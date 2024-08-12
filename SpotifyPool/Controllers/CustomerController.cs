@@ -10,17 +10,28 @@ namespace SpotifyPool.Controllers
     public class CustomerController : ControllerBase
     {
         private readonly CustomerBLL _customerBLL;
+        private readonly ILogger<CustomerController> _logger;
 
-        public CustomerController(CustomerBLL customerBLL)
+        public CustomerController(CustomerBLL customerBLL, ILogger<CustomerController> logger)
         {
             _customerBLL = customerBLL;
+            _logger = logger;
+
         }
 
         [HttpGet("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers()
         {
-            var users = await _customerBLL.GetAllUsers();
-            return users is not null ? Ok(users) : NotFound("Not Found!!!");
+            try
+            {
+                var users = await _customerBLL.GetAllUsers();
+                return users is not null ? Ok(users) : NotFound("Not Found!!!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
         }
     }
 }

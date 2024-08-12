@@ -2,6 +2,7 @@ using MongoDB.Driver;
 using Data_Access_Layer.DBContext;
 using Data_Access_Layer.Repositories.Accounts.Customers;
 using Business_Logic_Layer.BusinessLogic;
+using Data_Access_Layer.Repositories.Accounts.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,9 +24,12 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // Register DAL services
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IAuthenticationRepository, AuthenticationRepository>();
 
 // Register BLL services
 builder.Services.AddScoped<CustomerBLL>();
+builder.Services.AddScoped<AuthenticationBLL>();
+
 
 var app = builder.Build();
 

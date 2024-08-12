@@ -14,6 +14,8 @@ namespace Business_Logic_Layer.Mappers
         public CustomerMappings()
         {
             CreateMap<User, CustomerModel>().ReverseMap();
+            CreateMap<User, LoginModel>().ReverseMap();
+            CreateMap<User, RegisterModel>().ReverseMap();
         }
     }
 }
