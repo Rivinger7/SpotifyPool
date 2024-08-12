@@ -1,6 +1,7 @@
 using SpotifyPool.Data;
 using SpotifyPool.Models;
 using SpotifyPool.Services;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
