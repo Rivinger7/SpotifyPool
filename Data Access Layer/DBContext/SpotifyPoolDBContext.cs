@@ -1,6 +1,7 @@
 ﻿using MongoDB.Driver;
 using Data_Access_Layer.Repositories;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Data_Access_Layer.DBContext
 {
@@ -9,10 +10,10 @@ namespace Data_Access_Layer.DBContext
         private readonly IMongoDatabase _database;
         private readonly ILogger<SpotifyPoolDBContext> _logger;
 
-        public SpotifyPoolDBContext(MongoDBSetting mongoDBSettings, ILogger<SpotifyPoolDBContext> logger)
+        public SpotifyPoolDBContext(IOptions<MongoDBSetting> mongoDBSettings, ILogger<SpotifyPoolDBContext> logger)
         {
-            var mongoClient = new MongoClient(mongoDBSettings.ConnectionString);
-            _database = mongoClient.GetDatabase(mongoDBSettings.DatabaseName);
+            var mongoClient = new MongoClient(mongoDBSettings.Value.ConnectionString);
+            _database = mongoClient.GetDatabase(mongoDBSettings.Value.DatabaseName);
             _logger = logger;
         }
 

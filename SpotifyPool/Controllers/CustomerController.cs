@@ -1,4 +1,5 @@
-﻿using Data_Access_Layer.Repositories.Accounts.Customers;
+﻿using Business_Logic_Layer.BusinessLogic;
+using Data_Access_Layer.Repositories.Accounts.Customers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,17 +9,17 @@ namespace SpotifyPool.Controllers
     [ApiController]
     public class CustomerController : ControllerBase
     {
-        private readonly ICustomerRepository _customerRepository;
+        private readonly CustomerBLL _customerBLL;
 
-        public CustomerController(ICustomerRepository customerRepository)
+        public CustomerController(CustomerBLL customerBLL)
         {
-            _customerRepository = customerRepository;
+            _customerBLL = customerBLL;
         }
 
         [HttpGet("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers()
         {
-            var users = await _customerRepository.GetAllUsers();
+            var users = await _customerBLL.GetAllUsers();
             return users is not null ? Ok(users) : NotFound("Not Found!!!");
         }
     }

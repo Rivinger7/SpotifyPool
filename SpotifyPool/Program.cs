@@ -12,12 +12,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Register DAL services
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-
-// Register BLL services
-builder.Services.AddScoped<CustomerBLL>();
-
 //Config the database
 builder.Services.Configure<MongoDBSetting>(builder.Configuration.GetSection("MongoDBSettings"));
 
@@ -26,6 +20,12 @@ builder.Services.AddSingleton<SpotifyPoolDBContext>();
 
 // Add AutoMapper configuration
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// Register DAL services
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+
+// Register BLL services
+builder.Services.AddScoped<CustomerBLL>();
 
 var app = builder.Build();
 

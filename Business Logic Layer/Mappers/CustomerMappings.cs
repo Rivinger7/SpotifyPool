@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Business_Logic_Layer.Models;
+using Data_Access_Layer.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +13,7 @@ namespace Business_Logic_Layer.Mappers
     {
         public CustomerMappings()
         {
-
+            CreateMap<User, CustomerModel>().ReverseMap();
         }
     }
 }

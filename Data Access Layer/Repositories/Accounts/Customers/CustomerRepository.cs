@@ -20,6 +20,10 @@ namespace Data_Access_Layer.Repositories.Accounts.Customers
         public async Task<IEnumerable<User>> GetAllUsers()
         {
             IEnumerable<User> users = await _context.Users.Find(users => true).ToListAsync();
+            if (users is null)
+            {
+                return null;
+            }
             return users;
         }
     }

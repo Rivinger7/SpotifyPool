@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Business_Logic_Layer.Models;
 using Data_Access_Layer.Repositories;
 using Data_Access_Layer.Repositories.Accounts.Customers;
 using Microsoft.Extensions.Logging;
@@ -23,10 +24,11 @@ namespace Business_Logic_Layer.BusinessLogic
             _customerRepository = customerRepository;
         }
 
-        public async Task<IEnumerable<User>> GetAllUsers()
+        public async Task<IEnumerable<CustomerModel>> GetAllUsers()
         {
-            IEnumerable<User> users = await _customerRepository.GetAllUsers();
-            return users;
+            var users = await _customerRepository.GetAllUsers();
+            IEnumerable<CustomerModel> customerModel = _mapper.Map<IEnumerable<User>, IEnumerable<CustomerModel>>(users);
+            return customerModel;
         }
     }
 }
