@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyPool", "SpotifyPool\SpotifyPool.csproj", "{E8C63BE3-FB68-4BAA-A962-11955250B07D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpotifyPool", "SpotifyPool\SpotifyPool.csproj", "{E8C63BE3-FB68-4BAA-A962-11955250B07D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Data Access Layer", "Data Access Layer\Data Access Layer.csproj", "{6C5466BD-01D2-41F9-B8DE-2C7D0ABB641F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Business Logic Layer", "Business Logic Layer\Business Logic Layer.csproj", "{E9C35C23-1F7D-4D72-ADC4-B458533497B8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{E8C63BE3-FB68-4BAA-A962-11955250B07D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8C63BE3-FB68-4BAA-A962-11955250B07D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8C63BE3-FB68-4BAA-A962-11955250B07D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C5466BD-01D2-41F9-B8DE-2C7D0ABB641F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C5466BD-01D2-41F9-B8DE-2C7D0ABB641F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C5466BD-01D2-41F9-B8DE-2C7D0ABB641F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C5466BD-01D2-41F9-B8DE-2C7D0ABB641F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9C35C23-1F7D-4D72-ADC4-B458533497B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9C35C23-1F7D-4D72-ADC4-B458533497B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9C35C23-1F7D-4D72-ADC4-B458533497B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9C35C23-1F7D-4D72-ADC4-B458533497B8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

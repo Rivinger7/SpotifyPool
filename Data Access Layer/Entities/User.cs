@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
 
-namespace SpotifyPool.Data
+namespace Data_Access_Layer.Repositories
 {
 	public class User
 	{

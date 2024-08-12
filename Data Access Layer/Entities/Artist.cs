@@ -1,4 +1,4 @@
-﻿namespace SpotifyPool.Data
+﻿namespace Data_Access_Layer.Repositories
 {
 	public class Artist
 	{
