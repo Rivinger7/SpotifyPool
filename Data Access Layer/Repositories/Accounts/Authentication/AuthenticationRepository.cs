@@ -64,14 +64,58 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
             }
         }
 
-        public async Task<string> GetPasswordHashed(string username)
+        public async Task<string> GetAccountToken(string email)
         {
-            var passwordHashed = await _context.Users.Find(user => user.Username == username).Project(user => user.Password)
-                .FirstOrDefaultAsync();
+            try
+            {
+                string? token = await _context.Users.Find(user => user.Email == email).Project(user => user.Token)
+                    .FirstOrDefaultAsync();
 
-            await Console.Out.WriteLineAsync($"============================= {passwordHashed} ===================");
+                if(token is null)
+                {
+                    throw new ArgumentException("The account has activated", "activatedAccount");
+                }
 
-            return passwordHashed;
+                return token;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message, ex);
+            }
+        }
+
+        public async Task UpdateAccountConfirmationStatus(string email)
+        {
+            try
+            {
+                User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
+
+                if (retrieveUser is null)
+                {
+                    throw new ArgumentException("Not found any user", "notFound");
+                }
+
+                UpdateDefinition<User> statusUpdate = Builders<User>.Update.Set(user => user.Status, "Active");
+
+                UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, null);
+
+                UpdateResult statusResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, statusUpdate);
+
+                UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
+
+                // Kiểm tra nếu có ít nhất một field_name được cập nhật
+                if (statusResult.ModifiedCount < 1)
+                {
+                    throw new ArgumentException("Found User but can not update", "updateFail");
+                }
+
+                return;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message, ex);
+            }
+
         }
 
         public async Task<User> Authenticate(User user)
@@ -90,17 +134,24 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
 
             // Remember me cũng do bên FE quản lý luôn
 
-            //string status = retrieveUser.Status.ToUpper();
-            //switch(status)
-            //{
-            //    case "BANNED":
-            //        throw new ArgumentException("Account has been locked", "bannedStatus");
-            //    case "INACTIVE":
-            //        throw new ArgumentException("Account not activated", "inactiveStatus");
-            //}
-
+            string status = retrieveUser.Status.ToUpper();
+            switch (status)
+            {
+                case "BANNED":
+                    throw new ArgumentException("Account has been locked", "bannedStatus");
+                case "INACTIVE":
+                    throw new ArgumentException("Account is not activated", "inactiveStatus");
+            }
 
             return retrieveUser;
+        }
+
+        public async Task<string> GetPasswordHashed(string username)
+        {
+            string passwordHashed = await _context.Users.Find(user => user.Username == username).Project(user => user.Password)
+                .FirstOrDefaultAsync();
+
+            return passwordHashed;
         }
     }
 }

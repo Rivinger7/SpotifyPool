@@ -18,5 +18,6 @@ namespace Data_Access_Layer.Repositories
         public string? Image { get; set; }
         public string? Gender { get; set; }
         public string Status { get; set; }
+        public string? Token { get; set; }
     }
 }

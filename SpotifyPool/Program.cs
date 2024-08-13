@@ -3,6 +3,7 @@ using Data_Access_Layer.DBContext;
 using Data_Access_Layer.Repositories.Accounts.Customers;
 using Business_Logic_Layer.BusinessLogic;
 using Data_Access_Layer.Repositories.Accounts.Authentication;
+using Business_Logic_Layer.Services.EmailSender;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,9 @@ builder.Services.AddSingleton<SpotifyPoolDBContext>();
 // Add AutoMapper configuration
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+// Config the email sender (SMTP)
+builder.Services.Configure<EmailSenderSetting>(builder.Configuration.GetSection("Email"));
+
 // Register DAL services
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IAuthenticationRepository, AuthenticationRepository>();
@@ -30,6 +34,7 @@ builder.Services.AddScoped<IAuthenticationRepository, AuthenticationRepository>(
 builder.Services.AddScoped<CustomerBLL>();
 builder.Services.AddScoped<AuthenticationBLL>();
 
+builder.Services.AddScoped<IEmailSenderCustom, EmailSender>();
 
 var app = builder.Build();
 

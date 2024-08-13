@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace SpotifyPool.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/customer")]
     [ApiController]
     public class CustomerController : ControllerBase
     {

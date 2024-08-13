@@ -8,7 +8,7 @@ using MongoDB.Driver;
 
 namespace SpotifyPool.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/authentication")]
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
@@ -32,7 +32,7 @@ namespace SpotifyPool.Controllers
                 bool isConfirmedPassword = password == confirmedPassword;
                 if (!isConfirmedPassword)
                 {
-                    throw new ArgumentException("Password and Confirmed Password does not matched");
+                    throw new ArgumentException("Password and Confirmed Password does not matches");
                 }
 
                 await _authenticationBLL.CreateAccount(registerModel);
@@ -49,6 +49,29 @@ namespace SpotifyPool.Controllers
             catch (Exception ex)
             {
                 //Console.WriteLine(ex.ToString());
+                _logger.LogError(ex.StackTrace);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpPost("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail([FromBody] string email, string token)
+        {
+            try
+            {
+                await _authenticationBLL.ActivateAccountByToken(email, token);
+                return Ok(new { message = "Confirmed Email Successfully" });
+            }
+            catch (ArgumentException aex)
+            {
+                if(aex.ParamName == "ativateAccountFail" || aex.ParamName == "activatedAccount" || aex.ParamName == "notFound" || aex.ParamName == "updateFail")
+                {
+                    return Conflict(new {message = aex.Message});
+                }
+                return BadRequest(new {message = aex.Message});
+            }
+            catch(Exception ex)
+            {
                 _logger.LogError(ex.StackTrace);
                 return StatusCode(500, new { message = "Internal server error" });
             }

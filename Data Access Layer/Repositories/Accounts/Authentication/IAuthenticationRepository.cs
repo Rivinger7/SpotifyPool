@@ -12,5 +12,7 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
         Task CreateAccount(User user);
         Task CheckAccountExists(User user);
         Task<string> GetPasswordHashed(string username);
+        Task UpdateAccountConfirmationStatus(string email);
+        Task<string> GetAccountToken(string email);
     }
 }
