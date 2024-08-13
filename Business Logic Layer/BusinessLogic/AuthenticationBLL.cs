@@ -29,6 +29,9 @@ namespace Business_Logic_Layer.BusinessLogic
         {
             try
             {
+                string passwordHashed = BCrypt.Net.BCrypt.HashPassword(registerModel.Password);
+                registerModel.Password = passwordHashed;
+
                 User user = _mapper.Map<RegisterModel, User>(registerModel);
 
                 await _authenticationRepository.CheckAccountExists(user);
@@ -44,8 +47,32 @@ namespace Business_Logic_Layer.BusinessLogic
             }
         }
 
+        private async Task<string> GetPasswordHashed(string username)
+        {
+            try
+            {
+                var passwordHashed = await _authenticationRepository.GetPasswordHashed(username);
+                return passwordHashed;
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message, ex);
+                throw new Exception(ex.Message, ex);
+            }
+        }
+
         public async Task<CustomerModel> Authenticate(LoginModel loginModel)
         {
+            var passwordHashed = await GetPasswordHashed(loginModel.Username);
+
+            bool isPasswordHashed = BCrypt.Net.BCrypt.Verify(loginModel.Password, passwordHashed);
+            if (!isPasswordHashed)
+            {
+                throw new ArgumentException("Username or Password is incorrect", "loginFail");
+            }
+
+            loginModel.Password = passwordHashed;
+
             User user = _mapper.Map<LoginModel, User>(loginModel);
 
             var retrievedUser = await _authenticationRepository.Authenticate(user);

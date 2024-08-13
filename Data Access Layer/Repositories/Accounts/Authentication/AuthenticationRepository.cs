@@ -64,6 +64,16 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
             }
         }
 
+        public async Task<string> GetPasswordHashed(string username)
+        {
+            var passwordHashed = await _context.Users.Find(user => user.Username == username).Project(user => user.Password)
+                .FirstOrDefaultAsync();
+
+            await Console.Out.WriteLineAsync($"============================= {passwordHashed} ===================");
+
+            return passwordHashed;
+        }
+
         public async Task<User> Authenticate(User user)
         {
             string username = user.Username;
@@ -88,6 +98,7 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
             //    case "INACTIVE":
             //        throw new ArgumentException("Account not activated", "inactiveStatus");
             //}
+
 
             return retrieveUser;
         }
