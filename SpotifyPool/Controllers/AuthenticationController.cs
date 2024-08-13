@@ -35,9 +35,6 @@ namespace SpotifyPool.Controllers
                     throw new ArgumentException("Password and Confirmed Password does not matched");
                 }
 
-                string passwordHashed = BCrypt.Net.BCrypt.HashPassword(registerModel.Password);
-                registerModel.Password = passwordHashed;
-
                 await _authenticationBLL.CreateAccount(registerModel);
                 return Ok(new { message = "Account created successfully" });
             }
@@ -62,9 +59,6 @@ namespace SpotifyPool.Controllers
         {
             try
             {
-                string passwordHashed = BCrypt.Net.BCrypt.HashPassword(loginModel.Password);
-                loginModel.Password = passwordHashed;
-
                 var customerModel = await _authenticationBLL.Authenticate(loginModel);
                 return Ok(new { message = "Login Successfully", customerModel });
             }

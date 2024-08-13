@@ -11,5 +11,6 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
         Task<User> Authenticate(User user);
         Task CreateAccount(User user);
         Task CheckAccountExists(User user);
+        Task<string> GetPasswordHashed(string username);
     }
 }

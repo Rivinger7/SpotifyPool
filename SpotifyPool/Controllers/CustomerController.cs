@@ -30,7 +30,7 @@ namespace SpotifyPool.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
-                return StatusCode(500, new { message = "Internal server error" });
+                return StatusCode(500, new { message = "Internal server error", stackerror = ex.StackTrace});
             }
         }
     }
