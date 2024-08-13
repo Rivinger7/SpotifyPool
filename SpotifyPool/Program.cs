@@ -1,9 +1,12 @@
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using Data_Access_Layer.DBContext;
 using Data_Access_Layer.Repositories.Accounts.Customers;
 using Business_Logic_Layer.BusinessLogic;
 using Data_Access_Layer.Repositories.Accounts.Authentication;
 using Business_Logic_Layer.Services.EmailSender;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,25 @@ builder.Services.AddSingleton<SpotifyPoolDBContext>();
 
 // Add AutoMapper configuration
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// Config the Google Identity
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    //options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+}).AddCookie().AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration.GetSection("Authentication:Google:ClientId").Value;
+    options.ClientSecret = builder.Configuration.GetSection("Authentication:Google:ClientSecret").Value;
+    options.CallbackPath = "/api/authentication/signin-google"; // Đường dẫn Google sẽ chuyển hướng sau khi xác thực
+
+    options.Scope.Add("profile");
+    options.Scope.Add("email");
+    options.Scope.Add("openid");
+
+    options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
+});
 
 // Config the email sender (SMTP)
 builder.Services.Configure<EmailSenderSetting>(builder.Configuration.GetSection("Email"));

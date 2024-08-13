@@ -2,6 +2,9 @@
 using Business_Logic_Layer.BusinessLogic;
 using Business_Logic_Layer.Models;
 using Data_Access_Layer.DBContext;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -99,6 +102,47 @@ namespace SpotifyPool.Controllers
                 _logger.LogError(ex.StackTrace);
                 return StatusCode(500, new { message = "Internal server error"});
             }
+        }
+
+        [HttpGet("login-by-google")]
+        public Task<IActionResult> LoginByGoogle(string returnUrl = "/")
+        {
+            var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse", new { returnUrl }) };
+            return Task.FromResult<IActionResult>(Challenge(properties, GoogleDefaults.AuthenticationScheme));
+        }
+
+        [HttpGet("google-response")]
+        public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            if (result?.Principal == null)
+            {
+                return Unauthorized();
+            }
+
+            var claims = result.Principal.Identities
+                .FirstOrDefault()?.Claims
+                .Select(claim => new
+                {
+                    claim.Type,
+                    claim.Value
+                });
+
+            // Tạo JWT hoặc xử lý thêm thông tin người dùng tại đây
+            // ...
+            // Tạo JWT
+            // var token = GenerateJwtToken(result.Principal);
+            //return Ok(new { token });
+
+            return Ok(new { message = "Google login successful", claims });
+        }
+
+        [HttpGet("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok(new { message = "Logged out successfully" });
         }
     }
 }

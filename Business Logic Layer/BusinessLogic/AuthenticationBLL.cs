@@ -54,7 +54,7 @@ namespace Business_Logic_Layer.BusinessLogic
 
                 // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
             }
-            catch(ArgumentException aex)
+            catch (ArgumentException aex)
             {
                 throw new ArgumentException(aex.Message);
             }
@@ -68,18 +68,27 @@ namespace Business_Logic_Layer.BusinessLogic
         {
             // Giải mã token vừa nhận được
             // string verifiedToken = Decode(token);
+            // string email = Decode(email);
             // Sau đó kiểm tra token nhận được so với token từ db
 
-            var retrieveToken = await _authenticationRepository.GetAccountToken(email);
-
-            if(retrieveToken != token) // Đổi token bằng verifiedToken
+            try
             {
-                throw new ArgumentException("Token and Retrieve Token does not matches", "ativateAccountFail");
+                var retrieveToken = await _authenticationRepository.GetAccountToken(email);
+
+                if (retrieveToken != token) // Đổi token bằng verifiedToken
+                {
+                    throw new ArgumentException("Token and Retrieve Token does not matches", "ativateAccountFail");
+                }
+
+                await _authenticationRepository.UpdateAccountConfirmationStatus(email);
+
+                return;
             }
-
-            await _authenticationRepository.UpdateAccountConfirmationStatus(email);
-
-            return;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex);
+                throw new Exception(ex.Message, ex);
+            }
         }
 
         public async Task<CustomerModel> Authenticate(LoginModel loginModel)
