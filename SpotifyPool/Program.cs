@@ -7,6 +7,7 @@ using Business_Logic_Layer.Services.EmailSender;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
+using SpotifyPool.JIRA_REST_API.Issues;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +48,9 @@ builder.Services.AddAuthentication(options =>
 
 // Config the email sender (SMTP)
 builder.Services.Configure<EmailSenderSetting>(builder.Configuration.GetSection("Email"));
+
+// Register Jira Cloud REST API Client
+builder.Services.AddSingleton<IssueClient>();
 
 // Register DAL services
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();

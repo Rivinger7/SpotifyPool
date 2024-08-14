@@ -2,19 +2,22 @@
 using Data_Access_Layer.Repositories.Accounts.Customers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SpotifyPool.JIRA_REST_API.Issues;
 
 namespace SpotifyPool.Controllers
 {
-    [Route("api/customer")]
+    [Route("api/customers")]
     [ApiController]
     public class CustomerController : ControllerBase
     {
         private readonly CustomerBLL _customerBLL;
+        private readonly IssueClient _issueClient;
         private readonly ILogger<CustomerController> _logger;
 
-        public CustomerController(CustomerBLL customerBLL, ILogger<CustomerController> logger)
+        public CustomerController(CustomerBLL customerBLL, IssueClient issueClient, ILogger<CustomerController> logger)
         {
             _customerBLL = customerBLL;
+            _issueClient = issueClient;
             _logger = logger;
 
         }
