@@ -1,11 +1,14 @@
 ﻿using Business_Logic_Layer.BusinessLogic;
 using Data_Access_Layer.Repositories.Accounts.Customers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SpotifyPool.JIRA_REST_API.Issues;
 
 namespace SpotifyPool.Controllers
 {
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Customer")]
     [Route("api/customers")]
     [ApiController]
     public class CustomerController : ControllerBase
@@ -22,8 +25,9 @@ namespace SpotifyPool.Controllers
 
         }
 
+        
         [HttpGet("GetAllUsers")]
-        public async Task<IActionResult> GetAllUsers()
+		public async Task<IActionResult> GetAllUsers()
         {
             try
             {

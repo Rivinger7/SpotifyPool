@@ -7,7 +7,11 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using System.Security.Claims;
+using System.Text;
+using Business_Logic_Layer.Services.JWT;
 
 namespace SpotifyPool.Controllers
 {
@@ -17,20 +21,22 @@ namespace SpotifyPool.Controllers
     {
         private readonly AuthenticationBLL _authenticationBLL;
         private readonly ILogger<AuthenticationController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public AuthenticationController(AuthenticationBLL authenticationBLL, ILogger<AuthenticationController> logger)
-        {
-            _authenticationBLL = authenticationBLL;
-            _logger = logger;
-        }
+		public AuthenticationController(AuthenticationBLL authenticationBLL, ILogger<AuthenticationController> logger, IConfiguration configuration)
+		{
+			_authenticationBLL = authenticationBLL;
+			_logger = logger;
+			_configuration = configuration;
+		}
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
-        {
-            try
-            {
-                string password = registerModel.Password;
-                string confirmedPassword = registerModel.ConfirmedPassword;
+		[HttpPost("register")]
+		public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
+		{
+			try
+			{
+				string password = registerModel.Password;
+				string confirmedPassword = registerModel.ConfirmedPassword;
 
                 bool isConfirmedPassword = password == confirmedPassword;
                 if (!isConfirmedPassword)
@@ -38,24 +44,24 @@ namespace SpotifyPool.Controllers
                     throw new ArgumentException("Password and Confirmed Password does not matches");
                 }
 
-                await _authenticationBLL.CreateAccount(registerModel);
-                return Ok(new { message = "Account created successfully" });
-            }
-            catch(ArgumentException aex)
-            {
-                if (aex.ParamName == "usernameExists" || aex.ParamName == "emailExists" || aex.ParamName == "phoneNumberExists")
-                {
-                    return Conflict(new { message = aex.Message });
-                }
-                return BadRequest(new { message = aex.Message });
-            }
-            catch (Exception ex)
-            {
-                //Console.WriteLine(ex.ToString());
-                _logger.LogError(ex.StackTrace);
-                return StatusCode(500, new { message = "Internal server error" });
-            }
-        }
+				await _authenticationBLL.CreateAccount(registerModel);
+				return Ok(new { message = "Account created successfully" });
+			}
+			catch (ArgumentException aex)
+			{
+				if (aex.ParamName == "usernameExists" || aex.ParamName == "emailExists" || aex.ParamName == "phoneNumberExists")
+				{
+					return Conflict(new { message = aex.Message });
+				}
+				return BadRequest(new { message = aex.Message });
+			}
+			catch (Exception ex)
+			{
+				//Console.WriteLine(ex.ToString());
+				_logger.LogError(ex.StackTrace);
+				return StatusCode(500, new { message = "Internal server error" });
+			}
+		}
 
         [HttpPost("confirm-email")]
         public async Task<IActionResult> ConfirmEmail([FromBody] string email, string token)
@@ -80,13 +86,16 @@ namespace SpotifyPool.Controllers
             }
         }
 
+        
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             try
             {
                 var customerModel = await _authenticationBLL.Authenticate(loginModel);
-                return Ok(new { message = "Login Successfully", customerModel });
+                JWTGenerator jwtGenerator = new JWTGenerator(_configuration);
+                string token = jwtGenerator.GenerateJWTToken(customerModel);
+                return Ok(new { message = "Login Successfully", customerModel, token });
             }
             catch (ArgumentException aex)
             {
