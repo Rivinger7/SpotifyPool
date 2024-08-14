@@ -20,11 +20,26 @@ namespace Data_Access_Layer.Repositories.Accounts.Customers
         public async Task<IEnumerable<User>> GetAllUsers()
         {
             IEnumerable<User> users = await _context.Users.Find(users => true).ToListAsync();
-            if (users is null)
-            {
-                return null;
-            }
             return users;
+        }
+
+        public async Task<User> GetByUsername(string? username)
+        {
+            try
+            {
+                User user = await _context.Users.Find(user => username == user.Username).FirstOrDefaultAsync();
+                if(user is null)
+                {
+                    throw new ArgumentException("The Account does not exists", "accountNotFound");
+                }
+
+                return user;
+            }
+            catch(Exception ex)
+            {
+                throw new Exception(ex.Message, ex);
+            }
+            
         }
     }
 }

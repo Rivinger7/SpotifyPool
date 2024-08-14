@@ -1,13 +1,16 @@
 ﻿using AutoMapper;
 using Business_Logic_Layer.Models;
 using Business_Logic_Layer.Services.EmailSender;
+using Business_Logic_Layer.Services.JWT;
 using Data_Access_Layer.Repositories;
 using Data_Access_Layer.Repositories.Accounts.Authentication;
 using Data_Access_Layer.Repositories.Accounts.Customers;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,16 +19,20 @@ namespace Business_Logic_Layer.BusinessLogic
     public class AuthenticationBLL
     {
         private readonly IMapper _mapper;
-        private IAuthenticationRepository _authenticationRepository;
+        private readonly IAuthenticationRepository _authenticationRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly IEmailSenderCustom _emailSender;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<CustomerBLL> _logger;
 
-        public AuthenticationBLL(ILogger<CustomerBLL> logger, IMapper mapper, IAuthenticationRepository authenticationRepository, IEmailSenderCustom emailSender)
+        public AuthenticationBLL(ILogger<CustomerBLL> logger, IMapper mapper, IAuthenticationRepository authenticationRepository, ICustomerRepository customerRepository, IEmailSenderCustom emailSender, IConfiguration configuration)
         {
             _logger = logger;
             _mapper = mapper;
             _authenticationRepository = authenticationRepository;
+            _customerRepository = customerRepository;
             _emailSender = emailSender;
+            _configuration = configuration;
         }
 
         public async Task CreateAccount(RegisterModel registerModel)
@@ -42,15 +49,17 @@ namespace Business_Logic_Layer.BusinessLogic
 
                 await _authenticationRepository.CheckAccountExists(user);
 
-                //string token = GenerateConfirmationToken(user); // Tạo token xác nhận
                 // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
                 // Dùng mã hóa cho email khi tạo link
-                //string confirmationLink = $"https://myfrontend.com/confirm-email?email={HCMA(email)}&token={HCMA(token)}";
-                //user.Token = token;
-
+                string encryptedToken = Shared.Helpers.DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
+                JWT jwtGenerator = new JWT(_configuration);
+                string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
+                string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+                user.Token = encryptedToken;
+                
                 await _authenticationRepository.CreateAccount(user);
 
-                await _emailSender.SendEmailConfirmationAsync(user, "Xác nhận Email", "https://www.google.com/logos/doodles/2024/paris-games-artistic-swimming-6753651837110445-la202124.gif");
+                await _emailSender.SendEmailConfirmationAsync(user, "Xác nhận Email", confirmationLink);
 
                 // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
             }
@@ -64,18 +73,32 @@ namespace Business_Logic_Layer.BusinessLogic
             }
         }
 
-        public async Task ActivateAccountByToken(string email, string token)
+        public async Task ActivateAccountByToken(string token)
         {
-            // Giải mã token vừa nhận được
-            // string verifiedToken = Decode(token);
-            // string email = Decode(email);
-            // Sau đó kiểm tra token nhận được so với token từ db
-
             try
             {
+                var validator = new JWT(_configuration);
+                var decodedToken = validator.DecodeToken(token);
+
+                var emailClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "Email");
+                //var roleClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Role);
+                var encryptedTokenClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "EncrpytedToken");
+
+                if (emailClaim == null || encryptedTokenClaim == null)
+                {
+                    throw new ArgumentException("Token is missing required claims", "activateAccountFails");
+                }
+
+                var email = emailClaim.Value;
+                //var role = roleClaim.Value;
+                var encryptedToken = encryptedTokenClaim.Value;
+
+                //_logger.LogInformation("Token decoded successfully");
+                //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
+
                 var retrieveToken = await _authenticationRepository.GetAccountToken(email);
 
-                if (retrieveToken != token) // Đổi token bằng verifiedToken
+                if (retrieveToken != encryptedToken) // Đổi token bằng verifiedToken
                 {
                     throw new ArgumentException("Token and Retrieve Token does not matches", "ativateAccountFail");
                 }
@@ -86,7 +109,6 @@ namespace Business_Logic_Layer.BusinessLogic
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message, ex);
                 throw new Exception(ex.Message, ex);
             }
         }
@@ -100,7 +122,7 @@ namespace Business_Logic_Layer.BusinessLogic
             {
                 throw new ArgumentException("Username or Password is incorrect", "loginFail");
             }
-
+           
             loginModel.Password = passwordHashed;
 
             User user = _mapper.Map<LoginModel, User>(loginModel);
@@ -122,6 +144,30 @@ namespace Business_Logic_Layer.BusinessLogic
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message, ex);
+                throw new Exception(ex.Message, ex);
+            }
+        }
+
+        public async Task ReActiveAccountByToken(string username)
+        {
+            try
+            {
+                var user = await _customerRepository.GetByUsername(username);
+
+                string email = user.Email;
+
+                string encryptedToken = Shared.Helpers.DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
+                JWT jwtGenerator = new JWT(_configuration);
+                string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
+                string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+                await _authenticationRepository.UpdateTokenByEmail(email, encryptedToken);
+
+                await _emailSender.SendEmailConfirmationAsync(user, "Xác nhận Email", confirmationLink);
+
+                return;
+            }
+            catch (Exception ex)
+            {
                 throw new Exception(ex.Message, ex);
             }
         }

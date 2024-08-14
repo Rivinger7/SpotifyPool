@@ -28,7 +28,8 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
                     Email = user.Email,
                     Phonenumber = user.Phonenumber,
                     Role = "Customer",
-                    Status = "Inactive"
+                    Status = "Inactive",
+                    Token = user.Token
                 };
 
                 await _context.Users.InsertOneAsync(newUser);
@@ -64,14 +65,14 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
             }
         }
 
-        public async Task<string> GetAccountToken(string email)
+        public async Task<string> GetAccountToken(string? email)
         {
             try
             {
                 string? token = await _context.Users.Find(user => user.Email == email).Project(user => user.Token)
                     .FirstOrDefaultAsync();
 
-                if(token is null)
+                if (token is null)
                 {
                     throw new ArgumentException("The account has activated", "activatedAccount");
                 }
@@ -84,7 +85,22 @@ namespace Data_Access_Layer.Repositories.Accounts.Authentication
             }
         }
 
-        public async Task UpdateAccountConfirmationStatus(string email)
+        public async Task UpdateTokenByEmail(string email, string token)
+        {
+            try
+            {
+                User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
+
+                UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, token);
+                UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
+            }
+            catch(Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task UpdateAccountConfirmationStatus(string? email)
         {
             try
             {

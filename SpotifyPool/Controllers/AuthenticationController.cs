@@ -44,42 +44,42 @@ namespace SpotifyPool.Controllers
                     throw new ArgumentException("Password and Confirmed Password does not matches");
                 }
 
-				await _authenticationBLL.CreateAccount(registerModel);
-				return Ok(new { message = "Account created successfully" });
-			}
-			catch (ArgumentException aex)
-			{
-				if (aex.ParamName == "usernameExists" || aex.ParamName == "emailExists" || aex.ParamName == "phoneNumberExists")
-				{
-					return Conflict(new { message = aex.Message });
-				}
-				return BadRequest(new { message = aex.Message });
-			}
-			catch (Exception ex)
-			{
-				//Console.WriteLine(ex.ToString());
-				_logger.LogError(ex.StackTrace);
-				return StatusCode(500, new { message = "Internal server error" });
-			}
-		}
+                await _authenticationBLL.CreateAccount(registerModel);
+                return Ok(new { message = "Account created successfully" });
+            }
+            catch (ArgumentException aex)
+            {
+                if (aex.ParamName == "usernameExists" || aex.ParamName == "emailExists" || aex.ParamName == "phoneNumberExists")
+                {
+                    return Conflict(new { message = aex.Message });
+                }
+                return BadRequest(new { message = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine(ex.ToString());
+                _logger.LogError(ex.StackTrace);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
 
         [HttpPost("confirm-email")]
-        public async Task<IActionResult> ConfirmEmail([FromBody] string email, string token)
+        public async Task<IActionResult> ConfirmEmail([FromBody] string token)
         {
             try
             {
-                await _authenticationBLL.ActivateAccountByToken(email, token);
+                await _authenticationBLL.ActivateAccountByToken(token);
                 return Ok(new { message = "Confirmed Email Successfully" });
             }
             catch (ArgumentException aex)
             {
-                if(aex.ParamName == "ativateAccountFail" || aex.ParamName == "activatedAccount" || aex.ParamName == "notFound" || aex.ParamName == "updateFail")
+                if (aex.ParamName == "ativateAccountFail" || aex.ParamName == "activatedAccount" || aex.ParamName == "notFound" || aex.ParamName == "updateFail")
                 {
-                    return Conflict(new {message = aex.Message});
+                    return Conflict(new { message = aex.Message });
                 }
-                return BadRequest(new {message = aex.Message});
+                return BadRequest(new { message = aex.Message });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex.StackTrace);
                 return StatusCode(500, new { message = "Internal server error" });
@@ -93,7 +93,7 @@ namespace SpotifyPool.Controllers
             try
             {
                 var customerModel = await _authenticationBLL.Authenticate(loginModel);
-                JWTGenerator jwtGenerator = new JWTGenerator(_configuration);
+                JWT jwtGenerator = new JWT(_configuration);
                 string token = jwtGenerator.GenerateJWTToken(customerModel);
                 return Ok(new { message = "Login Successfully", customerModel, token });
             }
@@ -101,6 +101,7 @@ namespace SpotifyPool.Controllers
             {
                 if (aex.ParamName == "bannedStatus" || aex.ParamName == "inactiveStatus")
                 {
+                    HttpContext.Session.SetString("Username", loginModel.Username);
                     return Conflict(new { message = aex.Message });
                 }
                 return BadRequest(new { message = aex.Message });
@@ -109,7 +110,34 @@ namespace SpotifyPool.Controllers
             {
                 //Console.WriteLine(ex.ToString());
                 _logger.LogError(ex.StackTrace);
-                return StatusCode(500, new { message = "Internal server error"});
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpPost("reactive-account")]
+        public async Task<IActionResult> ReactiveAccount()
+        {
+            try
+            {
+                string? username = HttpContext.Session.GetString("Username");
+
+                if (string.IsNullOrEmpty(username))
+                {
+                    return Unauthorized(new { message = "No username found in session. Please log in again." });
+                }
+
+                await _authenticationBLL.ReActiveAccountByToken(username);
+
+                return Ok(new { message = "Email has sent to user's mail" });
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { message = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.StackTrace);
+                return StatusCode(500, new { message = "Internal server error" });
             }
         }
 

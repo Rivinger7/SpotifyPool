@@ -14,7 +14,7 @@ namespace Business_Logic_Layer.BusinessLogic
     public class CustomerBLL
     {
         private readonly IMapper _mapper;
-        private ICustomerRepository _customerRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly ILogger<CustomerBLL> _logger;
 
         public CustomerBLL(ILogger<CustomerBLL> logger, IMapper mapper, ICustomerRepository customerRepository)
