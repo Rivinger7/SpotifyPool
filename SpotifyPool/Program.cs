@@ -63,38 +63,39 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // Config the Google Identity
 builder.Services.AddAuthentication(options =>
 {
-	//options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-	////options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-	//options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-	options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddCookie().AddGoogle(options =>
+	options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+	//options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+	options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
+	//options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+	//options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+	//options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddCookie("Cookies").AddGoogle(options =>
 {
-	options.ClientId = builder.Configuration.GetSection("Authentication:Google:ClientId").Value;
-	options.ClientSecret = builder.Configuration.GetSection("Authentication:Google:ClientSecret").Value;
-	options.CallbackPath = "/api/authentication/signin-google"; // Đường dẫn Google sẽ chuyển hướng sau khi xác thực
+    options.ClientId = builder.Configuration.GetSection("Authentication:Google:ClientId").Value;
+    options.ClientSecret = builder.Configuration.GetSection("Authentication:Google:ClientSecret").Value;
+    options.CallbackPath = "/api/authentication/signin-google"; // Đường dẫn Google sẽ chuyển hướng sau khi xác thực
 
-	options.Scope.Add("profile");
-	options.Scope.Add("email");
-	options.Scope.Add("openid");
+    options.Scope.Add("profile");
+    options.Scope.Add("email");
+    options.Scope.Add("openid");
 
-	options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
+    options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
 }).AddJwtBearer(opt =>
 {
-	opt.TokenValidationParameters = new TokenValidationParameters
-	{
-		//tự cấp token
-		ValidateIssuer = false,
-		ValidateAudience = false,
-		ValidateLifetime = true,
+    opt.TokenValidationParameters = new TokenValidationParameters
+    {
+        //tự cấp token
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
 
-		//ký vào token
-		ValidateIssuerSigningKey = true,
-		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTSettings:SecretKey"])),
+        //ký vào token
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTSettings:SecretKey"])),
 
-		ClockSkew = TimeSpan.Zero
-	};
+        ClockSkew = TimeSpan.Zero
+    };
 });
 
 builder.Services.AddAuthorization(options =>
@@ -126,9 +127,9 @@ builder.Services.AddScoped<IEmailSenderCustom, EmailSender>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
+	options.Cookie.HttpOnly = true;
+	options.Cookie.IsEssential = true;
     options.IdleTimeout = TimeSpan.FromMinutes(10);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
@@ -143,12 +144,11 @@ if (app.Environment.IsDevelopment())
 //app.UseSwagger();
 //app.UseSwaggerUI();
 
+app.UseSession();
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-
-app.UseSession();
-
 app.UseAuthorization();
 
 app.MapControllers();

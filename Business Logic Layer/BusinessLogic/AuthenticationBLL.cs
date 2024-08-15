@@ -98,7 +98,7 @@ namespace Business_Logic_Layer.BusinessLogic
 
                 var retrieveToken = await _authenticationRepository.GetAccountToken(email);
 
-                if (retrieveToken != encryptedToken) // Đổi token bằng verifiedToken
+                if (retrieveToken != encryptedToken)
                 {
                     throw new ArgumentException("Token and Retrieve Token does not matches", "ativateAccountFail");
                 }

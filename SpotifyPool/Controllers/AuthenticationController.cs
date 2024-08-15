@@ -146,6 +146,10 @@ namespace SpotifyPool.Controllers
         {
             var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse", new { returnUrl }) };
             return Task.FromResult<IActionResult>(Challenge(properties, GoogleDefaults.AuthenticationScheme));
+
+            //var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse", new { returnUrl }) };
+            ////HttpContext.Items["oauthState"] = properties; // Lưu state trong HttpContext.Items
+            //return Task.FromResult<IActionResult>(Challenge(properties, GoogleDefaults.AuthenticationScheme));
         }
 
         [HttpGet("google-response")]
@@ -158,6 +162,8 @@ namespace SpotifyPool.Controllers
                 return Unauthorized();
             }
 
+            //var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
+
             var claims = result.Principal.Identities
                 .FirstOrDefault()?.Claims
                 .Select(claim => new
@@ -166,19 +172,34 @@ namespace SpotifyPool.Controllers
                     claim.Value
                 });
 
-            // Tạo JWT hoặc xử lý thêm thông tin người dùng tại đây
-            // ...
-            // Tạo JWT
-            // var token = GenerateJwtToken(result.Principal);
-            //return Ok(new { token });
+            // Trước khi kiểm tra liên kết thì cần xem account đó đã tồn tại chưa
 
-            return Ok(new { message = "Google login successful", claims });
+            // Kiểm tra user có liên kết google account chưa
+            // Nếu có liên kết thì đăng nhập bình thường
+            // Nếu chưa liên kết thì yêu cầu người dùng muốn liên kết hay không
+            // Nếu không cho phép liên kết thì không cho người dùng đăng nhập bằng google account vì account đã tồn tại google email rồi
+            // Nếu cho phép liên kết confirm liên kết
+
+            // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
+
+
+
+            // Tạo JWT token từ các claim của Google
+            var jwtGenerator = new JWT(_configuration);
+            var token = jwtGenerator.GenerateJWTToken(new CustomerModel
+            {
+                // Map thông tin từ Google vào model của bạn
+                Username = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
+                Email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
+                Role = "Customer", // Hoặc lấy từ claim nếu có
+            });
+
+            return Ok(new { message = "Google login successful", claims, token });
         }
 
         [HttpGet("logout")]
-        public async Task<IActionResult> Logout()
+        public IActionResult Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Ok(new { message = "Logged out successfully" });
         }
     }
