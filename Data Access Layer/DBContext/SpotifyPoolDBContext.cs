@@ -1,7 +1,7 @@
 ﻿using MongoDB.Driver;
-using Data_Access_Layer.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Data_Access_Layer.Entities;
 
 namespace Data_Access_Layer.DBContext
 {

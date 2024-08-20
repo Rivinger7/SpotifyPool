@@ -1,6 +1,6 @@
-﻿namespace Data_Access_Layer.Repositories
+﻿namespace Data_Access_Layer.Entities
 {
-	public class Playlist
-	{
-	}
+    public class Playlist
+    {
+    }
 }

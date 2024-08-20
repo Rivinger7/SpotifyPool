@@ -16,7 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Business Logic Layer\Business Logic Layer.csproj" />
+    <Folder Include="3. Application\MiddleWare\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Business Logic Layer\BusinessLogicLayer.Interface.csproj" />
+    <ProjectReference Include="..\BusinessLogicLayer.Implement\BusinessLogicLayer.Implement.csproj" />
+    <ProjectReference Include="..\Data Access Layer\DataAccessLayer.Implement.csproj" />
   </ItemGroup>
 
 </Project>
