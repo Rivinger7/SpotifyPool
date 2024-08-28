@@ -17,8 +17,8 @@ const BoxComponent = ({ isAvatar }: BoxComponentProps) => {
 						alt=""
 					/>
 				</div>
-				<div className="box-play-btn absolute right-2 bottom-2 transition-all duration-300 opacity-0 transform translate-y-2 group-hover:opacity-100 group-hover:translate-y-0">
-					<button className="box-btn cursor-pointer">
+				<div className="absolute transition-all duration-300 transform translate-y-2 opacity-0 box-play-btn right-2 bottom-2 group-hover:opacity-100 group-hover:translate-y-0">
+					<button className="cursor-pointer box-btn">
 						<span className="bg-[#1ed760] rounded-full flex items-center justify-center w-12 h-12 text-black">
 							<svg
 								data-encore-id="icon"
