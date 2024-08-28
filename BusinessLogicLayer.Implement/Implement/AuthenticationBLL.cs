@@ -3,69 +3,115 @@ using Business_Logic_Layer.Interface;
 using Business_Logic_Layer.Models;
 using Business_Logic_Layer.Services.EmailSender;
 using Business_Logic_Layer.Services.JWT;
+using BusinessLogicLayer.ModelView.Models;
+using Data_Access_Layer.DBContext;
 using Data_Access_Layer.Entities;
-using Data_Access_Layer.Implement.Repositories.Single.Accounts.Authentication;
-using Data_Access_Layer.Implement.Repositories.Single.Accounts.Customers;
+using DataAccessLayer.Interface.Interface.IUnitOfWork;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
+using System.Security.Claims;
 using Utility.Coding;
 
-namespace Business_Logic_Layer.BusinessLogic
+namespace BusinessLogicLayer.Implement.Implement
 {
     public class AuthenticationBLL : IAuthenticationBLL
     {
         private readonly IMapper _mapper;
-        private readonly IAuthenticationRepository _authenticationRepository;
-        private readonly ICustomerRepository _customerRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly SpotifyPoolDBContext _context;
+        private readonly IJwtBLL _jwtBLL;
         private readonly IEmailSenderCustom _emailSender;
         private readonly IConfiguration _configuration;
         private readonly ILogger<CustomerBLL> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuthenticationBLL(ILogger<CustomerBLL> logger, IMapper mapper, IAuthenticationRepository authenticationRepository, ICustomerRepository customerRepository, IEmailSenderCustom emailSender, IConfiguration configuration)
+        public AuthenticationBLL(ILogger<CustomerBLL> logger, IMapper mapper, IUnitOfWork unitOfWork, SpotifyPoolDBContext context, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _mapper = mapper;
-            _authenticationRepository = authenticationRepository;
-            _customerRepository = customerRepository;
+            _unitOfWork = unitOfWork;
+            _context = context;
+            _jwtBLL = jwtBLL;
             _emailSender = emailSender;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task CreateAccount(RegisterModel registerModel)
         {
-            try
+
+            string username = registerModel.Username;
+            string password = registerModel.Password;
+            string email = registerModel.Email;
+            string confirmedPassword = registerModel.ConfirmedPassword;
+
+            bool isConfirmedPassword = password == confirmedPassword;
+            if (!isConfirmedPassword)
             {
-                string password = registerModel.Password;
-                string email = registerModel.Email;
-
-                string passwordHashed = BCrypt.Net.BCrypt.HashPassword(password);
-                registerModel.Password = passwordHashed;
-
-                User user = _mapper.Map<RegisterModel, User>(registerModel);
-
-                await _authenticationRepository.CheckAccountExists(user);
-
-                // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
-                // Dùng mã hóa cho email khi tạo link
-                string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
-                JWT jwtGenerator = new JWT(_configuration);
-                string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
-                string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
-                user.Token = encryptedToken;
-                
-                await _authenticationRepository.CreateAccount(user);
-
-                await _emailSender.SendEmailConfirmationAsync(user, "Xác nhận Email", confirmationLink);
-
-                // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
+                throw new ArgumentException("Password and Confirmed Password do not match");
             }
-            catch (ArgumentException aex)
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+            bool isExistingUser = await _context.Users.Find(user => user.Username == username).AnyAsync();
+            if (isExistingUser)
             {
-                throw new ArgumentException(aex.Message);
+                throw new ArgumentException("Username already exists");
             }
-            catch (Exception ex)
+
+            await CheckAccountExists(registerModel);
+
+            // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
+            // Dùng mã hóa cho email khi tạo link
+            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
+            JWT jwtGenerator = new JWT(_configuration);
+            string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
+            string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+
+            User newUser = new()
             {
-                throw new Exception(ex.Message, ex);
+                Username = username,
+                Password = passwordHash,
+                Email = email,
+                Phonenumber = registerModel.PhoneNumber,
+                Role = "Customer",
+                Status = "Inactive",
+                Token = encryptedToken
+            };
+
+            await _context.Users.InsertOneAsync(newUser);
+
+            await _emailSender.SendEmailConfirmationAsync(newUser, "Xác nhận Email", confirmationLink);
+
+            // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
+        }
+
+        private async Task CheckAccountExists(RegisterModel registerModel)
+        {
+            string username = registerModel.Username;
+            string email = registerModel.Email;
+            string phonenumber = registerModel.PhoneNumber;
+
+            bool usernameExists = await _context.Users.Find(user => user.Username == username).AnyAsync();
+            if (usernameExists)
+            {
+                throw new ArgumentException("Username already exists", "usernameExists");
+            }
+
+            bool emailExists = await _context.Users.Find(user => user.Email == email).AnyAsync();
+            if (emailExists)
+            {
+                throw new ArgumentException("Email already exists", "emailExists");
+            }
+
+            bool phonenumberExists = await _context.Users.Find(user => user.Phonenumber == phonenumber).AnyAsync();
+            if (phonenumberExists)
+            {
+                throw new ArgumentException("Phone number already exists", "phoneNumberExists");
             }
         }
 
@@ -92,14 +138,13 @@ namespace Business_Logic_Layer.BusinessLogic
                 //_logger.LogInformation("Token decoded successfully");
                 //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
 
-                var retrieveToken = await _authenticationRepository.GetAccountToken(email);
-
-                if (retrieveToken != encryptedToken)
+                User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any user");
+                if (retrieveUser.Token != encryptedToken)
                 {
-                    throw new ArgumentException("Token and Retrieve Token does not matches", "ativateAccountFail");
+                    throw new ArgumentException("Token and Retrieve Token do not match", "ativateAccountFail");
                 }
 
-                await _authenticationRepository.UpdateAccountConfirmationStatus(email);
+                await UpdateAccountConfirmationStatus(retrieveUser);
 
                 return;
             }
@@ -109,63 +154,151 @@ namespace Business_Logic_Layer.BusinessLogic
             }
         }
 
-        public async Task<CustomerModel> Authenticate(LoginModel loginModel)
+        private async Task UpdateAccountConfirmationStatus(User retrieveUser)
         {
-            var passwordHashed = await GetPasswordHashed(loginModel.Username);
+            UpdateDefinition<User> statusUpdate = Builders<User>.Update.Set(user => user.Status, "Active");
 
-            bool isPasswordHashed = BCrypt.Net.BCrypt.Verify(loginModel.Password, passwordHashed);
-            if (!isPasswordHashed)
+            UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, null);
+
+            UpdateResult statusResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, statusUpdate);
+
+            UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
+
+            // Kiểm tra nếu có ít nhất một field_name được cập nhật
+            if (statusResult.ModifiedCount < 1 && tokenResult.ModifiedCount < 1)
             {
-                throw new ArgumentException("Username or Password is incorrect", "loginFail");
+                throw new ArgumentException("Found User but can not update", "updateFail");
             }
-           
-            loginModel.Password = passwordHashed;
 
-            User user = _mapper.Map<LoginModel, User>(loginModel);
-
-            var retrievedUser = await _authenticationRepository.Authenticate(user);
-
-            CustomerModel customerModel = _mapper.Map<User, CustomerModel>(retrievedUser);
-
-            return customerModel;
+            return;
         }
 
-        private async Task<string> GetPasswordHashed(string username)
+        public async Task<AuthenticatedResponseModel> LoginByGoogle()
         {
-            try
+            AuthenticateResult result = await _httpContextAccessor.HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme) ?? throw new ArgumentException($"Error at Line 191 of {nameof(LoginByGoogle)}");
+
+            if (result?.Principal == null)
             {
-                var passwordHashed = await _authenticationRepository.GetPasswordHashed(username);
-                return passwordHashed;
+                throw new ArgumentException("Principal is null");
             }
-            catch (Exception ex)
+
+            var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
+
+            //var claims = result.Principal.Identities
+            //    .FirstOrDefault()?.Claims
+            //    .Select(claim => new
+            //    {
+            //        claim.Type,
+            //        claim.Value
+            //    });
+
+
+            // Trước khi kiểm tra liên kết thì cần xem account đó đã tồn tại chưa
+
+            // Kiểm tra user có liên kết google account chưa
+            // Nếu có liên kết thì đăng nhập bình thường
+            // Nếu chưa liên kết thì yêu cầu người dùng muốn liên kết hay không
+            // Nếu không cho phép liên kết thì không cho người dùng đăng nhập bằng google account vì account đã tồn tại google email rồi
+            // Nếu cho phép liên kết confirm liên kết
+
+            // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
+
+            // Trường hớp đã đăng nhập vào hệ thống trước đó rồi
+            string email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new ArgumentException("Email is null");
+
+            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
+
+            // Tạo JWT token từ các claim của Google
+            JWT jwtGenerator = new(_configuration);
+            string? token = jwtGenerator.GenerateJWTToken(new CustomerModel
             {
-                _logger.LogError(ex.Message, ex);
-                throw new Exception(ex.Message, ex);
+                // Map thông tin từ Google vào customer model
+                Username = email,
+                Email = email,
+                Role = "Customer", // Hoặc lấy từ claim nếu có
+            });
+
+            // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
+            var claimsList = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, retrieveUser.Role)
+                };
+
+            _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out string accessToken, out string refreshToken);
+
+            // New object ModelView
+            AuthenticatedResponseModel authenticationModel = new()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+
+            return authenticationModel;
+        }
+
+        public async Task<AuthenticatedResponseModel> Authenticate(LoginModel loginModel)
+        {
+            string username = loginModel.Username;
+            string password = loginModel.Password;
+
+            User retrieveUser = await _context.Users.Find(user => user.Username == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
+
+            bool isPasswordHashed = BCrypt.Net.BCrypt.Verify(loginModel.Password, retrieveUser.Password);
+            if (!isPasswordHashed)
+            {
+                throw new ArgumentException("Username or Password is incorrect");
             }
+
+            // JWT
+            var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, retrieveUser.Role)
+                };
+
+            //Call method to generate access token
+            _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
+
+            if(accessToken is null)
+            {
+                await Console.Out.WriteLineAsync("accesstoken is null");
+            }
+
+            // New object ModelView
+            AuthenticatedResponseModel authenticationModel = new()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+
+            return authenticationModel;
         }
 
         public async Task ReActiveAccountByToken(string username)
         {
-            try
+
+            User retrieveUser = await _context.Users.Find(user => user.Username == username).FirstOrDefaultAsync() ?? throw new ArgumentException("");
+
+            string email = retrieveUser.Email;
+
+            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
+
+            JWT jwtGenerator = new JWT(_configuration);
+            string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
+            string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+
+            UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, token);
+            UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
+
+            if (tokenResult.ModifiedCount < 1)
             {
-                var user = await _customerRepository.GetByUsername(username);
-
-                string email = user.Email;
-
-                string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
-                JWT jwtGenerator = new JWT(_configuration);
-                string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
-                string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
-                await _authenticationRepository.UpdateTokenByEmail(email, encryptedToken);
-
-                await _emailSender.SendEmailConfirmationAsync(user, "Xác nhận Email", confirmationLink);
-
-                return;
+                throw new ArgumentException("");
             }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message, ex);
-            }
+
+            await _emailSender.SendEmailConfirmationAsync(retrieveUser, "Xác nhận Email", confirmationLink);
+
+            return;
         }
     }
 }

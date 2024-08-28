@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BusinessLogicLayer.ModelView\BusinessLogicLayer.ModelView.csproj" />
+    <ProjectReference Include="..\Data Access Layer\DataAccessLayer.Implement.csproj" />
   </ItemGroup>
 
 </Project>

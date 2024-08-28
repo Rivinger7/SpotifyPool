@@ -1,15 +1,16 @@
-﻿using Business_Logic_Layer.BusinessLogic;
-using Business_Logic_Layer.Services.EmailSender;
+﻿using Business_Logic_Layer.Services.EmailSender;
 using Data_Access_Layer.DBContext;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using SpotifyPool.JIRA_REST_API.Issues;
-using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
+using BusinessLogicLayer.Implement;
+using BusinessLogicLayer.Implement.Implement;
+using Business_Logic_Layer.Interface;
 
 namespace SpotifyPool.Main
 {
@@ -18,8 +19,11 @@ namespace SpotifyPool.Main
         public static void AddConfiguration(this IServiceCollection services, IConfiguration configuration)
         {
             services.ConfigRoute();
+            services.AddSwaggerGen();
             services.AddDatabase(configuration);
-            //services.AddAutoMapper();
+            services.AddAutoMapper();
+            services.AddInfrastructure(configuration);
+            services.AddServices(configuration);
 
             // Config Session HtppContext
             services.AddDistributedMemoryCache();
@@ -55,8 +59,8 @@ namespace SpotifyPool.Main
         public static void AddServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Register BLL services
-            services.AddScoped<CustomerBLL>();
-            services.AddScoped<AuthenticationBLL>();
+            //services.AddScoped<CustomerBLL>();
+            services.AddScoped<IAuthenticationBLL, AuthenticationBLL>();
 
             services.AddScoped<IEmailSenderCustom, EmailSender>();
             // Config the email sender (SMTP)
@@ -64,6 +68,8 @@ namespace SpotifyPool.Main
 
             // Register Jira Cloud REST API Client
             services.AddSingleton<IssueClient>();
+
+            services.AddTransient<IJwtBLL, JwtBLL>();
 
             // Config JWT
             services.AddSwaggerGen(c =>

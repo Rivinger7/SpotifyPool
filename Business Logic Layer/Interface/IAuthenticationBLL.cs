@@ -1,4 +1,5 @@
 ﻿using Business_Logic_Layer.Models;
+using BusinessLogicLayer.ModelView.Models;
 
 namespace Business_Logic_Layer.Interface
 {
@@ -6,9 +7,9 @@ namespace Business_Logic_Layer.Interface
     {
         Task CreateAccount(RegisterModel registerModel);
         Task ActivateAccountByToken(string token);
-        Task<CustomerModel> Authenticate(LoginModel loginModel);
+        Task<AuthenticatedResponseModel> Authenticate(LoginModel loginModel);
         Task ReActiveAccountByToken(string username);
-
+        Task<AuthenticatedResponseModel> LoginByGoogle();
 
     }
 }

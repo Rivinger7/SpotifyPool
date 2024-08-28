@@ -1,5 +1,6 @@
 ﻿using DataAccessLayer.Interface.Interface.IRepositories;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace Data_Access_Layer.Implement.Repositories.Generic
 {
@@ -12,7 +13,7 @@ namespace Data_Access_Layer.Implement.Repositories.Generic
             _collection = database.GetCollection<T>(collectionName);
         }
 
-        public IQueryable<T> Entities => _collection.AsQueryable();
+        public IMongoQueryable<T> Entities => _collection.AsQueryable();
 
         public async Task DeleteAsync(object id)
         {

@@ -17,27 +17,18 @@ namespace SpotifyPool.Controllers
         private readonly ILogger<AuthenticationController> _logger;
         private readonly IConfiguration _configuration;
 
-		public AuthenticationController(IAuthenticationBLL authenticationBLL, ILogger<AuthenticationController> logger, IConfiguration configuration)
-		{
-			_authenticationBLL = authenticationBLL;
-			_logger = logger;
-			_configuration = configuration;
-		}
+        public AuthenticationController(IAuthenticationBLL authenticationBLL, ILogger<AuthenticationController> logger, IConfiguration configuration)
+        {
+            _authenticationBLL = authenticationBLL;
+            _logger = logger;
+            _configuration = configuration;
+        }
 
-		[HttpPost("register")]
-		public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
-		{
-			try
-			{
-				string password = registerModel.Password;
-				string confirmedPassword = registerModel.ConfirmedPassword;
-
-                bool isConfirmedPassword = password == confirmedPassword;
-                if (!isConfirmedPassword)
-                {
-                    throw new ArgumentException("Password and Confirmed Password does not matches");
-                }
-
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
+        {
+            try
+            {
                 await _authenticationBLL.CreateAccount(registerModel);
                 return Ok(new { message = "Account created successfully" });
             }
@@ -75,21 +66,19 @@ namespace SpotifyPool.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.StackTrace);
+                await Console.Out.WriteLineAsync(ex.Message);
                 return StatusCode(500, new { message = "Internal server error" });
             }
         }
 
-        
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             try
             {
-                var customerModel = await _authenticationBLL.Authenticate(loginModel);
-                JWT jwtGenerator = new JWT(_configuration);
-                string token = jwtGenerator.GenerateJWTToken(customerModel);
-                return Ok(new { message = "Login Successfully", customerModel, token });
+                var authenticatedResponseModel = await _authenticationBLL.Authenticate(loginModel);
+                return Ok(new { message = "Login Successfully", authenticatedResponseModel });
             }
             catch (ArgumentException aex)
             {
@@ -102,8 +91,7 @@ namespace SpotifyPool.Controllers
             }
             catch (Exception ex)
             {
-                //Console.WriteLine(ex.ToString());
-                _logger.LogError(ex.StackTrace);
+                await Console.Out.WriteLineAsync(ex.Message);
                 return StatusCode(500, new { message = "Internal server error" });
             }
         }
@@ -149,46 +137,20 @@ namespace SpotifyPool.Controllers
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
         {
-            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            if (result?.Principal == null)
+            try
             {
-                return Unauthorized();
+                var authenticatedResponseModel = await _authenticationBLL.LoginByGoogle();
+                return Ok(new { message = "Login Successfully", authenticatedResponseModel });
             }
-
-            //var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
-
-            var claims = result.Principal.Identities
-                .FirstOrDefault()?.Claims
-                .Select(claim => new
-                {
-                    claim.Type,
-                    claim.Value
-                });
-
-            // Trước khi kiểm tra liên kết thì cần xem account đó đã tồn tại chưa
-
-            // Kiểm tra user có liên kết google account chưa
-            // Nếu có liên kết thì đăng nhập bình thường
-            // Nếu chưa liên kết thì yêu cầu người dùng muốn liên kết hay không
-            // Nếu không cho phép liên kết thì không cho người dùng đăng nhập bằng google account vì account đã tồn tại google email rồi
-            // Nếu cho phép liên kết confirm liên kết
-
-            // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
-
-
-
-            // Tạo JWT token từ các claim của Google
-            var jwtGenerator = new JWT(_configuration);
-            var token = jwtGenerator.GenerateJWTToken(new CustomerModel
+            catch (ArgumentException aex)
             {
-                // Map thông tin từ Google vào model của bạn
-                Username = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
-                Email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
-                Role = "Customer", // Hoặc lấy từ claim nếu có
-            });
-
-            return Ok(new { message = "Google login successful", claims, token });
+                return BadRequest(new { message = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.StackTrace);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
         }
 
         [HttpGet("logout")]

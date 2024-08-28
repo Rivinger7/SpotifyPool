@@ -20,5 +20,7 @@ namespace Data_Access_Layer.Entities
         public string Status { get; set; }
         public string? Token { get; set; }
         public bool isLinkedWithGoogle { get; set; }
+        public string RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
     }
 }

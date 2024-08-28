@@ -1,8 +1,10 @@
-﻿namespace DataAccessLayer.Interface.Interface.IRepositories
+﻿using MongoDB.Driver.Linq;
+
+namespace DataAccessLayer.Interface.Interface.IRepositories
 {
     public interface IGenericRepository<T> where T : class
     {
-        IQueryable<T> Entities { get; }
+        IMongoQueryable<T> Entities { get; }
 
         Task DeleteAsync(object id);
 

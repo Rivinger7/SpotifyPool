@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 
-namespace Shared.Helpers
+namespace Utility.Coding
 {
     public static class Util
     {
