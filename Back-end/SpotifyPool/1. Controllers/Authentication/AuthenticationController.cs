@@ -128,10 +128,6 @@ namespace SpotifyPool.Controllers
         {
             var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse", new { returnUrl }) };
             return Task.FromResult<IActionResult>(Challenge(properties, GoogleDefaults.AuthenticationScheme));
-
-            //var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse", new { returnUrl }) };
-            ////HttpContext.Items["oauthState"] = properties; // Lưu state trong HttpContext.Items
-            //return Task.FromResult<IActionResult>(Challenge(properties, GoogleDefaults.AuthenticationScheme));
         }
 
         [HttpGet("google-response")]
@@ -141,6 +137,7 @@ namespace SpotifyPool.Controllers
             {
                 var authenticatedResponseModel = await _authenticationBLL.LoginByGoogle();
                 return Ok(new { message = "Login Successfully", authenticatedResponseModel });
+                //return Redirect(returnUrl); // Tự động chuyển hướng đến returnURL không cần phải nhờ FE chuyển FE chỉ cần bỏ URL vào biến returnURL
             }
             catch (ArgumentException aex)
             {
@@ -148,7 +145,27 @@ namespace SpotifyPool.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.StackTrace);
+                await Console.Out.WriteLineAsync(ex.Message);
+                return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        [HttpPost("confirm-link-with-google-account")]
+        public async Task<IActionResult> ConfirmLinkWithGoogleAccount([FromBody] string email, [FromQuery] string returnUrl = "/")
+        {
+            try
+            {
+                var authenticatedResponseModel = await _authenticationBLL.ConfirmLinkWithGoogleAccount(email);
+                return Ok(new { message = "Login Successfully", authenticatedResponseModel });
+                //return Redirect(returnUrl); // Tự động chuyển hướng đến returnURL không cần phải nhờ FE chuyển FE chỉ cần bỏ URL vào biến returnURL
+            }
+            catch (ArgumentException aex)
+            {
+                return BadRequest(new { message = aex.Message });
+            }
+            catch (Exception ex)
+            {
+                await Console.Out.WriteLineAsync(ex.Message);
                 return StatusCode(500, new { message = "Internal server error" });
             }
         }

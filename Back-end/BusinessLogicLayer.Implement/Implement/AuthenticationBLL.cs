@@ -182,8 +182,6 @@ namespace BusinessLogicLayer.Implement.Implement
                 throw new ArgumentException("Principal is null");
             }
 
-            var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
-
             //var claims = result.Principal.Identities
             //    .FirstOrDefault()?.Claims
             //    .Select(claim => new
@@ -192,40 +190,52 @@ namespace BusinessLogicLayer.Implement.Implement
             //        claim.Value
             //    });
 
-
-            // Trước khi kiểm tra liên kết thì cần xem account đó đã tồn tại chưa
-
-            // Kiểm tra user có liên kết google account chưa
-            // Nếu có liên kết thì đăng nhập bình thường
-            // Nếu chưa liên kết thì yêu cầu người dùng muốn liên kết hay không
-            // Nếu không cho phép liên kết thì không cho người dùng đăng nhập bằng google account vì account đã tồn tại google email rồi
-            // Nếu cho phép liên kết confirm liên kết
-
-            // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
-
-            // Trường hớp đã đăng nhập vào hệ thống trước đó rồi
+            var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
+            string? givenName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value; // Given Name can be null
+            string? surName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value; // Sur Name can be null
+            string? fullName = Util.ValidateAndCombineName(givenName, surName);
             string email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new ArgumentException("Email is null");
 
+            // Lấy thông tin người dùng
             User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
 
-            // Tạo JWT token từ các claim của Google
-            JWT jwtGenerator = new(_configuration);
-            string? token = jwtGenerator.GenerateJWTToken(new CustomerModel
+            // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
+            if (retrieveUser is null)
             {
-                // Map thông tin từ Google vào customer model
-                Username = email,
-                Email = email,
-                Role = "Customer", // Hoặc lấy từ claim nếu có
-            });
-
-            // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
-            var claimsList = new List<Claim>
+                retrieveUser = new User()
                 {
-                    new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
-                    new Claim(ClaimTypes.Role, retrieveUser.Role)
+                    FullName = fullName,
+                    Email = email,
+                    Role = "Customer",
+                    Status = "Active",
                 };
+                await _context.Users.InsertOneAsync(retrieveUser);
+            }
+            else // Kiểm tra user có liên kết google account chưa
+            {
+                // Nếu chưa liên kết thì yêu cầu người dùng muốn liên kết hay không
+                bool? isLinkedWithGoogle = retrieveUser.isLinkedWithGoogle;
+                if (isLinkedWithGoogle is not null && !isLinkedWithGoogle.Value) // isLink = False
+                {
+                    // Sau khi gọi API thành công thì bên FE sẽ kiểm tra nếu access token là rỗng hoặc null thì tức là cần xác nhận liên kết tài khoản Google
+                    string confirmationLink = $"https://myfrontend.com/confirm-link-with-google-account";
 
-            _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out string accessToken, out string refreshToken);
+                    // Hoặc có thể sử dụng json nullable tức là thêm field của AuthResponse model view
+                    // Nếu null thì json sẽ không hiển thị ra field đó
+
+                    return new AuthenticatedResponseModel { ConfirmationLinkWithGoogleAccount = confirmationLink };
+                }
+            }
+
+            // Nếu không cho phép liên kết thì không cho người dùng đăng nhập bằng google account vì account đã tồn tại google email rồi
+            // Nếu cho phép liên kết confirm liên kết
+            // Tạo API để FE gọi
+            // Cái này bên FE sẽ tự xử lý
+
+            // Nếu có liên kết thì đăng nhập bình thường
+            // Trường hợp đã đăng nhập vào hệ thống trước đó rồi
+            // Tạo JWT access token và refresh token
+            JWTGenerator(retrieveUser, out string accessToken, out string refreshToken);
 
             // New object ModelView
             AuthenticatedResponseModel authenticationModel = new()
@@ -235,6 +245,55 @@ namespace BusinessLogicLayer.Implement.Implement
             };
 
             return authenticationModel;
+        }
+
+        public async Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email)
+        {
+            // Lấy thông tin người dùng
+            User retrieveUser = await _context.Users.Find(user => user.Email == email && user.isLinkedWithGoogle == false).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found user or user has been linked with google account");
+
+            // Cập nhật trạng thái liên kết tài khoản Google
+            UpdateDefinition<User> isLinkedWithGoogleUpdate = Builders<User>.Update.Set(user => user.isLinkedWithGoogle, true);
+            UpdateResult isLinkedWithGoogleUpdateResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, isLinkedWithGoogleUpdate);
+
+            // Kiểm tra nếu có ít nhất một field_name được cập nhật
+            if (isLinkedWithGoogleUpdateResult.ModifiedCount < 1)
+            {
+                throw new ArgumentException("Found User but can not update");
+            }
+
+            // Tạo JWT access token và refresh token
+            JWTGenerator(retrieveUser, out string accessToken, out string refreshToken);
+
+            // New object ModelView
+            AuthenticatedResponseModel authenticationModel = new()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+
+            return authenticationModel;
+        }
+
+        /// <summary>
+        /// Phương thức này dùng để tạo ra JWT access token và refresh token dựa trên các claim của người dùng.
+        /// </summary>
+        /// <param name="retrieveUser">Đối tượng người dùng đã được lấy từ cơ sở dữ liệu hoặc hệ thống.</param>
+        /// <param name="accessToken">Biến out dùng để lưu JWT access token được tạo ra.</param>
+        /// <param name="refreshToken">Biến out dùng để lưu refresh token được tạo ra.</param>
+        private void JWTGenerator(User retrieveUser, out string accessToken, out string refreshToken)
+        {
+            // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
+            IEnumerable<Claim> claimsList = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, retrieveUser.Role)
+                };
+
+            // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
+            _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out accessToken, out refreshToken);
+
+            return;
         }
 
         public async Task<AuthenticatedResponseModel> Authenticate(LoginModel loginModel)
@@ -251,7 +310,7 @@ namespace BusinessLogicLayer.Implement.Implement
             }
 
             // JWT
-            var claims = new List<Claim>
+            IEnumerable<Claim> claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
                     new Claim(ClaimTypes.Role, retrieveUser.Role)
@@ -260,7 +319,7 @@ namespace BusinessLogicLayer.Implement.Implement
             //Call method to generate access token
             _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
 
-            if(accessToken is null)
+            if (accessToken is null)
             {
                 await Console.Out.WriteLineAsync("accesstoken is null");
             }

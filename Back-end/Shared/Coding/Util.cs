@@ -73,5 +73,33 @@ namespace Utility.Coding
 
             return utcPlus7Now;
         }
+
+        /// <summary>
+        /// Hàm này dùng để validate và kết hợp họ và tên thành một chuỗi duy nhất.
+        /// </summary>
+        /// <param name="firstName">Chuỗi chứa tên (firstName/givenName) cần được kết hợp.</param>
+        /// <param name="lastName">Chuỗi chứa họ (lastName/surName) cần được kết hợp.</param>
+        /// <returns>
+        /// Chuỗi đã được kết hợp giữa họ và tên, với một khoảng trắng ở giữa.
+        /// Nếu họ hoặc tên là chuỗi rỗng hoặc null, kết quả sẽ không có khoảng trắng thừa.
+        /// </returns>
+        public static string? ValidateAndCombineName(string? firstName, string? lastName)
+        {
+            // Nếu cả 2 biến đều là null thì trả về null thay vì chuỗi rỗng
+            if(firstName == null && lastName == null)
+            {
+                return null;
+            }
+
+            // Cắt bỏ khoảng trắng ở đầu và cuối của firstName và lastName
+            string trimmedFirstName = firstName?.Trim() ?? string.Empty;
+            string trimmedLastName = lastName?.Trim() ?? string.Empty;
+
+            // Kết hợp firstName và lastName với một khoảng trắng ở giữa
+            string fullName = $"{trimmedFirstName} {trimmedLastName}".Trim();
+
+            return fullName;
+        }
+
     }
 }

@@ -10,6 +10,7 @@ namespace Business_Logic_Layer.Interface
         Task<AuthenticatedResponseModel> Authenticate(LoginModel loginModel);
         Task ReActiveAccountByToken(string username);
         Task<AuthenticatedResponseModel> LoginByGoogle();
+        Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email);
 
     }
 }
