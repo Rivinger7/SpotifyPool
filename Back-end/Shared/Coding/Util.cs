@@ -96,7 +96,7 @@ namespace Utility.Coding
             string trimmedLastName = lastName?.Trim() ?? string.Empty;
 
             // Kết hợp firstName và lastName với một khoảng trắng ở giữa
-            string fullName = $"{trimmedFirstName} {trimmedLastName}".Trim();
+            string fullName = $"{trimmedLastName} {trimmedFirstName}".Trim();
 
             return fullName;
         }

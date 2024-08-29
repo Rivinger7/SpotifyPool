@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Utility.Coding;
 
@@ -117,41 +118,34 @@ namespace BusinessLogicLayer.Implement.Implement
 
         public async Task ActivateAccountByToken(string token)
         {
-            try
+            JWT validator = new(_configuration);
+            JwtSecurityToken decodedToken = validator.DecodeToken(token);
+
+            Claim? emailClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "Email");
+            //var roleClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Role);
+            var encryptedTokenClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "EncrpytedToken");
+
+            if (emailClaim == null || encryptedTokenClaim == null)
             {
-                var validator = new JWT(_configuration);
-                var decodedToken = validator.DecodeToken(token);
-
-                var emailClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "Email");
-                //var roleClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Role);
-                var encryptedTokenClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "EncrpytedToken");
-
-                if (emailClaim == null || encryptedTokenClaim == null)
-                {
-                    throw new ArgumentException("Token is missing required claims", "activateAccountFails");
-                }
-
-                var email = emailClaim.Value;
-                //var role = roleClaim.Value;
-                var encryptedToken = encryptedTokenClaim.Value;
-
-                //_logger.LogInformation("Token decoded successfully");
-                //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
-
-                User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any user");
-                if (retrieveUser.Token != encryptedToken)
-                {
-                    throw new ArgumentException("Token and Retrieve Token do not match", "ativateAccountFail");
-                }
-
-                await UpdateAccountConfirmationStatus(retrieveUser);
-
-                return;
+                throw new ArgumentException("Token is missing required claims", "activateAccountFails");
             }
-            catch (Exception ex)
+
+            string email = emailClaim.Value;
+            //var role = roleClaim.Value;
+            string encryptedToken = encryptedTokenClaim.Value;
+
+            //_logger.LogInformation("Token decoded successfully");
+            //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
+
+            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any user");
+            if (retrieveUser.Token != encryptedToken)
             {
-                throw new Exception(ex.Message, ex);
+                throw new ArgumentException("Token and Retrieve Token do not match", "ativateAccountFail");
             }
+
+            await UpdateAccountConfirmationStatus(retrieveUser);
+
+            return;
         }
 
         private async Task UpdateAccountConfirmationStatus(User retrieveUser)
@@ -190,7 +184,7 @@ namespace BusinessLogicLayer.Implement.Implement
             //        claim.Value
             //    });
 
-            var claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
+            IEnumerable<Claim>? claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
             string? givenName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value; // Given Name can be null
             string? surName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value; // Sur Name can be null
             string? fullName = Util.ValidateAndCombineName(givenName, surName);
