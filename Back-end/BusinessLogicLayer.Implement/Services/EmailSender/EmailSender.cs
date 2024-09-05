@@ -55,7 +55,6 @@ namespace Business_Logic_Layer.Services.EmailSender
             }
         }
 
-
         private string GetEmailBody(string username, string message)
         {
             return $@"
@@ -177,6 +176,43 @@ namespace Business_Logic_Layer.Services.EmailSender
                     </table>
                 </td></tr>
             </tbody>";
+        }
+
+        public async Task SendEmailForgotPasswordAsync(User user, string subject, string message)
+        {
+            // Get username from the email
+            string email = user.Email ?? "NULL";
+            string username = user.Username;
+
+            try
+            {
+                var smtpClient = new SmtpClient(_emailSenderSetting.Smtp.Host)
+                {
+                    Port = int.Parse(_emailSenderSetting.Smtp.Port),
+                    Credentials = new NetworkCredential(_emailSenderSetting.Smtp.Username, _emailSenderSetting.Smtp.Password),
+                    EnableSsl = true,
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(_emailSenderSetting.FromAddress, _emailSenderSetting.FromName),
+                    Subject = subject,
+                    Body = message,
+                    IsBodyHtml = true,
+                };
+                mailMessage.To.Add(email);
+
+                await smtpClient.SendMailAsync(mailMessage);
+                _logger.LogInformation($"Email sent to {email} successfully.");
+            }
+            catch (SmtpException smtpEx)
+            {
+                _logger.LogError($"SMTP error while sending email to {email}: {smtpEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error while sending email to {email}: {ex.Message}");
+            }
         }
     }
 }

@@ -297,6 +297,12 @@ namespace BusinessLogicLayer.Implement.Implement
 
             User retrieveUser = await _context.Users.Find(user => user.Username == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
 
+            switch(retrieveUser.Status.ToLower())
+            {
+                case "inactive": throw new ArgumentException("Not active");
+                case "banned": throw new ArgumentException("Banned");
+            }
+
             bool isPasswordHashed = BCrypt.Net.BCrypt.Verify(loginModel.Password, retrieveUser.Password);
             if (!isPasswordHashed)
             {
@@ -352,6 +358,30 @@ namespace BusinessLogicLayer.Implement.Implement
             await _emailSender.SendEmailConfirmationAsync(retrieveUser, "Xác nhận Email", confirmationLink);
 
             return;
+        }
+
+        public async Task<string> SendTokenResetPasswordAsync(string email)
+        {
+            // Lấy thông tin người dùng
+            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
+
+            // Tạo password token
+            string passwordToken = DataEncryptionExtensions.GenerateRandomString();
+
+            // Gửi email tới người dùng
+            await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, "Xác nhận đặt lại mật khẩu", passwordToken);
+
+            return passwordToken;
+        }
+
+        public async Task ResetPasswordAsync(string email, string passwordToken)
+        {
+            // Kiểm tra
+
+            // Lấy thông tin người dùng
+            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
+
+
         }
     }
 }

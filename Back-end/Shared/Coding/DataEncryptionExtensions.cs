@@ -109,6 +109,26 @@ namespace Utility.Coding
             }
         }
 
+        /// <summary>
+        /// Hàm này tạo ra một chuỗi ngẫu nhiên gồm các ký tự chữ cái và số với độ dài mặc định là 6.
+        /// </summary>
+        /// <param name="length">Độ dài của chuỗi cần tạo. Mặc định là 6.</param>
+        /// <returns>
+        /// Một chuỗi ngẫu nhiên gồm các ký tự chữ cái (chữ hoa, chữ thường) và số.
+        /// </returns>
+        public static string GenerateRandomString(int length = 6)
+        {
+            // Chuỗi chứa các ký tự chữ cái và số
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+            // Đối tượng Random để sinh số ngẫu nhiên
+            Random random = new();
+
+            // Sinh ra chuỗi ngẫu nhiên từ tập hợp các ký tự
+            string randomString = new(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
+            return randomString;
+        }
+
 
         // For MOMO API
 
@@ -168,7 +188,6 @@ namespace Utility.Coding
                              .Select(x => Convert.ToByte(hex.Substring(x * 2, 2), 16))
                              .ToArray();
         }
-
 
         private static string CreateRsaPublicKeyXml(string base64Key)
         {
