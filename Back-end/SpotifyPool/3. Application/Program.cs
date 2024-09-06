@@ -1,4 +1,5 @@
-﻿using SpotifyPool.Main;
+﻿using Hellang.Middleware.ProblemDetails;
+using SpotifyPool.Main;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,12 +20,14 @@ builder.Services.AddConfiguration(builder.Configuration);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
-        builder => builder.WithOrigins("http://localhost:5173")
+        builder => builder.WithOrigins("http://localhost:5173") // Or using AllowAnyOrigin() for all
                           .AllowAnyHeader()
                           .AllowAnyMethod());
 });
 
 var app = builder.Build();
+
+app.UseProblemDetails();
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())

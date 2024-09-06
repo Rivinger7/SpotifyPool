@@ -75,25 +75,8 @@ namespace SpotifyPool.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
-            try
-            {
-                var authenticatedResponseModel = await _authenticationBLL.Authenticate(loginModel);
-                return Ok(new { message = "Login Successfully", authenticatedResponseModel });
-            }
-            catch (ArgumentException aex)
-            {
-                if (aex.ParamName == "bannedStatus" || aex.ParamName == "inactiveStatus")
-                {
-                    HttpContext.Session.SetString("Username", loginModel.Username);
-                    return Conflict(new { message = aex.Message });
-                }
-                return BadRequest(new { message = aex.Message });
-            }
-            catch (Exception ex)
-            {
-                await Console.Out.WriteLineAsync(ex.Message);
-                return StatusCode(500, new { message = "Internal server error" });
-            }
+            var authenticatedResponseModel = await _authenticationBLL.Authenticate(loginModel);
+            return Ok(new { message = "Login Successfully", authenticatedResponseModel });
         }
 
         [HttpPost("reactive-account")]

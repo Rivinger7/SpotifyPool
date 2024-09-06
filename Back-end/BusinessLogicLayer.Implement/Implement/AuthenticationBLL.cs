@@ -3,6 +3,7 @@ using Business_Logic_Layer.Interface;
 using Business_Logic_Layer.Models;
 using Business_Logic_Layer.Services.EmailSender;
 using Business_Logic_Layer.Services.JWT;
+using BusinessLogicLayer.Implement.CustomException;
 using BusinessLogicLayer.ModelView.Models;
 using Data_Access_Layer.DBContext;
 using Data_Access_Layer.Entities;
@@ -299,22 +300,22 @@ namespace BusinessLogicLayer.Implement.Implement
 
             switch(retrieveUser.Status.ToLower())
             {
-                case "inactive": throw new ArgumentException("Not active");
-                case "banned": throw new ArgumentException("Banned");
+                case "inactive": throw new UnAuthorizedCustomException("Not active");
+                case "banned": throw new UnAuthorizedCustomException("Banned");
             }
 
             bool isPasswordHashed = BCrypt.Net.BCrypt.Verify(loginModel.Password, retrieveUser.Password);
             if (!isPasswordHashed)
             {
-                throw new ArgumentException("Username or Password is incorrect");
+                throw new BadRequestCustomException("Username or Password is incorrect");
             }
 
             // JWT
-            IEnumerable<Claim> claims = new List<Claim>
-                {
+            IEnumerable<Claim> claims =
+                [
                     new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
                     new Claim(ClaimTypes.Role, retrieveUser.Role)
-                };
+                ];
 
             //Call method to generate access token
             _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
