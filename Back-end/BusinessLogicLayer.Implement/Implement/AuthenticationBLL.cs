@@ -3,7 +3,7 @@ using Business_Logic_Layer.Interface;
 using Business_Logic_Layer.Models;
 using Business_Logic_Layer.Services.EmailSender;
 using Business_Logic_Layer.Services.JWT;
-using BusinessLogicLayer.Implement.CustomException;
+using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.ModelView.Models;
 using Data_Access_Layer.DBContext;
 using Data_Access_Layer.Entities;
@@ -54,7 +54,7 @@ namespace BusinessLogicLayer.Implement.Implement
             bool isConfirmedPassword = password == confirmedPassword;
             if (!isConfirmedPassword)
             {
-                throw new ArgumentException("Password and Confirmed Password do not match");
+                throw new InvalidDataCustomException("Password and Confirmed Password do not match");
             }
 
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
@@ -62,7 +62,7 @@ namespace BusinessLogicLayer.Implement.Implement
             bool isExistingUser = await _context.Users.Find(user => user.Username == username).AnyAsync();
             if (isExistingUser)
             {
-                throw new ArgumentException("Username already exists");
+                throw new DataExistCustomException("Username already exists");
             }
 
             await CheckAccountExists(registerModel);
@@ -70,7 +70,7 @@ namespace BusinessLogicLayer.Implement.Implement
             // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
             // Dùng mã hóa cho email khi tạo link
             string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
-            JWT jwtGenerator = new JWT(_configuration);
+            JWT jwtGenerator = new(_configuration);
             string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
 
@@ -98,22 +98,30 @@ namespace BusinessLogicLayer.Implement.Implement
             string email = registerModel.Email;
             string phonenumber = registerModel.PhoneNumber;
 
-            bool usernameExists = await _context.Users.Find(user => user.Username == username).AnyAsync();
-            if (usernameExists)
+            // Tạo bộ lọc kết hợp các điều kiện (Username, Email, PhoneNumber)
+            FilterDefinition<User> filter = Builders<User>.Filter.Or(
+                Builders<User>.Filter.Eq(user => user.Username, username),
+                Builders<User>.Filter.Eq(user => user.Email, email),
+                Builders<User>.Filter.Eq(user => user.Phonenumber, phonenumber)
+            );
+
+            // Thực hiện truy vấn tới MongoDB để tìm xem có tài khoản nào khớp không
+            IEnumerable<User> existingUsers = await _context.Users.Find(filter).ToListAsync();
+
+            // Kiểm tra từng điều kiện và ném lỗi phù hợp
+            if (existingUsers.Any(user => user.Username == username))
             {
-                throw new ArgumentException("Username already exists", "usernameExists");
+                throw new DataExistCustomException("Username already exists");
             }
 
-            bool emailExists = await _context.Users.Find(user => user.Email == email).AnyAsync();
-            if (emailExists)
+            if (existingUsers.Any(user => user.Email == email))
             {
-                throw new ArgumentException("Email already exists", "emailExists");
+                throw new DataExistCustomException("Email already exists");
             }
 
-            bool phonenumberExists = await _context.Users.Find(user => user.Phonenumber == phonenumber).AnyAsync();
-            if (phonenumberExists)
+            if (existingUsers.Any(user => user.Phonenumber == phonenumber))
             {
-                throw new ArgumentException("Phone number already exists", "phoneNumberExists");
+                throw new DataExistCustomException("Phone number already exists");
             }
         }
 
@@ -124,11 +132,11 @@ namespace BusinessLogicLayer.Implement.Implement
 
             Claim? emailClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "Email");
             //var roleClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Role);
-            var encryptedTokenClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "EncrpytedToken");
+            Claim? encryptedTokenClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "EncrpytedToken");
 
             if (emailClaim == null || encryptedTokenClaim == null)
             {
-                throw new ArgumentException("Token is missing required claims", "activateAccountFails");
+                throw new DataNotFoundCustomException("Token is missing required claims");
             }
 
             string email = emailClaim.Value;
@@ -138,10 +146,10 @@ namespace BusinessLogicLayer.Implement.Implement
             //_logger.LogInformation("Token decoded successfully");
             //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
 
-            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any user");
+            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
             if (retrieveUser.Token != encryptedToken)
             {
-                throw new ArgumentException("Token and Retrieve Token do not match", "ativateAccountFail");
+                throw new InvalidDataCustomException("Token and Retrieve Token do not match");
             }
 
             await UpdateAccountConfirmationStatus(retrieveUser);
@@ -160,9 +168,9 @@ namespace BusinessLogicLayer.Implement.Implement
             UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
 
             // Kiểm tra nếu có ít nhất một field_name được cập nhật
-            if (statusResult.ModifiedCount < 1 && tokenResult.ModifiedCount < 1)
+            if (statusResult.ModifiedCount < 1 || tokenResult.ModifiedCount < 1)
             {
-                throw new ArgumentException("Found User but can not update", "updateFail");
+                throw new CustomException("Update Fail", StatusCodes.Status500InternalServerError, "Found user but can not update");
             }
 
             return;
@@ -170,11 +178,11 @@ namespace BusinessLogicLayer.Implement.Implement
 
         public async Task<AuthenticatedResponseModel> LoginByGoogle()
         {
-            AuthenticateResult result = await _httpContextAccessor.HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme) ?? throw new ArgumentException($"Error at Line 191 of {nameof(LoginByGoogle)}");
+            AuthenticateResult result = await _httpContextAccessor.HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             if (result?.Principal == null)
             {
-                throw new ArgumentException("Principal is null");
+                throw new ArgumentNullCustomException(nameof(result.Principal), "Principal is null");
             }
 
             //var claims = result.Principal.Identities
@@ -189,7 +197,7 @@ namespace BusinessLogicLayer.Implement.Implement
             string? givenName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value; // Given Name can be null
             string? surName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value; // Sur Name can be null
             string? fullName = Util.ValidateAndCombineName(givenName, surName);
-            string email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new ArgumentException("Email is null");
+            string email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new ArgumentNullCustomException(nameof(email), "Email is null");
 
             // Lấy thông tin người dùng
             User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
@@ -245,7 +253,7 @@ namespace BusinessLogicLayer.Implement.Implement
         public async Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email)
         {
             // Lấy thông tin người dùng
-            User retrieveUser = await _context.Users.Find(user => user.Email == email && user.isLinkedWithGoogle == false).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found user or user has been linked with google account");
+            User retrieveUser = await _context.Users.Find(user => user.Email == email && user.isLinkedWithGoogle == false).FirstOrDefaultAsync() ?? throw new CustomException("Google Account Linking", 44, "Not found user or user has been linked with google account");
 
             // Cập nhật trạng thái liên kết tài khoản Google
             UpdateDefinition<User> isLinkedWithGoogleUpdate = Builders<User>.Update.Set(user => user.isLinkedWithGoogle, true);
@@ -254,7 +262,7 @@ namespace BusinessLogicLayer.Implement.Implement
             // Kiểm tra nếu có ít nhất một field_name được cập nhật
             if (isLinkedWithGoogleUpdateResult.ModifiedCount < 1)
             {
-                throw new ArgumentException("Found User but can not update");
+                throw new CustomException("Update Fail", StatusCodes.Status500InternalServerError, "Found user but can not update");
             }
 
             // Tạo JWT access token và refresh token
@@ -279,11 +287,11 @@ namespace BusinessLogicLayer.Implement.Implement
         private void JWTGenerator(User retrieveUser, out string accessToken, out string refreshToken)
         {
             // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
-            IEnumerable<Claim> claimsList = new List<Claim>
-                {
+            IEnumerable<Claim> claimsList =
+                [
                     new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
                     new Claim(ClaimTypes.Role, retrieveUser.Role)
-                };
+                ];
 
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
             _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out accessToken, out refreshToken);
@@ -296,7 +304,7 @@ namespace BusinessLogicLayer.Implement.Implement
             string username = loginModel.Username;
             string password = loginModel.Password;
 
-            User retrieveUser = await _context.Users.Find(user => user.Username == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
+            User retrieveUser = await _context.Users.Find(user => user.Username == username).FirstOrDefaultAsync() ?? throw new UnAuthorizedCustomException("Username or Password is incorrect");
 
             switch(retrieveUser.Status.ToLower())
             {
@@ -307,7 +315,7 @@ namespace BusinessLogicLayer.Implement.Implement
             bool isPasswordHashed = BCrypt.Net.BCrypt.Verify(loginModel.Password, retrieveUser.Password);
             if (!isPasswordHashed)
             {
-                throw new BadRequestCustomException("Username or Password is incorrect");
+                throw new UnAuthorizedCustomException("Username or Password is incorrect");
             }
 
             // JWT
@@ -338,7 +346,7 @@ namespace BusinessLogicLayer.Implement.Implement
         public async Task ReActiveAccountByToken(string username)
         {
 
-            User retrieveUser = await _context.Users.Find(user => user.Username == username).FirstOrDefaultAsync() ?? throw new ArgumentException("");
+            User retrieveUser = await _context.Users.Find(user => user.Username == username).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
 
             string email = retrieveUser.Email;
 
@@ -353,7 +361,7 @@ namespace BusinessLogicLayer.Implement.Implement
 
             if (tokenResult.ModifiedCount < 1)
             {
-                throw new ArgumentException("");
+                throw new CustomException("Update Fail", StatusCodes.Status500InternalServerError, "Found user but can not update");
             }
 
             await _emailSender.SendEmailConfirmationAsync(retrieveUser, "Xác nhận Email", confirmationLink);

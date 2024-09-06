@@ -101,5 +101,6 @@ namespace Utility.Coding
             return fullName;
         }
 
+        public static string? GetTitleCustomException(string? title, string baseTitle) => string.IsNullOrEmpty(title) ? baseTitle : title;
     }
 }

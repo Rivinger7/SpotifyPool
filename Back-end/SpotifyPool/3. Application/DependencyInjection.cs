@@ -12,8 +12,9 @@ using BusinessLogicLayer.Implement;
 using BusinessLogicLayer.Implement.Implement;
 using Business_Logic_Layer.Interface;
 using Hellang.Middleware.ProblemDetails;
-using BusinessLogicLayer.Implement.CustomException;
+using BusinessLogicLayer.Implement.CustomExceptions;
 using Microsoft.AspNetCore.Mvc;
+using Utility.Coding;
 
 namespace SpotifyPool.Main
 {
@@ -196,11 +197,41 @@ namespace SpotifyPool.Main
                 };
 
                 // Map các lỗi cụ thể từ custom exception
-                options.Map<BadRequestCustomException>(ex =>
+                options.Map<ArgumentNullCustomException>(ex =>
                 {
                     ProblemDetails details = new()
                     {
-                        Title = "Bad Rquest",
+                        Title = Util.GetTitleCustomException(ex.ParamName, "Null Reference"),
+                        Status = ex.StatusCode,
+                        Detail = ex.Message,
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<CustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = ex.Title,
+                        Status = ex.StatusCode,
+                        Detail = ex.Message,
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<BadRequestCustomException>(ex =>
+                {
+                    ProblemDetails details = new() 
+                    {
+                        Title = Util.GetTitleCustomException(ex.Title, "Bad Rquest"),
                         Status = StatusCodes.Status400BadRequest,
                         Detail = ex.Message
                     };
@@ -221,7 +252,7 @@ namespace SpotifyPool.Main
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}"); 
+                    _logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
@@ -236,7 +267,7 @@ namespace SpotifyPool.Main
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}"); 
+                    _logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
@@ -251,7 +282,7 @@ namespace SpotifyPool.Main
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}"); 
+                    _logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
@@ -266,7 +297,7 @@ namespace SpotifyPool.Main
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}"); 
+                    _logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
@@ -350,7 +381,7 @@ namespace SpotifyPool.Main
                 {
                     ProblemDetails details = new()
                     {
-                        Title = "Unauthorized",
+                        Title = Util.GetTitleCustomException(ex.Title, "Unauthorized"),
                         Status = StatusCodes.Status401Unauthorized,
                         Detail = ex.Message
                     };
