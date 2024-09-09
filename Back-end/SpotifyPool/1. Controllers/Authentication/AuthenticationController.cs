@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using Business_Logic_Layer.Interface;
+using BusinessLogicLayer.Implement.Services.Cloudinaries;
+using Microsoft.AspNetCore.Http;
+using CloudinaryDotNet.Actions;
 
 namespace SpotifyPool.Controllers
 {
@@ -12,14 +15,12 @@ namespace SpotifyPool.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthenticationBLL _authenticationBLL;
-        private readonly ILogger<AuthenticationController> _logger;
-        private readonly IConfiguration _configuration;
+        private readonly CloudinaryService _cloudinaryService;
 
-        public AuthenticationController(IAuthenticationBLL authenticationBLL, ILogger<AuthenticationController> logger, IConfiguration configuration)
+        public AuthenticationController(IAuthenticationBLL authenticationBLL, CloudinaryService cloudinaryService)
         {
             _authenticationBLL = authenticationBLL;
-            _logger = logger;
-            _configuration = configuration;
+            _cloudinaryService = cloudinaryService;
         }
 
         [HttpPost("register")]
@@ -71,7 +72,6 @@ namespace SpotifyPool.Controllers
             var authenticatedResponseModel = await _authenticationBLL.LoginByGoogle();
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
             //return Redirect(returnUrl); // Tự động chuyển hướng đến returnURL không cần phải nhờ FE chuyển FE chỉ cần bỏ URL vào biến returnURL
-
         }
 
         [HttpPost("confirm-link-with-google-account")]
@@ -86,6 +86,50 @@ namespace SpotifyPool.Controllers
         public IActionResult Logout()
         {
             return Ok(new { message = "Logged out successfully" });
+        }
+
+
+        // Testing
+        [HttpPost("upload-image")]
+        public IActionResult UploadImage(IFormFile imageFile)
+        {
+            var uploadResult = _cloudinaryService.UploadImage(imageFile);
+            return Ok(new { message = "Upload Image Successfully", uploadResult });
+        }
+
+        [HttpPost("upload-video")]
+        public IActionResult UploadVideo(IFormFile videoFile)
+        {
+            var uploadResult = _cloudinaryService.UploadVideo(videoFile);
+            return Ok(new { message = "Upload Video Successfully", uploadResult });
+        }
+
+        [HttpGet("get-image/{publicID}")]
+        public IActionResult GetImageResult(string publicID)
+        {
+            var getResult = _cloudinaryService.GetImageResult(publicID);
+            return Ok(new { message = "Get Image Successfully", getResult });
+        }
+
+        [HttpGet("get-video/{publicID}")]
+        public IActionResult GetVideoResult(string publicID)
+        {
+            var getResult = _cloudinaryService.GetVideoResult(publicID);
+            return Ok(new { message = "Get Video Successfully", getResult });
+        }
+
+        [HttpDelete("delete-image/{publicID}")]
+        public IActionResult DeleteImage(string publicID)
+        {
+            var deleteResult = _cloudinaryService.DeleteImage(publicID);
+            return Ok(new {message = $"Delete Image Successfully with Public ID {publicID}", deleteResult});
+        }
+
+        [HttpDelete("delete-video/{publicID}")]
+        public IActionResult DeleteVideo(string publicID)
+        {
+            var deleteResult = _cloudinaryService.DeleteVideo(publicID);
+            return Ok(new { message = $"Delete Video Successfully with Public ID {publicID}", deleteResult });
         }
     }
 }

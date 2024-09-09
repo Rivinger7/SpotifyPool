@@ -16,6 +16,13 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using Microsoft.AspNetCore.Mvc;
 using Utility.Coding;
 
+// Import the required packages
+//==============================
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using dotenv.net;
+using BusinessLogicLayer.Implement.Services.Cloudinaries;
+
 namespace SpotifyPool.Main
 {
     public static class DependencyInjection
@@ -42,6 +49,7 @@ namespace SpotifyPool.Main
             services.AddInfrastructure(configuration);
             services.AddServices(configuration);
             services.AddProblemDetails();
+            services.AddCloudinary(configuration);
 
             // Log an informational message
             _logger.LogInformation("Services have been configured.");
@@ -54,6 +62,18 @@ namespace SpotifyPool.Main
                 options.Cookie.IsEssential = true;
                 options.IdleTimeout = TimeSpan.FromMinutes(30);
             });
+        }
+
+        public static void AddCloudinary(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Set your Cloudinary credentials
+            //=================================
+            //DotEnv.Load(options: new DotEnvOptions(probeForEnv: true));
+            //Cloudinary cloudinary = new(Environment.GetEnvironmentVariable("CLOUDINARY_URL"));
+            //cloudinary.Api.Secure = true;
+
+            services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
+            services.AddScoped<CloudinaryService>();
         }
 
         public static void ConfigRoute(this IServiceCollection services)

@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="CloudinaryDotNet" Version="1.26.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
@@ -16,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Business Logic Layer\BusinessLogicLayer.Interface.csproj" />
+    <ProjectReference Include="..\BusinessLogicLayer.Enum\BusinessLogicLayer.Enum.csproj" />
     <ProjectReference Include="..\BusinessLogicLayer.Mapper\BusinessLogicLayer.Mapper.csproj" />
     <ProjectReference Include="..\DataAccessLayer.Interface\DataAccessLayer.Interface.csproj" />
   </ItemGroup>

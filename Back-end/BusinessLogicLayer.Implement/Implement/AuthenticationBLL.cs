@@ -217,7 +217,7 @@ namespace BusinessLogicLayer.Implement.Implement
             else // Kiểm tra user có liên kết google account chưa
             {
                 // Nếu chưa liên kết thì yêu cầu người dùng muốn liên kết hay không
-                bool? isLinkedWithGoogle = retrieveUser.isLinkedWithGoogle;
+                bool? isLinkedWithGoogle = retrieveUser.IsLinkedWithGoogle;
                 if (isLinkedWithGoogle is not null && !isLinkedWithGoogle.Value) // isLink = False
                 {
                     // Sau khi gọi API thành công thì bên FE sẽ kiểm tra nếu access token là rỗng hoặc null thì tức là cần xác nhận liên kết tài khoản Google
@@ -253,10 +253,10 @@ namespace BusinessLogicLayer.Implement.Implement
         public async Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email)
         {
             // Lấy thông tin người dùng
-            User retrieveUser = await _context.Users.Find(user => user.Email == email && user.isLinkedWithGoogle == false).FirstOrDefaultAsync() ?? throw new CustomException("Google Account Linking", 44, "Not found user or user has been linked with google account");
+            User retrieveUser = await _context.Users.Find(user => user.Email == email && user.IsLinkedWithGoogle == false).FirstOrDefaultAsync() ?? throw new CustomException("Google Account Linking", 44, "Not found user or user has been linked with google account");
 
             // Cập nhật trạng thái liên kết tài khoản Google
-            UpdateDefinition<User> isLinkedWithGoogleUpdate = Builders<User>.Update.Set(user => user.isLinkedWithGoogle, true);
+            UpdateDefinition<User> isLinkedWithGoogleUpdate = Builders<User>.Update.Set(user => user.IsLinkedWithGoogle, true);
             UpdateResult isLinkedWithGoogleUpdateResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, isLinkedWithGoogleUpdate);
 
             // Kiểm tra nếu có ít nhất một field_name được cập nhật
