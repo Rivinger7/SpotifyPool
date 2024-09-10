@@ -138,7 +138,7 @@ namespace SpotifyPool.Main
                                 Id = "Bearer"
                             }
                         },
-                        new string[] {}
+                        Array.Empty<string>()
                     }
                 });
             });
@@ -249,7 +249,7 @@ namespace SpotifyPool.Main
 
                 options.Map<BadRequestCustomException>(ex =>
                 {
-                    ProblemDetails details = new() 
+                    ProblemDetails details = new()
                     {
                         Title = Util.GetTitleCustomException(ex.Title, "Bad Rquest"),
                         Status = StatusCodes.Status400BadRequest,
@@ -413,7 +413,21 @@ namespace SpotifyPool.Main
                 });
 
                 // Xử lý lỗi chung chung, không bắt được loại lỗi cụ thể
-                options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
+                //options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
+                options.Map<Exception>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Internal Server Error",
+                        Status = StatusCodes.Status500InternalServerError,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
             });
         }
     }
