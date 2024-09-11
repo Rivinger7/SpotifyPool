@@ -8,6 +8,7 @@ using BusinessLogicLayer.Implement.Services.Cloudinaries;
 using Microsoft.AspNetCore.Http;
 using CloudinaryDotNet.Actions;
 using System.ComponentModel.DataAnnotations;
+using BusinessLogicLayer.ModelView.Models;
 
 namespace SpotifyPool.Controllers
 {
@@ -135,9 +136,9 @@ namespace SpotifyPool.Controllers
 
         [HttpPost("forgot-password")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPassword([FromBody][EmailAddress] string email)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
         {
-            await _authenticationBLL.SendTokenForgotPasswordAsync(email);
+            await _authenticationBLL.SendTokenForgotPasswordAsync(model);
 			return Ok("Success! Please check message in your mail.");
         }
     }

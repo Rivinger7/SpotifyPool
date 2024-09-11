@@ -5,13 +5,7 @@ namespace Data_Access_Layer.Entities
 {
     public class User : MongoIdentityUser<ObjectId>
     {
-        //[BsonId]
-        //[BsonRepresentation(BsonType.ObjectId)]
-        //public Guid Id { get; set; } = new Guid();
         public string? FullName { get; set; }
-        //public string Email { get; set; } = null!;
-        //public string? PhoneNumber { get; set; }
-        //public string? UserName { get; set; }
         public string Role { get; set; } = null!;
         public DateOnly? Birthdate { get; set; }
         public string? Gender { get; set; }

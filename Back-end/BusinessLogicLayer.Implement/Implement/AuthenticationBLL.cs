@@ -323,6 +323,7 @@ namespace BusinessLogicLayer.Implement.Implement
 										  ?? throw new DataNotFoundCustomException("UserName or Password is incorrect");
 
 
+
 			switch (retrieveUser.Status.ToLower())
 			{
 				case "inactive": throw new UnAuthorizedCustomException("Not active");
