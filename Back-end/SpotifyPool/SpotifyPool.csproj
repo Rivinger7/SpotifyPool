@@ -24,7 +24,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Business Logic Layer\BusinessLogicLayer.Interface.csproj" />
     <ProjectReference Include="..\BusinessLogicLayer.Implement\BusinessLogicLayer.Implement.csproj" />
-    <ProjectReference Include="..\Data Access Layer\DataAccessLayer.Implement.csproj" />
   </ItemGroup>
 
 </Project>
