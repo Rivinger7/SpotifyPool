@@ -1,48 +1,40 @@
-﻿using Business_Logic_Layer.Models;
-using Microsoft.AspNetCore.Authentication.Google;
+﻿using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
-using Business_Logic_Layer.Interface;
-using BusinessLogicLayer.Implement.Services.Cloudinaries;
-using Microsoft.AspNetCore.Http;
-using CloudinaryDotNet.Actions;
-using System.ComponentModel.DataAnnotations;
-using BusinessLogicLayer.ModelView.Models;
+using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
+using BusinessLogicLayer.Interface.Services_Interface.Authentication;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
+using BusinessLogicLayer.ModelView;
 
 namespace SpotifyPool.Controllers
 {
     [Route("api/authentication")]
     [ApiController]
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController(IAuthenticationBLL authenticationBLL, CloudinaryService cloudinaryService) : ControllerBase
     {
-        private readonly IAuthenticationBLL _authenticationBLL;
-        private readonly CloudinaryService _cloudinaryService;
-
-        public AuthenticationController(IAuthenticationBLL authenticationBLL, CloudinaryService cloudinaryService)
-        {
-            _authenticationBLL = authenticationBLL;
-            _cloudinaryService = cloudinaryService;
-        }
+        private readonly IAuthenticationBLL authenticationBLL = authenticationBLL;
+        private readonly CloudinaryService cloudinaryService = cloudinaryService;
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
+        public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)
         {
-            await _authenticationBLL.CreateAccount(registerModel);
+            await authenticationBLL.CreateAccount(registerModel);
             return Ok(new { message = "Account created successfully" });
         }
 
         [HttpPost("confirm-email")]
         public async Task<IActionResult> ConfirmEmail([FromBody] string token)
         {
-            await _authenticationBLL.ActivateAccountByToken(token);
+            await authenticationBLL.ActivateAccountByToken(token);
             return Ok(new { message = "Confirmed Email Successfully" });
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
+        public async Task<IActionResult> Login([FromBody] LoginRequestModel loginModel)
         {
-            var authenticatedResponseModel = await _authenticationBLL.Authenticate(loginModel);
+            var authenticatedResponseModel = await authenticationBLL.Authenticate(loginModel);
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
         }
 
@@ -56,7 +48,7 @@ namespace SpotifyPool.Controllers
                 return Unauthorized(new { message = "No username found in session. Please log in again." });
             }
 
-            await _authenticationBLL.ReActiveAccountByToken(username);
+            await authenticationBLL.ReActiveAccountByToken(username);
 
             return Ok(new { message = "Email has sent to user's mail" });
         }
@@ -71,7 +63,7 @@ namespace SpotifyPool.Controllers
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
         {
-            var authenticatedResponseModel = await _authenticationBLL.LoginByGoogle();
+            var authenticatedResponseModel = await authenticationBLL.LoginByGoogle();
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
             //return Redirect(returnUrl); // Tự động chuyển hướng đến returnURL không cần phải nhờ FE chuyển FE chỉ cần bỏ URL vào biến returnURL
         }
@@ -79,7 +71,7 @@ namespace SpotifyPool.Controllers
         [HttpPost("confirm-link-with-google-account")]
         public async Task<IActionResult> ConfirmLinkWithGoogleAccount([FromBody] string email, [FromQuery] string returnUrl = "/")
         {
-            var authenticatedResponseModel = await _authenticationBLL.ConfirmLinkWithGoogleAccount(email);
+            var authenticatedResponseModel = await authenticationBLL.ConfirmLinkWithGoogleAccount(email);
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
             //return Redirect(returnUrl); // Tự động chuyển hướng đến returnURL không cần phải nhờ FE chuyển FE chỉ cần bỏ URL vào biến returnURL
         }
@@ -95,51 +87,58 @@ namespace SpotifyPool.Controllers
         [HttpPost("upload-image")]
         public IActionResult UploadImage(IFormFile imageFile)
         {
-            var uploadResult = _cloudinaryService.UploadImage(imageFile);
+            var uploadResult = cloudinaryService.UploadImage(imageFile);
             return Ok(new { message = "Upload Image Successfully", uploadResult });
         }
 
         [HttpPost("upload-video")]
         public IActionResult UploadVideo(IFormFile videoFile)
         {
-            var uploadResult = _cloudinaryService.UploadVideo(videoFile);
+            var uploadResult = cloudinaryService.UploadVideo(videoFile);
             return Ok(new { message = "Upload Video Successfully", uploadResult });
         }
 
         [HttpGet("get-image/{publicID}")]
         public IActionResult GetImageResult(string publicID)
         {
-            var getResult = _cloudinaryService.GetImageResult(publicID);
+            var getResult = cloudinaryService.GetImageResult(publicID);
             return Ok(new { message = "Get Image Successfully", getResult });
         }
 
         [HttpGet("get-video/{publicID}")]
         public IActionResult GetVideoResult(string publicID)
         {
-            var getResult = _cloudinaryService.GetVideoResult(publicID);
+            var getResult = cloudinaryService.GetVideoResult(publicID);
             return Ok(new { message = "Get Video Successfully", getResult });
         }
 
         [HttpDelete("delete-image/{publicID}")]
         public IActionResult DeleteImage(string publicID)
         {
-            var deleteResult = _cloudinaryService.DeleteImage(publicID);
-            return Ok(new {message = $"Delete Image Successfully with Public ID {publicID}", deleteResult});
+            var deleteResult = cloudinaryService.DeleteImage(publicID);
+            return Ok(new { message = $"Delete Image Successfully with Public ID {publicID}", deleteResult });
         }
 
         [HttpDelete("delete-video/{publicID}")]
         public IActionResult DeleteVideo(string publicID)
         {
-            var deleteResult = _cloudinaryService.DeleteVideo(publicID);
+            var deleteResult = cloudinaryService.DeleteVideo(publicID);
             return Ok(new { message = $"Delete Video Successfully with Public ID {publicID}", deleteResult });
         }
 
         [HttpPost("forgot-password")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel model)
         {
-            await _authenticationBLL.SendTokenForgotPasswordAsync(model);
-			return Ok("Success! Please check message in your mail.");
+            var token = await authenticationBLL.SendTokenForgotPasswordAsync(model);
+            return Ok(new { message = "Success! Please check message in your mail.", token });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel model)
+        {
+            await authenticationBLL.ResetPasswordAsync(model);
+            return Ok("Reset password successfully");
         }
     }
 }
+

@@ -1,16 +1,15 @@
 ﻿using AutoMapper;
-using Business_Logic_Layer.Models;
-using Data_Access_Layer.Entities;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
+using DataAccessLayer.Repository.Entities;
 
-namespace Business_Logic_Layer.Mappers
+namespace BusinessLogicLayer.Mapper
 {
     public class CustomerMappings : Profile
     {
         public CustomerMappings()
         {
-            CreateMap<User, CustomerModel>().ReverseMap();
-            CreateMap<User, LoginModel>().ReverseMap();
-            CreateMap<User, RegisterModel>().ReverseMap();
+            CreateMap<User, LoginRequestModel>().ReverseMap();
+            CreateMap<User, RegisterRequestModel>().ReverseMap();
         }
     }
 }

@@ -6,4 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Microservice Model Views\" />
+    <Folder Include="Service Model Views\Forgot Password\Response\" />
+    <Folder Include="Service Model Views\JWTs\Response\" />
+    <Folder Include="Service Model Views\Reset Password\Response\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Utility.csproj" />
+  </ItemGroup>
+
 </Project>
