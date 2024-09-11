@@ -22,7 +22,7 @@ namespace Business_Logic_Layer.Services.EmailSender
         {
             // Get username from the email
             string email = user.Email ?? "NULL";
-            string username = user.Username;
+            string username = user.UserName;
 
             try
             {
@@ -182,7 +182,7 @@ namespace Business_Logic_Layer.Services.EmailSender
         {
             // Get username from the email
             string email = user.Email ?? "NULL";
-            string username = user.Username;
+            string username = user.UserName;
 
             try
             {

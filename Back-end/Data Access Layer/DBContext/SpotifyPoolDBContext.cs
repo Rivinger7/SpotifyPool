@@ -17,7 +17,7 @@ namespace Data_Access_Layer.DBContext
             _logger = logger;
         }
 
-        public IMongoCollection<User> Users => _database.GetCollection<User>("User");
+        public IMongoCollection<User> Users => _database.GetCollection<User>("users");
         public IMongoCollection<Playlist> Playlists => _database.GetCollection<Playlist>("Playlist");
         public IMongoCollection<Track> Tracks => _database.GetCollection<Track>("Track");
         public IMongoCollection<Artist> Artists => _database.GetCollection<Artist>("Artist");

@@ -8,11 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AspNetCore.Identity.MongoDbCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
     <PackageReference Include="MongoDB.Driver" Version="2.28.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BusinessLogicLayer.ModelView\BusinessLogicLayer.ModelView.csproj" />
     <ProjectReference Include="..\DataAccessLayer.Interface\DataAccessLayer.Interface.csproj" />
     <ProjectReference Include="..\Shared\Utility.csproj" />
   </ItemGroup>

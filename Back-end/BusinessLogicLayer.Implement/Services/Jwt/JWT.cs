@@ -24,7 +24,7 @@ namespace Business_Logic_Layer.Services.JWT
 			var tokenDescription = new SecurityTokenDescriptor
 			{
 				Subject = new ClaimsIdentity(new[] {
-							new Claim("Username", customerModel.Username),
+							new Claim("UserName", customerModel.Username),
                             new Claim("Email", customerModel.Email),
 							new Claim(ClaimTypes.Role, customerModel.Role),
 				}),

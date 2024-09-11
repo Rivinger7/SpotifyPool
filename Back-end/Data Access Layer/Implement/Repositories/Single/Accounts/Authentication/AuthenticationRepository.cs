@@ -24,10 +24,10 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
             {
                 User newUser = new()
                 {
-                    Username = user.Username,
-                    Password = user.Password,
+                    UserName = user.UserName,
+                    //Password = user.Password,
                     Email = user.Email,
-                    Phonenumber = user.Phonenumber,
+                    PhoneNumber = user.PhoneNumber,
                     Role = "Customer",
                     Status = "Inactive",
                     Token = user.Token
@@ -43,14 +43,14 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
 
         public async Task CheckAccountExists(User user)
         {
-            string username = user.Username;
+            string UserName = user.UserName;
             string email = user.Email;
-            string phonenumber = user.Phonenumber;
+            string phonenumber = user.PhoneNumber;
 
-            bool usernameExists = await _context.Users.Find(user => user.Username == username).AnyAsync();
-            if (usernameExists)
+            bool UserNameExists = await _context.Users.Find(user => user.UserName == UserName).AnyAsync();
+            if (UserNameExists)
             {
-                throw new ArgumentException("Username already exists", "usernameExists");
+                throw new ArgumentException("UserName already exists", "UserNameExists");
             }
 
             bool emailExists = await _context.Users.Find(user => user.Email == email).AnyAsync();
@@ -59,7 +59,7 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
                 throw new ArgumentException("Email already exists", "emailExists");
             }
 
-            bool phonenumberExists = await _context.Users.Find(user => user.Phonenumber == phonenumber).AnyAsync();
+            bool phonenumberExists = await _context.Users.Find(user => user.PhoneNumber == phonenumber).AnyAsync();
             if (phonenumberExists)
             {
                 throw new ArgumentException("Phone number already exists", "phoneNumberExists");
@@ -135,16 +135,17 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
 
         }
 
-        public async Task<User> Authenticate(User user)
+		//EDITED Password
+		public async Task<User> Authenticate(User user)
         {
-            string username = user.Username;
-            string password = user.Password;
+            string UserName = user.UserName;
+            string password = user.PasswordHash;
 
-            User retrieveUser = await _context.Users.Find(user => user.Username == username && user.Password == password).FirstOrDefaultAsync();
+            User retrieveUser = await _context.Users.Find(user => user.UserName == UserName && user.PasswordHash == password).FirstOrDefaultAsync();
 
             if (retrieveUser is null)
             {
-                throw new ArgumentException("Username or Password is incorrect", "loginFail");
+                throw new ArgumentException("UserName or Password is incorrect", "loginFail");
             }
 
             // Role thì bên FE sẽ tự validation. Vì mỗi User sẽ có role khác nhau
@@ -163,9 +164,10 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
             return retrieveUser;
         }
 
-        public async Task<string> GetPasswordHashed(string username)
+        //EDITED Password
+        public async Task<string> GetPasswordHashed(string UserName)
         {
-            string passwordHashed = await _context.Users.Find(user => user.Username == username).Project(user => user.Password)
+            string passwordHashed = await _context.Users.Find(user => user.UserName == UserName).Project(user => user.PasswordHash)
                 .FirstOrDefaultAsync();
 
             return passwordHashed;

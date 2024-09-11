@@ -14,7 +14,7 @@ namespace Business_Logic_Layer.Models
         [StringLength(30, ErrorMessage = "Tên đăng nhập không được vượt quá 30 ký tự")]
         [MinLength(3, ErrorMessage = "Tên đăng nhập phải có ít nhất 3 ký tự")]
         [RegularExpression("^[a-zA-Z][a-zA-Z0-9]*$", ErrorMessage = "Tên đăng nhập chỉ được chứa các ký tự chữ cái và số, và phải bắt đầu bằng chữ cái.")]
-        public string Username { get; set; }
+        public string UserName { get; set; }
 
         [Display(Name = "Mật khẩu")]
         [Required(ErrorMessage = "* Vui lòng nhập mật khẩu")]

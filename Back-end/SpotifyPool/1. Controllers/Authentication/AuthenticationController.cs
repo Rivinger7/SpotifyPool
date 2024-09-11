@@ -7,6 +7,7 @@ using Business_Logic_Layer.Interface;
 using BusinessLogicLayer.Implement.Services.Cloudinaries;
 using Microsoft.AspNetCore.Http;
 using CloudinaryDotNet.Actions;
+using System.ComponentModel.DataAnnotations;
 
 namespace SpotifyPool.Controllers
 {
@@ -47,7 +48,7 @@ namespace SpotifyPool.Controllers
         [HttpPost("reactive-account")]
         public async Task<IActionResult> ReactiveAccount()
         {
-            string? username = HttpContext.Session.GetString("Username");
+            string? username = HttpContext.Session.GetString("UserName");
 
             if (string.IsNullOrEmpty(username))
             {
@@ -130,6 +131,14 @@ namespace SpotifyPool.Controllers
         {
             var deleteResult = _cloudinaryService.DeleteVideo(publicID);
             return Ok(new { message = $"Delete Video Successfully with Public ID {publicID}", deleteResult });
+        }
+
+        [HttpPost("forgot-password")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword([FromBody][EmailAddress] string email)
+        {
+            await _authenticationBLL.SendTokenForgotPasswordAsync(email);
+			return Ok("Success! Please check message in your mail.");
         }
     }
 }

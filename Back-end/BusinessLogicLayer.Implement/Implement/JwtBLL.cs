@@ -5,6 +5,7 @@ using Data_Access_Layer.Entities;
 using DataAccessLayer.Interface.Interface.IUnitOfWork;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -129,7 +130,7 @@ namespace BusinessLogicLayer.Implement.Implement
         /// <param name="refreshToken"></param>
         public void GenerateAccessToken(IEnumerable<Claim> claims, User user, out string accessToken, out string refreshToken)
         {
-            string userID = user.Id;
+            ObjectId userID = user.Id;
 
             //generate access token and refresh token
             accessToken = GenerateAccessToken(claims);
@@ -139,7 +140,7 @@ namespace BusinessLogicLayer.Implement.Implement
             //set refresh token, expirytime for refreshtoken to user and save to database
             UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, refreshToken);
 
-            DateTime refreshTokenExpiryTime = Util.GetUtcPlus7Time().AddMinutes(10);
+            DateTime refreshTokenExpiryTime = Util.GetUtcPlus7Time().AddDays(5);
             UpdateDefinition<User> refreshTokenExpiryTimeUpdate = Builders<User>.Update.Set(user => user.RefreshTokenExpiryTime, refreshTokenExpiryTime);
 
             // Update
@@ -189,7 +190,9 @@ namespace BusinessLogicLayer.Implement.Implement
 
             var principal = GetPrincipalFromExpiredToken(tokenApiModel.AccessToken);
 
-            string userID = principal.Identity.Name ?? throw new ArgumentException("User's ID is not found in any session"); //this is mapped to the Name claim by default
+            string userIDString = principal.Identity.Name ?? throw new ArgumentException("User's ID is not found in any session"); //this is mapped to the Name claim by default
+
+            ObjectId userID = ObjectId.Parse(userIDString);
 
             User retrieveUser = _context.Users.Find(user => user.Id == userID).FirstOrDefault() ?? throw new ArgumentException("User's ID is not found");
 
@@ -204,7 +207,7 @@ namespace BusinessLogicLayer.Implement.Implement
             newRefreshToken = GenerateRefreshToken();
 
             UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, newRefreshToken);
-            UpdateResult refeshTokenUpdateResult = _context.Users.UpdateOne(user => user.Id.ToString() == userID, refeshTokenUpdate);
+            UpdateResult refeshTokenUpdateResult = _context.Users.UpdateOne(user => user.Id == userID, refeshTokenUpdate);
         }
     }
 }

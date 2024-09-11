@@ -28,7 +28,7 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Customers
         {
             try
             {
-                User user = await _context.Users.Find(user => username == user.Username).FirstOrDefaultAsync();
+                User user = await _context.Users.Find(user => username == user.UserName).FirstOrDefaultAsync();
                 if (user is null)
                 {
                     throw new ArgumentException("The Account does not exists", "accountNotFound");
