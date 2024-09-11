@@ -391,7 +391,7 @@ namespace BusinessLogicLayer.Implement.Implement
 			return;
 		}
 
-		public async Task SendTokenForgotPasswordAsync(ForgotPasswordModel model)
+		public async Task<string> SendTokenForgotPasswordAsync(ForgotPasswordModel model)
 		{
 			// Lấy thông tin người dùng
 			User retrieveUser = await _userManager.FindByEmailAsync(model.Email)
@@ -406,23 +406,38 @@ namespace BusinessLogicLayer.Implement.Implement
 				{"email", model.Email }
 			};
 
-			var callback = QueryHelpers.AddQueryString(model.ClientUrl, parameter);
+			// tạo chuỗi url có 2 tham số trên 
+			string? callback = QueryHelpers.AddQueryString(model.ClientUrl, parameter);
 
-			var message = new Message([retrieveUser.Email], "Reset Password", callback);
+			// tạo message để gửi email
+			Message message = new Message([retrieveUser.Email], "Reset Password", callback);
 
-			
+			await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
 
-			
+
+			return token;
 		}
 
-		public async Task ResetPasswordAsync(string email, string passwordToken)
+
+		public async Task ResetPasswordAsync(ResetPasswordModel model)
 		{
-			// Kiểm tra
-
-			// Lấy thông tin người dùng
-			User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
+			// tìm user theo email
+			User user = await _userManager.FindByEmailAsync(model.Email) ?? throw new DataNotFoundCustomException("Email does not match with any account!");
 
 
+
+			if(model.NewPassword != model.ConfirmPassword)
+			{
+				throw new BadRequestCustomException("New password and confirm password do not match!");
+			}
+
+			// reset password
+			IdentityResult result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+
+			if (!result.Succeeded)
+			{
+				throw new BadRequestCustomException("Reset password failed!");
+			}
 		}
 	}
 }

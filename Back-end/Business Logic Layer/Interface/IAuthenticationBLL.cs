@@ -11,7 +11,8 @@ namespace Business_Logic_Layer.Interface
         Task ReActiveAccountByToken(string username);
         Task<AuthenticatedResponseModel> LoginByGoogle();
         Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email);
-        Task SendTokenForgotPasswordAsync(ForgotPasswordModel model);
+        Task<string> SendTokenForgotPasswordAsync(ForgotPasswordModel model);
+        Task ResetPasswordAsync(ResetPasswordModel model);
 
 	}
 }

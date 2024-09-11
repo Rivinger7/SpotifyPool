@@ -135,11 +135,17 @@ namespace SpotifyPool.Controllers
         }
 
         [HttpPost("forgot-password")]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
         {
-            await _authenticationBLL.SendTokenForgotPasswordAsync(model);
-			return Ok("Success! Please check message in your mail.");
+            var token  = await _authenticationBLL.SendTokenForgotPasswordAsync(model);
+			return Ok(new {message = "Success! Please check message in your mail.", token });
         }
-    }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
+		{
+			await _authenticationBLL.ResetPasswordAsync(model);
+			return Ok("Reset password successfully");
+		}
+	}
 }

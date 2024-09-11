@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Data_Access_Layer.Entities;
+using Utility.Coding;
 
 namespace Business_Logic_Layer.Services.EmailSender
 {
@@ -178,7 +179,7 @@ namespace Business_Logic_Layer.Services.EmailSender
             </tbody>";
         }
 
-        public async Task SendEmailForgotPasswordAsync(User user, string subject, string message)
+        public async Task SendEmailForgotPasswordAsync(User user, Message message)//(User user, string subject, string message)
         {
             // Get username from the email
             string email = user.Email ?? "NULL";
@@ -196,8 +197,8 @@ namespace Business_Logic_Layer.Services.EmailSender
                 var mailMessage = new MailMessage
                 {
                     From = new MailAddress(_emailSenderSetting.FromAddress, _emailSenderSetting.FromName),
-                    Subject = subject,
-                    Body = message,
+                    Subject = message.Subject,
+                    Body = message.Content,
                     IsBodyHtml = true,
                 };
                 mailMessage.To.Add(email);
@@ -214,5 +215,6 @@ namespace Business_Logic_Layer.Services.EmailSender
                 _logger.LogError($"Error while sending email to {email}: {ex.Message}");
             }
         }
-    }
+
+	}
 }

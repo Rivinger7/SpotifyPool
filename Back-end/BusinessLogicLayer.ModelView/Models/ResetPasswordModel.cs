@@ -9,7 +9,7 @@ namespace BusinessLogicLayer.ModelView.Models
 		public string Email { get; set; }
 
 		[Required]
-		public string OTP { get; set; }
+		public string Token { get; set; }
 
 		[Display(Name = "Xác Nhận Mật khẩu")]
 		[Required(ErrorMessage = "* Vui lòng xác nhận mật khẩu")]
