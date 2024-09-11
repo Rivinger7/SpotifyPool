@@ -10,13 +10,13 @@ namespace Data_Access_Layer.Entities
         public DateOnly? Birthdate { get; set; }
         public string? Gender { get; set; }
         public string Status { get; set; } = null!;
-        public string? Token { get; set; }
+        public string? TokenEmailConfirm { get; set; }
         public bool? IsLinkedWithGoogle { get; set; } = null;
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
 
         // Image Object
         public string? Image { get; set; }
-        public string? Type { get; set; }
+        public string? ImageType { get; set; }
     }
 }

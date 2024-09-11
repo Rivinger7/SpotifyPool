@@ -88,7 +88,7 @@ namespace Business_Logic_Layer.Services.JWT
             }
             catch (SecurityTokenException ex)
             {
-                // Token không hợp lệ hoặc đã hết hạn
+                // TokenEmailConfirm không hợp lệ hoặc đã hết hạn
                 Console.WriteLine(ex.Message);
                 return null;
             }

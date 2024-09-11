@@ -30,7 +30,7 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
                     PhoneNumber = user.PhoneNumber,
                     Role = "Customer",
                     Status = "Inactive",
-                    Token = user.Token
+                    TokenEmailConfirm = user.TokenEmailConfirm
                 };
 
                 await _context.Users.InsertOneAsync(newUser);
@@ -70,7 +70,7 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
         {
             try
             {
-                string? token = await _context.Users.Find(user => user.Email == email).Project(user => user.Token)
+                string? token = await _context.Users.Find(user => user.Email == email).Project(user => user.TokenEmailConfirm)
                     .FirstOrDefaultAsync();
 
                 if (token is null)
@@ -92,7 +92,7 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
             {
                 User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
 
-                UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, token);
+                UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, token);
                 UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
             }
             catch (Exception ex)
@@ -114,7 +114,7 @@ namespace Data_Access_Layer.Implement.Repositories.Single.Accounts.Authenticatio
 
                 UpdateDefinition<User> statusUpdate = Builders<User>.Update.Set(user => user.Status, "Active");
 
-                UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, null);
+                UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, null);
 
                 UpdateResult statusResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, statusUpdate);
 

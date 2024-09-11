@@ -88,7 +88,7 @@ namespace BusinessLogicLayer.Implement.Implement
 				PhoneNumber = registerModel.PhoneNumber,
 				Role = "Customer",
 				Status = "Inactive",
-				Token = encryptedToken
+				TokenEmailConfirm = encryptedToken
 			};
 
 			//await _context.Users.InsertOneAsync(newUser);
@@ -148,23 +148,23 @@ namespace BusinessLogicLayer.Implement.Implement
 			//var roleClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Role);
 			Claim? encryptedTokenClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "EncrpytedToken");
 
-			if (emailClaim == null || encryptedTokenClaim == null)
-			{
-				throw new DataNotFoundCustomException("Token is missing required claims");
-			}
+            if (emailClaim == null || encryptedTokenClaim == null)
+            {
+                throw new DataNotFoundCustomException("TokenEmailConfirm is missing required claims");
+            }
 
 			string email = emailClaim.Value;
 			//var role = roleClaim.Value;
 			string encryptedToken = encryptedTokenClaim.Value;
 
-			//_logger.LogInformation("Token decoded successfully");
-			//_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
+            //_logger.LogInformation("TokenEmailConfirm decoded successfully");
+            //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
 
-			User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
-			if (retrieveUser.Token != encryptedToken)
-			{
-				throw new InvalidDataCustomException("Token and Retrieve Token do not match");
-			}
+            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
+            if (retrieveUser.TokenEmailConfirm != encryptedToken)
+            {
+                throw new InvalidDataCustomException("TokenEmailConfirm and Retrieve TokenEmailConfirm do not match");
+            }
 
 			await UpdateAccountConfirmationStatus(retrieveUser);
 
@@ -175,7 +175,7 @@ namespace BusinessLogicLayer.Implement.Implement
 		{
 			UpdateDefinition<User> statusUpdate = Builders<User>.Update.Set(user => user.Status, "Active");
 
-			UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, null);
+            UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, null);
 
 			UpdateResult statusResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, statusUpdate);
 
@@ -378,8 +378,8 @@ namespace BusinessLogicLayer.Implement.Implement
 			string token = jwtGenerator.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
 			string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
 
-			UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.Token, token);
-			UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
+            UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, token);
+            UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
 
 			if (tokenResult.ModifiedCount < 1)
 			{

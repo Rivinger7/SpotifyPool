@@ -136,31 +136,31 @@ namespace SpotifyPool.Main
 			{
 				c.SwaggerDoc("v1", new OpenApiInfo { Title = "Spotify Pool", Version = "v1" });
 
-				// Add JWT Authentication
-				c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-				{
-					Name = "Authorization",
-					Type = SecuritySchemeType.ApiKey,
-					Scheme = "Bearer",
-					BearerFormat = "JWT",
-					In = ParameterLocation.Header,
-					Description = "Enter 'Bearer' [space] and then your token",
-				});
-				c.AddSecurityRequirement(new OpenApiSecurityRequirement
-				{
-					{
-						new OpenApiSecurityScheme
-						{
-							Reference = new OpenApiReference
-							{
-								Type = ReferenceType.SecurityScheme,
-								Id = "Bearer"
-							}
-						},
-						new string[] {}
-					}
-				});
-			});
+                // Add JWT Authentication
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Enter 'Bearer' [space] and then your token",
+                });
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
 
 			// Config the Google Identity
 			services.AddAuthentication(options =>
@@ -275,14 +275,14 @@ namespace SpotifyPool.Main
 					return details;
 				});
 
-				options.Map<BadRequestCustomException>(ex =>
-				{
-					ProblemDetails details = new()
-					{
-						Title = Util.GetTitleCustomException(ex.Title, "Bad Rquest"),
-						Status = StatusCodes.Status400BadRequest,
-						Detail = ex.Message
-					};
+                options.Map<BadRequestCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = Util.GetTitleCustomException(ex.Title, "Bad Rquest"),
+                        Status = StatusCodes.Status400BadRequest,
+                        Detail = ex.Message
+                    };
 
 					// Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
 					_logger.LogError($"Full error details: {ex}");
@@ -440,9 +440,23 @@ namespace SpotifyPool.Main
 					return details;
 				});
 
-				// Xử lý lỗi chung chung, không bắt được loại lỗi cụ thể
-				//options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
-			});
-		}
-	}
+                // Xử lý lỗi chung chung, không bắt được loại lỗi cụ thể
+                //options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
+                options.Map<Exception>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Internal Server Error",
+                        Status = StatusCodes.Status500InternalServerError,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+            });
+        }
+    }
 }
