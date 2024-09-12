@@ -363,4 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Bỏ qua file env
-.env
+Back-end/SpotifyPool/4. Application/.env
