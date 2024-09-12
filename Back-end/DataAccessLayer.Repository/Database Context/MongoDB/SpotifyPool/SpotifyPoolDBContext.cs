@@ -10,10 +10,10 @@ namespace DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool
         private readonly IMongoDatabase _database;
         private readonly ILogger<SpotifyPoolDBContext> _logger;
 
-        public SpotifyPoolDBContext(IOptions<MongoDBSetting> mongoDBSettings, ILogger<SpotifyPoolDBContext> logger)
+        public SpotifyPoolDBContext(MongoDBSetting mongoDBSettings, ILogger<SpotifyPoolDBContext> logger)
         {
-            var mongoClient = new MongoClient(mongoDBSettings.Value.ConnectionString);
-            _database = mongoClient.GetDatabase(mongoDBSettings.Value.DatabaseName);
+            var mongoClient = new MongoClient(mongoDBSettings.ConnectionString);
+            _database = mongoClient.GetDatabase(mongoDBSettings.DatabaseName);
             _logger = logger;
         }
 

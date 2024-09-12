@@ -1,29 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.OpenApi.Models;
-using Hellang.Middleware.ProblemDetails;
+﻿using Hellang.Middleware.ProblemDetails;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
 using Microsoft.AspNetCore.Mvc;
 using Utility.Coding;
 using Microsoft.AspNetCore.Identity;
-using MongoDB.Bson;
-using BusinessLogicLayer.Implement.Services.Authentication;
-using BusinessLogicLayer.Implement.Services.JWTs;
-using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
-using BusinessLogicLayer.Implement.Microservices.EmailSender;
-using DataAccessLayer.Repository.Entities;
-using BusinessLogicLayer.Interface.Services_Interface.Authentication;
-using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
-using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
-using BusinessLogicLayer.Setting.Microservices.EmailSender;
-using BusinessLogicLayer.Interface.Services_Interface.JWTs;
-using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
-using BusinessLogicLayer.Setting.Microservices.Cloudinaries;
 
 namespace SpotifyPool.Infrastructure
 {
@@ -44,15 +23,13 @@ namespace SpotifyPool.Infrastructure
 
         public static void AddConfiguration(this IServiceCollection services, IConfiguration configuration)
         {
+            // API Config
             services.ConfigRoute();
             services.AddSwaggerGen();
             services.AddCors();
-            services.AddDatabase(configuration);
-            services.AddAutoMapper();
-            services.AddInfrastructure(configuration);
-            services.AddServices(configuration);
+
+            // Problem Details
             services.AddProblemDetails();
-            services.AddCloudinary(configuration);
 
             // Log an informational message
             _logger.LogInformation("Services have been configured.");
@@ -65,18 +42,6 @@ namespace SpotifyPool.Infrastructure
                 options.Cookie.IsEssential = true;
                 options.IdleTimeout = TimeSpan.FromMinutes(30);
             });
-        }
-
-        public static void AddCloudinary(this IServiceCollection services, IConfiguration configuration)
-        {
-            // Set your Cloudinary credentials
-            //=================================
-            //DotEnv.Load(options: new DotEnvOptions(probeForEnv: true));
-            //Cloudinary cloudinary = new(Environment.GetEnvironmentVariable("CLOUDINARY_URL"));
-            //cloudinary.Api.Secure = true;
-
-            services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
-            services.AddScoped<CloudinaryService>();
         }
 
         public static void ConfigRoute(this IServiceCollection services)
@@ -110,122 +75,6 @@ namespace SpotifyPool.Infrastructure
                                       .AllowAnyHeader()
                                       .AllowAnyMethod());
             });
-        }
-        // Config the database
-        public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.Configure<MongoDBSetting>(configuration.GetSection("MongoDBSettings"));
-            services.AddSingleton<SpotifyPoolDBContext>();
-        }
-
-        // Add AutoMapper configuration
-        public static void AddAutoMapper(this IServiceCollection services)
-        {
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-        }
-
-        public static void AddServices(this IServiceCollection services, IConfiguration configuration)
-        {
-            // Register BLL services
-            //services.AddScoped<CustomerBLL>();
-            services.AddScoped<IAuthenticationBLL, AuthenticationBLL>();
-
-            services.AddScoped<IEmailSenderCustom, EmailSender>();
-            // Config the email sender (SMTP)
-            services.Configure<EmailSenderSetting>(configuration.GetSection("Email"));
-
-            // Register Jira Cloud REST API Client
-            services.AddSingleton<IssueClient>();
-
-            services.AddTransient<IJwtBLL, JwtBLL>();
-
-            // Config JWT
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Spotify Pool", Version = "v1" });
-
-                // Add JWT Authentication
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                {
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey,
-                    Scheme = "Bearer",
-                    BearerFormat = "JWT",
-                    In = ParameterLocation.Header,
-                    Description = "Enter 'Bearer' [space] and then your token",
-                });
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-            });
-
-            // Config the Google Identity
-            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                //options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-
-                //options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                //options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                //options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddCookie("Cookies").AddGoogle(options =>
-            {
-                options.ClientId = configuration.GetSection("Authentication:Google:ClientId").Value;
-                options.ClientSecret = configuration.GetSection("Authentication:Google:ClientSecret").Value;
-                options.CallbackPath = "/api/authentication/signin-google"; // Đường dẫn Google sẽ chuyển hướng sau khi xác thực
-
-                options.Scope.Add("profile");
-                options.Scope.Add("email");
-                options.Scope.Add("openid");
-
-                options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
-            }).AddJwtBearer(opt =>
-            {
-                opt.TokenValidationParameters = new TokenValidationParameters
-                {
-                    //tự cấp token
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-
-                    //ký vào token
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWTSettings:SecretKey"])),
-
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
-
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("GoogleOrJwt", policy =>
-                {
-                    policy.AddAuthenticationSchemes(GoogleDefaults.AuthenticationScheme, JwtBearerDefaults.AuthenticationScheme);
-                    policy.RequireAuthenticatedUser();
-                });
-            });
-
-            // Add Identity
-            services.AddIdentity<User, Roles>()
-                .AddMongoDbStores<User, Roles, ObjectId>
-                (
-                    configuration.GetSection("MongoDBSettings:ConnectionString").Value,
-                    configuration.GetSection("MongoDBSettings:DatabaseName").Value
-                )
-                .AddDefaultTokenProviders();
-
         }
 
         public static void AddProblemDetails(this IServiceCollection services)

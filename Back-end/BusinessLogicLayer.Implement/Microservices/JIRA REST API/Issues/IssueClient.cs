@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
+using BusinessLogicLayer.Setting.Microservices.Jira;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -8,20 +9,16 @@ namespace BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues
 {
     public class IssueClient
     {
-        private readonly string? _username;
-        private readonly string? _apiKey;
         private readonly string? _domain;
         private readonly HttpClient _httpClient;
         private readonly ILogger<IssueClient> _logger;
 
-        public IssueClient(IConfiguration configuration, ILogger<IssueClient> logger)
+        public IssueClient(JiraSetting jiraSettings, ILogger<IssueClient> logger)
         {
-            _username = configuration["JiraSettings:AtlassianUsername"];
-            _apiKey = configuration["JiraSettings:AtlassianApiKey"];
-            _domain = configuration["JiraSettings:Domain"];
+            _domain = jiraSettings.Domain;
 
             _httpClient = new HttpClient();
-            var authToken = Encoding.ASCII.GetBytes($"{_username}:{_apiKey}");
+            var authToken = Encoding.ASCII.GetBytes($"{jiraSettings.UserName}:{jiraSettings.ApiKey}");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _logger = logger;

@@ -9,19 +9,9 @@ using BusinessLogicLayer.Enum.Microservices.Cloudinary;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
-    public class CloudinaryService
+    public class CloudinaryService(Cloudinary cloudinary)
     {
-        private readonly Cloudinary _cloudinary;
-
-        public CloudinaryService(IOptions<CloudinarySettings> cloudinaryConfig)
-        {
-            var settings = cloudinaryConfig.Value;
-            _cloudinary = new Cloudinary(new Account(
-                settings.CloudName,
-                settings.ApiKey,
-                settings.ApiSecret
-            ));
-        }
+        private readonly Cloudinary _cloudinary = cloudinary;
 
         public ImageUploadResult UploadImage(IFormFile imageFile, string tags = "AvatarUserProfile")
         {

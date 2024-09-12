@@ -1,4 +1,5 @@
-﻿using BusinessLogicLayer.Interface.Services_Interface.JWTs;
+﻿using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
@@ -36,7 +37,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             int expireMinutes = 60; //set default expire time is 60 minutes
 
             //get secret key from appsettings.json
-            var secretKey = _config.GetSection("JWTSettings:SecretKey").Value;
+            var secretKey = Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found");
 
             //convert secret key to byte array
             var symmetricKey = Encoding.UTF8.GetBytes(secretKey);
@@ -97,7 +98,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
                 ValidateIssuerSigningKey = true,
 
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("Jwt:SecretKey").Value)), //Sign with encoded secret key
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"))), //Sign with encoded secret key
 
                 ValidateLifetime = false //this field not need to check validate because we just want to get principal from that token
             };
@@ -211,7 +212,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-            var secretKeyBytes = Encoding.UTF8.GetBytes(_config["JWTSettings:SecretKey"]);
+            var secretKeyBytes = Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
 
             var tokenDescription = new SecurityTokenDescriptor
             {

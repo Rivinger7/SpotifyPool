@@ -10,16 +10,10 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Microservices.EmailSender
 {
-    public class EmailSender : IEmailSenderCustom
+    public class EmailSender(EmailSenderSetting emailSenderSetting, ILogger<EmailSender> logger) : IEmailSenderCustom
     {
-        private readonly EmailSenderSetting _emailSenderSetting;
-        private readonly ILogger<EmailSender> _logger;
-
-        public EmailSender(IOptions<EmailSenderSetting> configuration, ILogger<EmailSender> logger)
-        {
-            _emailSenderSetting = configuration.Value;
-            _logger = logger;
-        }
+        private readonly EmailSenderSetting _emailSenderSetting = emailSenderSetting;
+        private readonly ILogger<EmailSender> _logger = logger;
 
         public async Task SendEmailConfirmationAsync(User user, string subject, string message)
         {

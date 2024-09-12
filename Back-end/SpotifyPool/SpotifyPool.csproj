@@ -27,4 +27,10 @@
 		<ProjectReference Include="..\BusinessLogicLayer.DependencyInjection\BusinessLogicLayer.DependencyInjection.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="4. Application\.env">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>
