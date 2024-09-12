@@ -10,16 +10,15 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="CloudinaryDotNet" Version="1.26.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Business Logic Layer\BusinessLogicLayer.Interface.csproj" />
     <ProjectReference Include="..\BusinessLogicLayer.Enum\BusinessLogicLayer.Enum.csproj" />
-    <ProjectReference Include="..\DataAccessLayer.Interface\DataAccessLayer.Interface.csproj" />
+    <ProjectReference Include="..\BusinessLogicLayer.Setting\BusinessLogicLayer.Setting.csproj" />
+    <ProjectReference Include="..\Shared\Utility.csproj" />
   </ItemGroup>
 
 </Project>
