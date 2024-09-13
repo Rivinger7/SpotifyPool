@@ -5,9 +5,9 @@ VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpotifyPool", "SpotifyPool\SpotifyPool.csproj", "{E8C63BE3-FB68-4BAA-A962-11955250B07D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccessLayer.Implement", "Data Access Layer\DataAccessLayer.Implement.csproj", "{6C5466BD-01D2-41F9-B8DE-2C7D0ABB641F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccessLayer.Implement", "DataAccessLayer.Implement\DataAccessLayer.Implement.csproj", "{6C5466BD-01D2-41F9-B8DE-2C7D0ABB641F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogicLayer.Interface", "Business Logic Layer\BusinessLogicLayer.Interface.csproj", "{E9C35C23-1F7D-4D72-ADC4-B458533497B8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogicLayer.Interface", "BusinessLogicLayer.Interface\BusinessLogicLayer.Interface.csproj", "{E9C35C23-1F7D-4D72-ADC4-B458533497B8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utility", "Shared\Utility.csproj", "{3949C987-D42F-4F3E-AE87-0A60DAAD3EA8}"
 EndProject
