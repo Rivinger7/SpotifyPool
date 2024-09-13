@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Bỏ qua file env
 Back-end/**/*.env
+
+# Skip .env file
+/Back-end/SpotifyPool/4. Application/.env
