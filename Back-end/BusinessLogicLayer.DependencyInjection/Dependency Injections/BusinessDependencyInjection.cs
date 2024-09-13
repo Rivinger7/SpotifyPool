@@ -25,41 +25,99 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using BusinessLogicLayer.Setting.Microservices.Jira;
+using Business_Logic_Layer.Services_Interface.InMemoryCache;
+using BusinessLogicLayer.Implement.Services.InMemoryCache;
+using Business_Logic_Layer.Services_Interface.Users;
+using BusinessLogicLayer.Implement.Services.Users;
+using MongoDB.Driver;
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
     public static class BusinessDependencyInjection
     {
-        public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        public static void AddBusinessInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+            var stopwatch = new Stopwatch();
+
             // Register IHttpContextAccessor
+            stopwatch.Start();
             services.AddHttpContextAccessor();
+            stopwatch.Stop();
+            Console.WriteLine($"AddHttpContextAccessor took {stopwatch.ElapsedMilliseconds} ms");
 
             // Database
+            stopwatch.Restart();
             services.AddDatabase(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddDatabase took {stopwatch.ElapsedMilliseconds} ms");
 
             // AutoMapper
+            stopwatch.Restart();
             services.AddAutoMapper();
+            stopwatch.Stop();
+            Console.WriteLine($"AddAutoMapper took {stopwatch.ElapsedMilliseconds} ms");
 
-            // Services
+            // Register other services...
+            stopwatch.Restart();
             services.AddServices(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddServices took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
             services.AddEmailSender(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddEmailSender took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
             services.AddJWT(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddJWT took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
             services.AddAuthorization();
+            stopwatch.Stop();
+            Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
             services.AddJiraClient(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddJiraClient took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
             services.AddIdentity(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddIdentity took {stopwatch.ElapsedMilliseconds} ms");
 
-            // Microservices
+            // Cloudinary
+            stopwatch.Restart();
             services.AddCloudinary(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddCloudinary took {stopwatch.ElapsedMilliseconds} ms");
 
-            // Repositories
-            //services.AddRepositories();
+            // Caching (In-memory cache)
+            stopwatch.Restart();
+            services.AddMemoryCache(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        public static void AddMemoryCache(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddMemoryCache();
+            services.AddScoped<ICacheCustom, CacheCustom>();
         }
 
         public static void AddServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Register BLL services
+
+            // Authentication
             services.AddScoped<IAuthenticationBLL, AuthenticationBLL>();
+
+            // User
+            services.AddScoped<IUserBLL, UserBLL>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
@@ -221,8 +279,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 Api = { Secure = true }
             };
 
-            // Register Cloudinary in DI container as a scoped service
+            // Register the Cloudinary with DI
             services.AddScoped(provider => cloudinary);
+
+            // Register Cloudinary in DI container as a scoped service
             services.AddScoped<CloudinaryService>();
         }
 
@@ -248,8 +308,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 DatabaseName = databaseName
             };
 
-            // Register the MongoDB context (or client)
+            // Register the MongoDBSetting with DI
             services.AddSingleton(mongoDbSettings);
+
+            // Register MongoClient as singleton, sharing the connection across all usages
+            services.AddSingleton<IMongoClient>(sp =>
+            {
+                return new MongoClient(mongoDbSettings.ConnectionString);
+            });
+
+            // Register the MongoDB context (or client)
             services.AddSingleton<SpotifyPoolDBContext>();
         }
 

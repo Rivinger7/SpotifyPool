@@ -11,6 +11,7 @@
     <Folder Include="Service Model Views\Forgot Password\Response\" />
     <Folder Include="Service Model Views\JWTs\Response\" />
     <Folder Include="Service Model Views\Reset Password\Response\" />
+    <Folder Include="Service Model Views\Users\Request\" />
   </ItemGroup>
 
   <ItemGroup>

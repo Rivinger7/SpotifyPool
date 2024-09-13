@@ -2,20 +2,18 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
-using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using BusinessLogicLayer.ModelView;
 
-namespace SpotifyPool.Controllers
+namespace SpotifyPool.Controllers.Authentication
 {
     [Route("api/authentication")]
     [ApiController]
-    public class AuthenticationController(IAuthenticationBLL authenticationBLL, CloudinaryService cloudinaryService) : ControllerBase
+    public class AuthenticationController(IAuthenticationBLL authenticationBLL) : ControllerBase
     {
         private readonly IAuthenticationBLL authenticationBLL = authenticationBLL;
-        private readonly CloudinaryService cloudinaryService = cloudinaryService;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)
@@ -80,50 +78,6 @@ namespace SpotifyPool.Controllers
         public IActionResult Logout()
         {
             return Ok(new { message = "Logged out successfully" });
-        }
-
-
-        // Testing
-        [HttpPost("upload-image")]
-        public IActionResult UploadImage(IFormFile imageFile)
-        {
-            var uploadResult = cloudinaryService.UploadImage(imageFile);
-            return Ok(new { message = "Upload Image Successfully", uploadResult });
-        }
-
-        [HttpPost("upload-video")]
-        public IActionResult UploadVideo(IFormFile videoFile)
-        {
-            var uploadResult = cloudinaryService.UploadVideo(videoFile);
-            return Ok(new { message = "Upload Video Successfully", uploadResult });
-        }
-
-        [HttpGet("get-image/{publicID}")]
-        public IActionResult GetImageResult(string publicID)
-        {
-            var getResult = cloudinaryService.GetImageResult(publicID);
-            return Ok(new { message = "Get Image Successfully", getResult });
-        }
-
-        [HttpGet("get-video/{publicID}")]
-        public IActionResult GetVideoResult(string publicID)
-        {
-            var getResult = cloudinaryService.GetVideoResult(publicID);
-            return Ok(new { message = "Get Video Successfully", getResult });
-        }
-
-        [HttpDelete("delete-image/{publicID}")]
-        public IActionResult DeleteImage(string publicID)
-        {
-            var deleteResult = cloudinaryService.DeleteImage(publicID);
-            return Ok(new { message = $"Delete Image Successfully with Public ID {publicID}", deleteResult });
-        }
-
-        [HttpDelete("delete-video/{publicID}")]
-        public IActionResult DeleteVideo(string publicID)
-        {
-            var deleteResult = cloudinaryService.DeleteVideo(publicID);
-            return Ok(new { message = $"Delete Video Successfully with Public ID {publicID}", deleteResult });
         }
 
         [HttpPost("forgot-password")]

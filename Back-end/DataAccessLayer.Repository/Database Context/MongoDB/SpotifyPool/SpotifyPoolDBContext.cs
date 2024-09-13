@@ -5,17 +5,10 @@ using DataAccessLayer.Repository.Entities;
 
 namespace DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool
 {
-    public class SpotifyPoolDBContext
+    public class SpotifyPoolDBContext(MongoDBSetting mongoDBSettings, IMongoClient mongoClient, ILogger<SpotifyPoolDBContext> logger)
     {
-        private readonly IMongoDatabase _database;
-        private readonly ILogger<SpotifyPoolDBContext> _logger;
-
-        public SpotifyPoolDBContext(MongoDBSetting mongoDBSettings, ILogger<SpotifyPoolDBContext> logger)
-        {
-            var mongoClient = new MongoClient(mongoDBSettings.ConnectionString);
-            _database = mongoClient.GetDatabase(mongoDBSettings.DatabaseName);
-            _logger = logger;
-        }
+        private readonly IMongoDatabase _database = mongoClient.GetDatabase(mongoDBSettings.DatabaseName);
+        private readonly ILogger<SpotifyPoolDBContext> _logger = logger;
 
         public IMongoCollection<User> Users => _database.GetCollection<User>("users");
         public IMongoCollection<Playlist> Playlists => _database.GetCollection<Playlist>("Playlist");

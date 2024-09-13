@@ -20,7 +20,6 @@
 
 	<ItemGroup>
 		<Folder Include="3. Middleware\" />
-		<Folder Include="4. Application\" />
 	</ItemGroup>
 
 	<ItemGroup>

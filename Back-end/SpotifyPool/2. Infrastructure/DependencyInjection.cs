@@ -21,7 +21,7 @@ namespace SpotifyPool.Infrastructure
             _logger = loggerFactory.CreateLogger("DependencyInjectionLogger");
         }
 
-        public static void AddConfiguration(this IServiceCollection services, IConfiguration configuration)
+        public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             // API Config
             services.ConfigRoute();

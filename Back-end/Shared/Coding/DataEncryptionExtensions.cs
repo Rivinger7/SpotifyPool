@@ -27,7 +27,7 @@ namespace Utility.Coding
 
         public static string ToSHA512Hash(this string password, string? saltKey)
         {
-            SHA512Managed sha512 = new SHA512Managed();
+            SHA512Managed sha512 = new();
             byte[] encryptedSHA512 = sha512.ComputeHash(Encoding.UTF8.GetBytes(string.Concat(password, saltKey)));
             sha512.Clear();
 
@@ -70,22 +70,20 @@ namespace Utility.Coding
 
         public static string Encrypt(string plainText, in string key = "DONOTTOUCHOURPASSWORD!!!", in string iv = "1234567890123456")
         {
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = Encoding.UTF8.GetBytes(key);
-                aes.IV = Encoding.UTF8.GetBytes(iv);
+            using Aes aes = Aes.Create();
+            aes.Key = Encoding.UTF8.GetBytes(key);
+            aes.IV = Encoding.UTF8.GetBytes(iv);
 
-                using (MemoryStream ms = new MemoryStream())
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
                 {
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                    using (StreamWriter sw = new StreamWriter(cs))
                     {
-                        using (StreamWriter sw = new StreamWriter(cs))
-                        {
-                            sw.Write(plainText);
-                        }
+                        sw.Write(plainText);
                     }
-                    return Convert.ToBase64String(ms.ToArray());
                 }
+                return Convert.ToBase64String(ms.ToArray());
             }
         }
 
@@ -137,13 +135,11 @@ namespace Utility.Coding
         {
             byte[] keyByte = Encoding.UTF8.GetBytes(key);
             byte[] messageBytes = Encoding.UTF8.GetBytes(inputData);
-            using (var hmacsha256 = new HMACSHA256(keyByte))
-            {
-                byte[] hashmessage = hmacsha256.ComputeHash(messageBytes);
-                string hex = BitConverter.ToString(hashmessage);
-                hex = hex.Replace("-", "").ToLower();
-                return hex;
-            }
+            using var hmacsha256 = new HMACSHA256(keyByte);
+            byte[] hashmessage = hmacsha256.ComputeHash(messageBytes);
+            string hex = BitConverter.ToString(hashmessage);
+            hex = hex.Replace("-", "").ToLower();
+            return hex;
         }
 
         // Mine

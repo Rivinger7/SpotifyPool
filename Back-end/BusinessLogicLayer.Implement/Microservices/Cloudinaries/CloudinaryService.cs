@@ -1,17 +1,17 @@
 ﻿using CloudinaryDotNet.Actions;
 using CloudinaryDotNet;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using Utility.Coding;
-using BusinessLogicLayer.Setting.Microservices.Cloudinaries;
 using BusinessLogicLayer.Enum.Microservices.Cloudinary;
+using Business_Logic_Layer.Services_Interface.InMemoryCache;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
-    public class CloudinaryService(Cloudinary cloudinary)
+    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache)
     {
         private readonly Cloudinary _cloudinary = cloudinary;
+        private readonly ICacheCustom _cache = cache;
 
         public ImageUploadResult UploadImage(IFormFile imageFile, string tags = "AvatarUserProfile")
         {
@@ -101,9 +101,18 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         }
 
         // Get Image from Server
-        public GetResourceResult? GetImageResult(string publicID)
+        public GetResourceResult? GetImageResult(string publicID, bool isCache = false)
         {
-            GetResourceResult? getResult = _cloudinary.GetResource(publicID);
+            GetResourceResult? getResult = null;
+
+            if (isCache)
+            {
+                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(publicID));
+            }
+            else
+            {
+                getResult = _cloudinary.GetResource(publicID);
+            }
 
             if ((int)getResult.StatusCode != StatusCodes.Status200OK)
             {
@@ -114,13 +123,22 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         }
 
         // Get Video from Server
-        public GetResourceResult? GetVideoResult(string publicID)
+        public GetResourceResult? GetVideoResult(string publicID, bool isCache = false)
         {
-            GetResourceResult? getResult = _cloudinary.GetResource(publicID);
+            GetResourceResult? getResult = null;
+
+            if (isCache)
+            {
+                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(publicID));
+            }
+            else
+            {
+                getResult = _cloudinary.GetResource(publicID);
+            }
 
             if ((int)getResult.StatusCode != StatusCodes.Status200OK)
             {
-                throw new DataNotFoundCustomException($"Not found any Image with Public ID {publicID}");
+                throw new DataNotFoundCustomException($"Not found any Video with Public ID {publicID}");
             }
 
             return getResult;
@@ -147,6 +165,9 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 throw new DataNotFoundCustomException($"Not found any Image with Public ID {publicID}");
             }
 
+            // Xóa cache nếu tồn tại bằng cách sử dụng hàm RemoveCache
+            _cache.RemoveCache<GetResourceResult>(publicID); // Xóa cache cho kiểu GetResourceResult với khóa là publicID
+
             return deletionResult;
         }
 
@@ -166,6 +187,9 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             {
                 throw new DataNotFoundCustomException($"Not found any Image with Public ID {publicID}");
             }
+
+            // Xóa cache nếu tồn tại bằng cách sử dụng hàm RemoveCache
+            _cache.RemoveCache<GetResourceResult>(publicID); // Xóa cache cho kiểu GetResourceResult với khóa là publicID
 
             return deletionResult;
         }
