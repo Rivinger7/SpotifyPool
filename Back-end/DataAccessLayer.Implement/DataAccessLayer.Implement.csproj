@@ -13,9 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BusinessLogicLayer.ModelView\BusinessLogicLayer.ModelView.csproj" />
     <ProjectReference Include="..\DataAccessLayer.Interface\DataAccessLayer.Interface.csproj" />
-    <ProjectReference Include="..\Shared\Utility.csproj" />
   </ItemGroup>
 
 </Project>

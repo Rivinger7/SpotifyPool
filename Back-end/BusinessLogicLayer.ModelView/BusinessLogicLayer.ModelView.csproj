@@ -14,8 +14,4 @@
     <Folder Include="Service Model Views\Users\Request\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Shared\Utility.csproj" />
-  </ItemGroup>
-
 </Project>
