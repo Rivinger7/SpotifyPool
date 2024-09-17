@@ -182,7 +182,7 @@ body,
 	padding: 10px 24px 10px 16px;
 }
 
-/* ==== MAIN CONTENT ==== */
+/* ==== MAIN CONTENT -- HOME ==== */
 .main-content-header-style {
 	-webkit-transition: background-color 0.25s, opacity 0.4s ease-out;
 	transition: background-color 0.25s, opacity 0.4s ease-out;
@@ -197,4 +197,10 @@ body,
 .box-btn:hover span {
 	transform: scale(1.04);
 	background: #3be477;
+}
+
+/* ==== SEARCH ==== */
+.search-container {
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	grid-auto-rows: min-content;
 }

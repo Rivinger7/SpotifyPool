@@ -1,10 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 
 const LeftSideBar = () => {
@@ -30,12 +25,7 @@ const LeftSideBar = () => {
 					</div>
 					<ul className={"p-2 pl-3 pr-3"}>
 						<li className={"p-1 pl-3 pr-3"}>
-							<Link
-								to={"/"}
-								className={
-									"flex gap-5 h-10 items-center font-bold"
-								}
-							>
+							<Link to={"/"} className={"flex gap-5 h-10 items-center font-bold"}>
 								<svg
 									data-encore-id="icon"
 									role="img"
@@ -51,7 +41,7 @@ const LeftSideBar = () => {
 						</li>
 						<li className={"p-1 pl-3 pr-3"}>
 							<Link
-								to={"/"}
+								to={"/search"}
 								className={
 									"flex gap-5 h-10 items-center font-bold text-[#b3b3b3] hover:text-white transition-all"
 								}
@@ -77,39 +67,29 @@ const LeftSideBar = () => {
 					}
 				>
 					{/* ==== YOUR LIBRARY ====  */}
-					<div
-						className={
-							"left-sidebar-library flex flex-col flex-1 w-full"
-						}
-					>
+					<div className={"left-sidebar-library flex flex-col flex-1 w-full"}>
 						<div className="library-header">
 							<header className={"p-2 pl-4 pr-4"}>
 								<div className={"flex justify-between"}>
 									<div className={"flex items-center"}>
-										<TooltipProvider>
+										<TooltipProvider delayDuration={0}>
 											<Tooltip>
-												<TooltipTrigger>
-													<button
-														className={
-															"flex items-center p-1 pl-2 pr-2 gap-3 h-10 font-bold text-[#b3b3b3] hover:text-white transition-all"
-														}
+												<TooltipTrigger
+													className={
+														"flex items-center p-1 pl-2 pr-2 gap-3 h-10 font-bold text-[#b3b3b3] hover:text-white transition-all"
+													}
+												>
+													<svg
+														data-encore-id="icon"
+														role="img"
+														aria-hidden="true"
+														className="w-6"
+														fill={"currentColor"}
+														viewBox="0 0 24 24"
 													>
-														<svg
-															data-encore-id="icon"
-															role="img"
-															aria-hidden="true"
-															className="w-6"
-															fill={
-																"currentColor"
-															}
-															viewBox="0 0 24 24"
-														>
-															<path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6.464a1 1 0 0 0-.5-.866l-6-3.464zM9 2a1 1 0 0 0-1 1v18a1 1 0 1 0 2 0V3a1 1 0 0 0-1-1z"></path>
-														</svg>
-														<span>
-															Your Library
-														</span>
-													</button>
+														<path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6.464a1 1 0 0 0-.5-.866l-6-3.464zM9 2a1 1 0 0 0-1 1v18a1 1 0 1 0 2 0V3a1 1 0 0 0-1-1z"></path>
+													</svg>
+													<span>Your Library</span>
 												</TooltipTrigger>
 												<TooltipContent>
 													<p>Collapse your library</p>
@@ -118,15 +98,13 @@ const LeftSideBar = () => {
 										</TooltipProvider>
 									</div>
 									<span className={"block relative"}>
-										<TooltipProvider>
+										<TooltipProvider delayDuration={0}>
 											<Tooltip>
 												<TooltipTrigger
 													className={
 														"hover:bg-[#1f1f1f] rounded-full p-2 font-bold text-[#b3b3b3] hover:text-white transition-all"
 													}
-													onClick={
-														handleCreatePlaylist
-													}
+													onClick={handleCreatePlaylist}
 												>
 													<svg
 														data-encore-id="icon"
@@ -140,10 +118,7 @@ const LeftSideBar = () => {
 													</svg>
 												</TooltipTrigger>
 												<TooltipContent>
-													<p>
-														Create playlist or
-														folder
-													</p>
+													<p>Create playlist or folder</p>
 												</TooltipContent>
 											</Tooltip>
 										</TooltipProvider>
@@ -154,9 +129,7 @@ const LeftSideBar = () => {
 												}
 											>
 												<div
-													onClick={
-														handleCreatePlaylist
-													}
+													onClick={handleCreatePlaylist}
 													className={
 														"flex items-center justify-between p-3 cursor-default min-w-[190px] h-10 text-[#b3b3b3] hover:text-white transition-all hover:bg-[hsla(0,0%,100%,.1)]"
 													}
@@ -178,15 +151,11 @@ const LeftSideBar = () => {
 									</span>
 								</div>
 							</header>
-							<div
-								className={
-									"flex items-center gap-2 m-2 ml-4 mr-4"
-								}
-							></div>
+							<div className={"flex items-center gap-2 m-2 ml-4 mr-4"}></div>
 						</div>
 						{/*  ==== LIBRARY BODY ==== */}
-						<div className="library-body h-full">
-							<div className="library-body-container flex flex-col h-full gap-2 min-h-full p-2 pt-0">
+						<div className="h-full library-body">
+							<div className="flex flex-col h-full min-h-full gap-2 p-2 pt-0 library-body-container">
 								<section className="flex flex-col bg-[#1f1f1f] justify-center gap-5 rounded-lg m-2 ml-0 mr-0 p-4 pl-5 pr-5">
 									<div className="flex flex-col gap-2">
 										<span className="font-bold">
@@ -197,7 +166,7 @@ const LeftSideBar = () => {
 										</span>
 									</div>
 									<div className="library-body-btn">
-										<button className="bg-transparent border-0 cursor-pointer text-center touch-manipulation transition-all align-middle rounded-full">
+										<button className="text-center align-middle transition-all bg-transparent border-0 rounded-full cursor-pointer touch-manipulation">
 											<span className="bg-white text-black flex items-center justify-center rounded-full font-bold p-1 pl-4 pr-4 text-[14px] h-8">
 												Create playlist
 											</span>
@@ -210,12 +179,11 @@ const LeftSideBar = () => {
 											Let's find some podcasts to follow
 										</span>
 										<span className="text-[14px]">
-											We'll keep you updated on new
-											episodes
+											We'll keep you updated on new episodes
 										</span>
 									</div>
 									<div className="library-body-btn">
-										<button className="bg-transparent border-0 cursor-pointer text-center touch-manipulation transition-all align-middle rounded-full">
+										<button className="text-center align-middle transition-all bg-transparent border-0 rounded-full cursor-pointer touch-manipulation">
 											<span className="bg-white text-black flex items-center justify-center rounded-full font-bold p-1 pl-4 pr-4 text-[14px] h-8">
 												Browse podcasts
 											</span>
@@ -228,43 +196,37 @@ const LeftSideBar = () => {
 					{/* ==== SIDEBAR FOOTER ==== */}
 					<div className={"left-sidebar-footer"}>
 						<div className="left-sidebar-legal-links text-[#b3b3b3] text-[11px] m-8 ml-0 mr-0 p-6 pt-0 pb-0">
-							<div className="linklists-container flex flex-wrap">
+							<div className="flex flex-wrap linklists-container">
 								<div className="link-container">
 									<Link
 										to={
 											"https://www.spotify.com/vn-vi/legal/end-user-agreement/"
 										}
-										className="text-link leading-7 mr-4"
+										className="mr-4 leading-7 text-link"
 									>
 										<span>Legal</span>
 									</Link>
 								</div>
 								<div className="link-container">
 									<Link
-										to={
-											"https://www.spotify.com/vn-vi/safetyandprivacy"
-										}
-										className="text-link leading-7 mr-4"
+										to={"https://www.spotify.com/vn-vi/safetyandprivacy"}
+										className="mr-4 leading-7 text-link"
 									>
 										<span>Safety & Privacy Center</span>
 									</Link>
 								</div>
 								<div className="link-container">
 									<Link
-										to={
-											"https://www.spotify.com/vn-vi/legal/privacy-policy/"
-										}
-										className="text-link leading-7 mr-4"
+										to={"https://www.spotify.com/vn-vi/legal/privacy-policy/"}
+										className="mr-4 leading-7 text-link"
 									>
 										<span>Privacy Policy</span>
 									</Link>
 								</div>
 								<div className="link-container">
 									<Link
-										to={
-											"https://www.spotify.com/vn-vi/legal/cookies-policy/"
-										}
-										className="text-link leading-7 mr-4"
+										to={"https://www.spotify.com/vn-vi/legal/cookies-policy/"}
+										className="mr-4 leading-7 text-link"
 									>
 										<span>Cookies</span>
 									</Link>
@@ -274,26 +236,22 @@ const LeftSideBar = () => {
 										to={
 											"https://www.spotify.com/vn-vi/legal/privacy-policy/#s3"
 										}
-										className="text-link leading-7 mr-4"
+										className="mr-4 leading-7 text-link"
 									>
 										<span>About Ads</span>
 									</Link>
 								</div>
 								<div className="link-container">
 									<Link
-										to={
-											"https://www.spotify.com/vn-vi/accessibility"
-										}
-										className="text-link leading-7 mr-4"
+										to={"https://www.spotify.com/vn-vi/accessibility"}
+										className="mr-4 leading-7 text-link"
 									>
 										<span>Accessibility</span>
 									</Link>
 								</div>
 							</div>
 							<Link
-								to={
-									"https://www.spotify.com/vn-vi/legal/cookies-policy/"
-								}
+								to={"https://www.spotify.com/vn-vi/legal/cookies-policy/"}
 								className={"hover:underline leading-7"}
 								target={"_blank"}
 								rel={"noopener"}
@@ -301,7 +259,7 @@ const LeftSideBar = () => {
 								<span>Cookies</span>
 							</Link>
 						</div>
-						<div className="left-sidebar-language mb-8 p-6 pt-0 pb-0">
+						<div className="p-6 pt-0 pb-0 mb-8 left-sidebar-language">
 							<button className="rounded-full border border-[#7c7c7c] p-4 pt-1 pb-1 font-bold cursor-pointer inline-flex items-center justify-center gap-1 text-[14px]">
 								<span>
 									<svg

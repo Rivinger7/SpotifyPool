@@ -8,7 +8,7 @@ interface AreaHeaderProps {
 const AreaHeader = ({ children }: AreaHeaderProps) => {
 	return (
 		<div className="area-headers">
-			{/* // NOTE: The children prop is used to display the title of the area */}
+			{/* Display title */}
 			<div className="text-2xl font-bold">{children}</div>
 			<div>
 				<Link to={"/"} className="hover:underline text-[#b3b3b3]">
