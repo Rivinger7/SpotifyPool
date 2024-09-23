@@ -3,7 +3,6 @@ using CloudinaryDotNet;
 using Microsoft.AspNetCore.Http;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using Utility.Coding;
-using BusinessLogicLayer.Enum.Microservices.Cloudinary;
 using Business_Logic_Layer.Services_Interface.InMemoryCache;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
@@ -20,11 +19,20 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 throw new ArgumentNullCustomException(nameof(imageFile), "No file uploaded");
             }
 
-            // Lấy đuôi file (File Extension)
-            string? fileExtension = Path.GetExtension(imageFile.FileName).ToLower().TrimStart('.');
+            #region Kiểm tra bằng đuôi file (.ext)
+            //// Lấy đuôi file (File Extension)
+            //string? fileExtension = Path.GetExtension(imageFile.FileName).ToLower().TrimStart('.');
 
-            // Kiểm tra nếu phần mở rộng có tồn tại trong enum ImageExtension
-            if (!System.Enum.TryParse(fileExtension, true, out ImageExtension _))
+            //// Kiểm tra nếu phần mở rộng có tồn tại trong enum ImageExtension
+            //if (!System.Enum.TryParse(fileExtension, true, out ImageExtension _))
+            //{
+            //    throw new BadRequestCustomException("Unsupported file type");
+            //}
+            #endregion
+
+            // Kiểm tra bằng content-type (image/webp)
+            string fileType = imageFile.ContentType.Split('/').First();
+            if (fileType != "image")
             {
                 throw new BadRequestCustomException("Unsupported file type");
             }
@@ -42,9 +50,11 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             using Stream? stream = imageFile.OpenReadStream();
             ImageUploadParams uploadParams = new()
             {
+                Folder = "Image/Test",
                 File = new(imageFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
-                PublicId = $"{hashedData}_{timestamp}",
+                PublicId = $"{Uri.EscapeDataString(hashedData + '_' + timestamp)}",
+                DisplayName = imageFile.FileName,
                 UniqueFilename = false, // Đã custom nên không cần Unique từ Server nữa
                 Tags = tags,
                 Format = "webp",
@@ -52,49 +62,74 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             };
 
             ImageUploadResult? uploadResult = _cloudinary.Upload(uploadParams);
+
+            if ((int)uploadResult.StatusCode != StatusCodes.Status200OK)
+            {
+                throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Status);
+            }
+
             Console.WriteLine(uploadResult.JsonObj);
 
             return uploadResult;
         }
 
-        public VideoUploadResult UploadVideo(IFormFile videoFile)
+        public VideoUploadResult UploadTrack(IFormFile trackFile)
         {
-            if (videoFile is null || videoFile.Length == 0)
+            if (trackFile is null || trackFile.Length == 0)
             {
-                throw new ArgumentNullCustomException(nameof(videoFile), "No file uploaded");
+                throw new ArgumentNullCustomException(nameof(trackFile), "No file uploaded");
             }
 
-            // Lấy đuôi file (File Extension)
-            string? fileExtension = Path.GetExtension(videoFile.FileName).ToLower().TrimStart('.');
+            #region Kiểm tra bằng đuôi file (.ext)
+            //// Lấy đuôi file (File Extension)
+            //string? fileExtension = Path.GetExtension(trackFile.FileName).ToLower().TrimStart('.');
 
-            // Kiểm tra nếu phần mở rộng có tồn tại trong enum ImageExtension
-            if (!System.Enum.TryParse(fileExtension, true, out VideoExtension _))
+            //// Kiểm tra nếu phần mở rộng có tồn tại trong enum ImageExtension
+            //if (!System.Enum.TryParse(fileExtension, true, out VideoExtension _))
+            //{
+            //    throw new BadRequestCustomException("Unsupported file type");
+            //}
+            #endregion
+
+            // Kiểm tra bằng content-type
+            string fileType = trackFile.ContentType.Split('/').First();
+            switch(fileType)
             {
-                throw new BadRequestCustomException("Unsupported file type");
+                case "audio": break;
+                case "video": break;
+                default: throw new BadRequestCustomException("Unsupported file type");
             }
 
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string userID = "testing";
 
             // Hashing Metadata
-            string hashedData = DataEncryptionExtensions.Encrypt($"video_{userID}");
+            string hashedData = DataEncryptionExtensions.Encrypt($"track_{userID}");
 
             // Nếu người dùng đang ở khác muối giờ thì cách này hiệu quả hơn
             // Không nhất thiết phải là UTC+7 vì còn tùy thuộc theo hệ thống trên máy của người dùng
             string timestamp = DateTime.UtcNow.Ticks.ToString();
 
-            using Stream? stream = videoFile.OpenReadStream();
+            using Stream? stream = trackFile.OpenReadStream();
             VideoUploadParams uploadParams = new()
             {
-                File = new(videoFile.FileName, stream), // new FileDescription()
+                Folder = "Audio/Test",
+                File = new(trackFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
-                PublicId = $"{hashedData}_{timestamp}",
+                PublicId = $"{Uri.EscapeDataString(hashedData + '_' + timestamp)}",
+                DisplayName = trackFile.FileName,
                 UniqueFilename = false, // Đã custom nên không cần Unique từ Server nữa
-                Format = "mp4",
+                Format = "mp3",
                 Overwrite = true
             };
 
             VideoUploadResult? uploadResult = _cloudinary.Upload(uploadParams);
+
+            if((int)uploadResult.StatusCode != StatusCodes.Status200OK)
+            {
+                throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Status);
+            }
+
             Console.WriteLine(uploadResult.JsonObj);
 
             return uploadResult;
@@ -105,13 +140,18 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         {
             GetResourceResult? getResult = null;
 
+            GetResourceParams? getResourceParams = new(publicID)
+            {
+                ResourceType = ResourceType.Image,
+            };
+
             if (isCache)
             {
-                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(publicID));
+                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(getResourceParams));
             }
             else
             {
-                getResult = _cloudinary.GetResource(publicID);
+                getResult = _cloudinary.GetResource(getResourceParams);
             }
 
             if ((int)getResult.StatusCode != StatusCodes.Status200OK)
@@ -123,22 +163,27 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         }
 
         // Get Video from Server
-        public GetResourceResult? GetVideoResult(string publicID, bool isCache = false)
+        public GetResourceResult? GetTrackResult(string publicID, bool isCache = false)
         {
             GetResourceResult? getResult = null;
 
+            GetResourceParams getResourceParams = new(publicID)
+            {
+                ResourceType = ResourceType.Video  // Explicitly set the resource type to video
+            };
+
             if (isCache)
             {
-                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(publicID));
+                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(getResourceParams));
             }
             else
             {
-                getResult = _cloudinary.GetResource(publicID);
+                getResult = _cloudinary.GetResource(getResourceParams);
             }
 
             if ((int)getResult.StatusCode != StatusCodes.Status200OK)
             {
-                throw new DataNotFoundCustomException($"Not found any Video with Public ID {publicID}");
+                throw new DataNotFoundCustomException($"Not found any Track with Public ID {publicID}");
             }
 
             return getResult;
@@ -166,13 +211,13 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             }
 
             // Xóa cache nếu tồn tại bằng cách sử dụng hàm RemoveCache
-            _cache.RemoveCache<GetResourceResult>(publicID); // Xóa cache cho kiểu GetResourceResult với khóa là publicID
+            //_cache.RemoveCache<GetResourceResult>(publicID); // Xóa cache cho kiểu GetResourceResult với khóa là publicID
 
             return deletionResult;
         }
 
         // Delete Video from Server
-        public DeletionResult? DeleteVideo(string publicID)
+        public DeletionResult? DeleteTrack(string publicID)
         {
             DeletionParams deletionParams = new(publicID)
             {
@@ -189,7 +234,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             }
 
             // Xóa cache nếu tồn tại bằng cách sử dụng hàm RemoveCache
-            _cache.RemoveCache<GetResourceResult>(publicID); // Xóa cache cho kiểu GetResourceResult với khóa là publicID
+            //_cache.RemoveCache<GetResourceResult>(publicID); // Xóa cache cho kiểu GetResourceResult với khóa là publicID
 
             return deletionResult;
         }

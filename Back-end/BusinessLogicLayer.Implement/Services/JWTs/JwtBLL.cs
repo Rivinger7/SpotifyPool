@@ -116,7 +116,8 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         /// <param name="refreshToken"></param>
         public void GenerateAccessToken(IEnumerable<Claim> claims, User user, out string accessToken, out string refreshToken)
         {
-            ObjectId userID = user.Id;
+            //ObjectId userID = user.SpotifyId;
+            string userID = user.Id;
 
             //generate access token and refresh token
             accessToken = GenerateAccessToken(claims);
@@ -178,7 +179,8 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
             string userIDString = principal.Identity?.Name ?? throw new ArgumentException("User's ID is not found in any session"); //this is mapped to the Name claim by default
 
-            ObjectId userID = ObjectId.Parse(userIDString);
+            //ObjectId userID = ObjectId.Parse(userIDString);
+            string userID = userIDString;
 
             User retrieveUser = _context.Users.Find(user => user.Id == userID).FirstOrDefault() ?? throw new ArgumentException("User's ID is not found");
 

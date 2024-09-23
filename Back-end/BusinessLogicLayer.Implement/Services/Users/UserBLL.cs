@@ -60,7 +60,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     FullName = users.FullName,
                     Gender = users.Gender,
                     Birthdate = users.Birthdate,
-                    Image = users.Image,
+                    //Image = users.Image,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
                     Status = users.Status
                 })
@@ -76,7 +76,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     FullName = users.FullName,
                     Gender = users.Gender,
                     Birthdate = users.Birthdate,
-                    Image = users.Image,
+                    //Image = users.Image,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
                     Status = users.Status
                 })
@@ -89,34 +89,34 @@ namespace BusinessLogicLayer.Implement.Services.Users
 
         public async Task<UserResponseModel> GetUserByIDAsync(string id, bool isCache = false)
         {
-            ObjectId objectId = ObjectId.Parse(id);
+            //ObjectId objectId = ObjectId.Parse(id);
 
             UserResponseModel user;
 
             if (isCache)
             {
-                user = await _cache.GetOrSetAsync(id.ToString(), () => _context.Users.Find(user => user.Id == objectId).Project(user => new UserResponseModel
+                user = await _cache.GetOrSetAsync(id.ToString(), () => _context.Users.Find(user => user.Id == id).Project(user => new UserResponseModel
                 {
                     UserId = user.Id.ToString(),
                     Role = user.Role,
                     FullName = user.FullName,
                     Gender = user.Gender,
                     Birthdate = user.Birthdate,
-                    Image = user.Image,
+                    //Image = user.Images,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
                     Status = user.Status
                 }).FirstOrDefaultAsync());
             }
             else
             {
-                user = await _context.Users.Find(user => user.Id == objectId).Project(user => new UserResponseModel
+                user = await _context.Users.Find(user => user.Id == id).Project(user => new UserResponseModel
                 {
                     UserId = user.Id.ToString(),
                     Role = user.Role,
                     FullName = user.FullName,
                     Gender = user.Gender,
                     Birthdate = user.Birthdate,
-                    Image = user.Image,
+                    //Image = user.Image,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
                     Status = user.Status
 

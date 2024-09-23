@@ -1,14 +1,32 @@
 ﻿using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
+using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SpotifyPool.Controllers.Media
 {
     [Route("api/media")]
     [ApiController]
-    public class MediaController(CloudinaryService cloudinaryService) : ControllerBase
+    public class MediaController(CloudinaryService cloudinaryService, ISpotify spotifyService) : ControllerBase
     {
         private readonly CloudinaryService cloudinaryService = cloudinaryService;
+        private readonly ISpotify _spotifyService = spotifyService;
+
+        #region Cloudinary
+        [HttpPost("test-content-type-file")]
+        public IActionResult GetContentTypeFile(IFormFile formFile)
+        {
+            if (formFile == null)
+            {
+                return BadRequest("ehhh");
+            }
+
+            var contentType = formFile.ContentType;
+
+            string[] type = contentType.Split("/");
+
+            return Ok(new {ContentType = contentType, Type = type});
+        }
 
         [HttpPost("upload-image")]
         public IActionResult UploadImage(IFormFile imageFile)
@@ -17,10 +35,10 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = "Upload Image Successfully", uploadResult });
         }
 
-        [HttpPost("upload-video")]
-        public IActionResult UploadVideo(IFormFile videoFile)
+        [HttpPost("upload-track")]
+        public IActionResult UploadTrack(IFormFile trackFile)
         {
-            var uploadResult = cloudinaryService.UploadVideo(videoFile);
+            var uploadResult = cloudinaryService.UploadTrack(trackFile);
             return Ok(new { message = "Upload Video Successfully", uploadResult });
         }
 
@@ -31,11 +49,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = "Get Image Successfully", getResult });
         }
 
-        [HttpGet("get-video/{publicID}")]
-        public IActionResult GetVideoResult(string publicID)
+        [HttpGet("get-track/{publicID}")]
+        public IActionResult GetTrackResult(string publicID)
         {
-            var getResult = cloudinaryService.GetVideoResult(publicID);
-            return Ok(new { message = "Get Video Successfully", getResult });
+            var getResult = cloudinaryService.GetTrackResult(publicID);
+            return Ok(new { message = "Get Track Successfully", getResult });
         }
 
         [HttpDelete("delete-image/{publicID}")]
@@ -45,11 +63,93 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = $"Delete Image Successfully with Public ID {publicID}", deleteResult });
         }
 
-        [HttpDelete("delete-video/{publicID}")]
-        public IActionResult DeleteVideo(string publicID)
+        [HttpDelete("delete-track/{publicID}")]
+        public IActionResult DeleteTrack(string publicID)
         {
-            var deleteResult = cloudinaryService.DeleteVideo(publicID);
-            return Ok(new { message = $"Delete Video Successfully with Public ID {publicID}", deleteResult });
+            var deleteResult = cloudinaryService.DeleteTrack(publicID);
+            return Ok(new { message = $"Delete Track Successfully with Public ID {publicID}", deleteResult });
         }
+        #endregion
+
+        #region Spotify
+        [HttpGet("spotify/authorize")]
+        public IActionResult Authorize()
+        {
+           var result = _spotifyService.Authorize();
+            return Redirect(result);
+        }
+
+        // Step 3: Handle Spotify authorization callback and get the access token
+        [HttpGet("callback")]
+        public async Task<IActionResult> Callback([FromQuery] string code)
+        {
+            if (string.IsNullOrEmpty(code))
+            {
+                return BadRequest("Authorization code not found.");
+            }
+
+            // Exchange the authorization code for an access token
+            var (accessToken, refreshToken) = await _spotifyService.GetAccessTokenAsync(code);
+
+            // Store the access token in the session or return it to the client
+            // For simplicity, we'll just return it as a response here
+            return Ok(new
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            });
+        }
+
+        // Step 4: Get the top tracks
+        [HttpGet("top-tracks")]
+        public async Task<IActionResult> GetTopTracks([FromQuery] string accessToken)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest("Access token is required.");
+            }
+
+            // Use the access token to get top tracks
+            string topTracks = await _spotifyService.GetTopTracksAsync(accessToken);
+
+            return Ok(topTracks); // Return the top tracks as the response
+        }
+
+        [HttpGet("saved-tracks")]
+        public async Task<IActionResult> GetUserSaveTracks([FromQuery] string accessToken, [FromQuery] int limit, [FromQuery] int offset)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest("Access token is required.");
+            }
+
+            var savedTracks = await _spotifyService.GetUserSaveTracksAsync(accessToken, limit, offset);
+            return Ok(savedTracks);
+        }
+
+        [HttpGet("genre-seeds")]
+        public async Task<IActionResult> GetAllGenreSeeds([FromQuery] string accessToken)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest("Access token is required.");
+            }
+
+            await _spotifyService.GetAllGenreSeedsAsync(accessToken);
+            return Ok();
+        }
+
+        [HttpGet("markets")]
+        public async Task<IActionResult> GetAllMarkets([FromQuery] string accessToken)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest("Access token is required.");
+            }
+
+            await _spotifyService.GetAllMarketsAsync(accessToken);
+            return Ok();
+        }
+        #endregion
     }
 }

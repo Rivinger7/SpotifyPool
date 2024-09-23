@@ -32,6 +32,8 @@ using BusinessLogicLayer.Implement.Services.Users;
 using MongoDB.Driver;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Implement.Microservices.Spotify;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -86,7 +88,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             Console.WriteLine($"AddJiraClient took {stopwatch.ElapsedMilliseconds} ms");
 
             stopwatch.Restart();
-            services.AddIdentity(configuration);
+            //services.AddIdentity(configuration);
             stopwatch.Stop();
             Console.WriteLine($"AddIdentity took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -96,11 +98,21 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             stopwatch.Stop();
             Console.WriteLine($"AddCloudinary took {stopwatch.ElapsedMilliseconds} ms");
 
+            // Spotify
+            services.AddSpotify(configuration);
+
             // Caching (In-memory cache)
             stopwatch.Restart();
             services.AddMemoryCache(configuration);
             stopwatch.Stop();
             Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        public static void AddSpotify(this IServiceCollection services, IConfiguration configuration)
+        {
+            // ...
+
+            services.AddScoped<ISpotify, SpotifyService>();
         }
 
         public static void AddMemoryCache(this IServiceCollection services, IConfiguration configuration)
@@ -235,17 +247,17 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             });
         }
 
-        public static void AddIdentity(this IServiceCollection services, IConfiguration configuration)
-        {
-            // Add Identity
-            services.AddIdentity<User, Roles>()
-                .AddMongoDbStores<User, Roles, ObjectId>
-                (
-                    Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING"),
-                    Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME")
-                )
-                .AddDefaultTokenProviders();
-        }
+        //public static void AddIdentity(this IServiceCollection services, IConfiguration configuration)
+        //{
+        //    // Add Identity
+        //    services.AddIdentity<User, Roles>()
+        //        .AddMongoDbStores<User, Roles, ObjectId>
+        //        (
+        //            Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING"),
+        //            Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME")
+        //        )
+        //        .AddDefaultTokenProviders();
+        //}
 
         public static void AddJiraClient(this IServiceCollection services, IConfiguration configuration)
         {

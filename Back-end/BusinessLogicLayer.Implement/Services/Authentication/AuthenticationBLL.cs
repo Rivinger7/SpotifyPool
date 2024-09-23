@@ -32,10 +32,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthenticationBLL> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
+        //private readonly UserManager<User> _userManager;
+        //private readonly SignInManager<User> _signInManager;
 
-        public AuthenticationBLL(ILogger<AuthenticationBLL> logger, IMapper mapper, SpotifyPoolDBContext context, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, UserManager<User> userManager, SignInManager<User> signInManager)
+        public AuthenticationBLL(ILogger<AuthenticationBLL> logger, IMapper mapper, SpotifyPoolDBContext context, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _mapper = mapper;
@@ -44,64 +44,64 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             _emailSender = emailSender;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
-            _userManager = userManager;
-            _signInManager = signInManager;
+            //_userManager = userManager;
+            //_signInManager = signInManager;
         }
 
-        public async Task CreateAccount(RegisterRequestModel registerModel)
-        {
-            string username = registerModel.UserName;
-            string password = registerModel.Password;
-            string email = registerModel.Email;
-            string confirmedPassword = registerModel.ConfirmedPassword;
+        //public async Task CreateAccount(RegisterRequestModel registerModel)
+        //{
+        //    string username = registerModel.UserName;
+        //    string password = registerModel.Password;
+        //    string email = registerModel.Email;
+        //    string confirmedPassword = registerModel.ConfirmedPassword;
 
-            bool isConfirmedPassword = password == confirmedPassword;
-            if (!isConfirmedPassword)
-            {
-                throw new InvalidDataCustomException("Password and Confirmed Password do not match");
-            }
+        //    bool isConfirmedPassword = password == confirmedPassword;
+        //    if (!isConfirmedPassword)
+        //    {
+        //        throw new InvalidDataCustomException("Password and Confirmed Password do not match");
+        //    }
 
-            //string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+        //    //string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-            bool isExistingUser = await _context.Users.Find(user => user.UserName == username).AnyAsync();
-            if (isExistingUser)
-            {
-                throw new DataExistCustomException("UserName already exists");
-            }
+        //    bool isExistingUser = await _context.Users.Find(user => user.UserName == username).AnyAsync();
+        //    if (isExistingUser)
+        //    {
+        //        throw new DataExistCustomException("UserName already exists");
+        //    }
 
-            await CheckAccountExists(registerModel);
+        //    await CheckAccountExists(registerModel);
 
-            // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
-            // Dùng mã hóa cho email khi tạo link
-            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
-            string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
-            string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+        //    // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
+        //    // Dùng mã hóa cho email khi tạo link
+        //    string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
+        //    string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
+        //    string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
 
-            User newUser = new()
-            {
-                UserName = username,
-                //Password = passwordHash,
-                Email = email,
-                PhoneNumber = registerModel.PhoneNumber,
-                Role = "Customer",
-                Status = "Inactive",
-                TokenEmailConfirm = encryptedToken
-            };
+        //    User newUser = new()
+        //    {
+        //        UserName = username,
+        //        //Password = passwordHash,
+        //        Email = email,
+        //        PhoneNumber = registerModel.PhoneNumber,
+        //        Role = "Customer",
+        //        Status = "Inactive",
+        //        TokenEmailConfirm = encryptedToken
+        //    };
 
-            //await _context.Users.InsertOneAsync(newUser);
-            var result = await _userManager.CreateAsync(newUser, password);
+        //    //await _context.Users.InsertOneAsync(newUser);
+        //    var result = await _userManager.CreateAsync(newUser, password);
 
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new BadRequestCustomException($"Cannot handle password: {errors}");
-            }
+        //    if (!result.Succeeded)
+        //    {
+        //        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+        //        throw new BadRequestCustomException($"Cannot handle password: {errors}");
+        //    }
 
-            await _emailSender.SendEmailConfirmationAsync(newUser, "Xác nhận Email", confirmationLink);
+        //    await _emailSender.SendEmailConfirmationAsync(newUser, "Xác nhận Email", confirmationLink);
 
-            // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
+        //    // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
 
-        }
+        //}
 
         private async Task CheckAccountExists(RegisterRequestModel registerModel)
         {
@@ -309,129 +309,154 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return;
         }
 
-        public async Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel)
+        public Task CreateAccount(RegisterRequestModel registerModel)
         {
-            string username = loginModel.Username;
-            string password = loginModel.Password;
-
-            // get user by UserManager
-            User retrieveUser = await _userManager.FindByNameAsync(username)
-                                          ?? throw new DataNotFoundCustomException("UserName or Password is incorrect");
-
-
-
-            switch (retrieveUser.Status.ToLower())
-            {
-                case "inactive": throw new UnAuthorizedCustomException("Not active");
-                case "banned": throw new UnAuthorizedCustomException("Banned");
-            }
-
-
-            SignInResult result = await _signInManager.PasswordSignInAsync(retrieveUser, password, false, false);
-
-
-            if (!result.Succeeded)
-            {
-                throw new BadRequestCustomException("username or password is not correct!");
-            }
-
-            // JWT
-            IEnumerable<Claim> claims =
-                [
-                    new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
-                    new Claim(ClaimTypes.Role, retrieveUser.Role)
-                ];
-
-            //Call method to generate access token
-            _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
-
-            if (accessToken is null)
-            {
-                await Console.Out.WriteLineAsync("accesstoken is null");
-            }
-
-            // New object ModelView
-            AuthenticatedResponseModel authenticationModel = new()
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            };
-
-            return authenticationModel;
-
+            throw new NotImplementedException();
         }
 
-        public async Task ReActiveAccountByToken(string username)
+        public Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel)
         {
-
-            User retrieveUser = await _userManager.FindByNameAsync(username) ?? throw new DataNotFoundCustomException("Not found any user");
-
-            string email = retrieveUser.Email;
-
-            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
-
-            string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
-            string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
-
-            UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, token);
-            UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
-
-            if (tokenResult.ModifiedCount < 1)
-            {
-                throw new CustomException("Update Fail", StatusCodes.Status500InternalServerError, "Found user but can not update");
-            }
-
-            await _emailSender.SendEmailConfirmationAsync(retrieveUser, "Xác nhận Email", confirmationLink);
-
-            return;
+            throw new NotImplementedException();
         }
 
-        public async Task<string> SendTokenForgotPasswordAsync(ForgotPasswordRequestModel model)
+        public Task ReActiveAccountByToken(string username)
         {
-            // Lấy thông tin người dùng
-            User retrieveUser = await _userManager.FindByEmailAsync(model.Email)
-                                                ?? throw new DataNotFoundCustomException("There's no account match with this email!");
-
-            // Tạo token cho forgot password
-            string? token = await _userManager.GeneratePasswordResetTokenAsync(retrieveUser);
-
-            Dictionary<string, string?> parameter = new()
-            {
-                {"token", token },
-                {"email", model.Email }
-            };
-
-            // tạo chuỗi url có 2 tham số trên 
-            string? callback = QueryHelpers.AddQueryString(model.ClientUrl, parameter);
-
-            // tạo message để gửi email
-            Message message = new Message([retrieveUser.Email], "Reset Password", callback);
-
-            await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
-
-
-            return token;
+            throw new NotImplementedException();
         }
 
-        public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
+        public Task<string> SendTokenForgotPasswordAsync(ForgotPasswordRequestModel model)
         {
-            // tìm user theo email
-            User user = await _userManager.FindByEmailAsync(model.Email) ?? throw new DataNotFoundCustomException("Email does not match with any account!");
-
-
-
-            if (model.NewPassword != model.ConfirmPassword)
-            {
-                throw new BadRequestCustomException("New password and confirm password do not match!");
-            }
-
-            // reset password
-            IdentityResult result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
-
-            if (!result.Succeeded)
-            {
-                throw new BadRequestCustomException("Reset password failed!");
-            }
+            throw new NotImplementedException();
         }
+
+        public Task ResetPasswordAsync(ResetPasswordRequestModel model)
+        {
+            throw new NotImplementedException();
+        }
+
+        //public async Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel)
+        //{
+        //    string username = loginModel.Username;
+        //    string password = loginModel.Password;
+
+        //    // get user by UserManager
+        //    User retrieveUser = await _userManager.FindByNameAsync(username)
+        //                                  ?? throw new DataNotFoundCustomException("UserName or Password is incorrect");
+
+
+
+        //    switch (retrieveUser.Status.ToLower())
+        //    {
+        //        case "inactive": throw new UnAuthorizedCustomException("Not active");
+        //        case "banned": throw new UnAuthorizedCustomException("Banned");
+        //    }
+
+
+        //    SignInResult result = await _signInManager.PasswordSignInAsync(retrieveUser, password, false, false);
+
+
+        //    if (!result.Succeeded)
+        //    {
+        //        throw new BadRequestCustomException("username or password is not correct!");
+        //    }
+
+        //    // JWT
+        //    IEnumerable<Claim> claims =
+        //        [
+        //            new Claim(ClaimTypes.Name, retrieveUser.SpotifyId.ToString()),
+        //            new Claim(ClaimTypes.Role, retrieveUser.Role)
+        //        ];
+
+        //    //Call method to generate access token
+        //    _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
+
+        //    if (accessToken is null)
+        //    {
+        //        await Console.Out.WriteLineAsync("accesstoken is null");
+        //    }
+
+        //    // New object ModelView
+        //    AuthenticatedResponseModel authenticationModel = new()
+        //    {
+        //        AccessToken = accessToken,
+        //        RefreshToken = refreshToken
+        //    };
+
+        //    return authenticationModel;
+
+        //}
+
+        //public async Task ReActiveAccountByToken(string username)
+        //{
+
+        //    User retrieveUser = await _userManager.FindByNameAsync(username) ?? throw new DataNotFoundCustomException("Not found any user");
+
+        //    string email = retrieveUser.Email;
+
+        //    string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
+
+        //    string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
+        //    string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+
+        //    UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, token);
+        //    UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.SpotifyId == retrieveUser.SpotifyId, tokenUpdate);
+
+        //    if (tokenResult.ModifiedCount < 1)
+        //    {
+        //        throw new CustomException("Update Fail", StatusCodes.Status500InternalServerError, "Found user but can not update");
+        //    }
+
+        //    await _emailSender.SendEmailConfirmationAsync(retrieveUser, "Xác nhận Email", confirmationLink);
+
+        //    return;
+        //}
+
+        //public async Task<string> SendTokenForgotPasswordAsync(ForgotPasswordRequestModel model)
+        //{
+        //    // Lấy thông tin người dùng
+        //    User retrieveUser = await _userManager.FindByEmailAsync(model.Email)
+        //                                        ?? throw new DataNotFoundCustomException("There's no account match with this email!");
+
+        //    // Tạo token cho forgot password
+        //    string? token = await _userManager.GeneratePasswordResetTokenAsync(retrieveUser);
+
+        //    Dictionary<string, string?> parameter = new()
+        //    {
+        //        {"token", token },
+        //        {"email", model.Email }
+        //    };
+
+        //    // tạo chuỗi url có 2 tham số trên 
+        //    string? callback = QueryHelpers.AddQueryString(model.ClientUrl, parameter);
+
+        //    // tạo message để gửi email
+        //    Message message = new Message([retrieveUser.Email], "Reset Password", callback);
+
+        //    await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
+
+
+        //    return token;
+        //}
+
+        //public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
+        //{
+        //    // tìm user theo email
+        //    User user = await _userManager.FindByEmailAsync(model.Email) ?? throw new DataNotFoundCustomException("Email does not match with any account!");
+
+
+
+        //    if (model.NewPassword != model.ConfirmPassword)
+        //    {
+        //        throw new BadRequestCustomException("New password and confirm password do not match!");
+        //    }
+
+        //    // reset password
+        //    IdentityResult result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+
+        //    if (!result.Succeeded)
+        //    {
+        //        throw new BadRequestCustomException("Reset password failed!");
+        //    }
+        //}
     }
 }

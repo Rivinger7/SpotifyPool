@@ -8,10 +8,22 @@
 
   <ItemGroup>
     <Folder Include="Microservice Model Views\" />
+    <Folder Include="Service Model Views\Artists\Request\" />
     <Folder Include="Service Model Views\Forgot Password\Response\" />
+    <Folder Include="Service Model Views\Genres\Request\" />
     <Folder Include="Service Model Views\JWTs\Response\" />
+    <Folder Include="Service Model Views\Markets\Request\" />
     <Folder Include="Service Model Views\Reset Password\Response\" />
+    <Folder Include="Service Model Views\Tracks\Request\" />
     <Folder Include="Service Model Views\Users\Request\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataAccessLayer.Repository\DataAccessLayer.Repository.csproj" />
   </ItemGroup>
 
 </Project>
