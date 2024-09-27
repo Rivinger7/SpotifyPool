@@ -7,6 +7,7 @@ using DataAccessLayer.Repository.Entities;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.ModelView.Service_Model_Views;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
@@ -60,7 +61,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     FullName = users.FullName,
                     Gender = users.Gender,
                     Birthdate = users.Birthdate,
-                    //Image = users.Image,
+                    //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
                     Status = users.Status
                 })
@@ -76,7 +77,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     FullName = users.FullName,
                     Gender = users.Gender,
                     Birthdate = users.Birthdate,
-                    //Image = users.Image,
+                    //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
                     Status = users.Status
                 })
@@ -102,7 +103,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     FullName = user.FullName,
                     Gender = user.Gender,
                     Birthdate = user.Birthdate,
-                    //Image = user.Images,
+                    //ImageResponseModel = user.Images,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
                     Status = user.Status
                 }).FirstOrDefaultAsync());
@@ -116,7 +117,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     FullName = user.FullName,
                     Gender = user.Gender,
                     Birthdate = user.Birthdate,
-                    //Image = user.Image,
+                    //ImageResponseModel = user.ImageResponseModel,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
                     Status = user.Status
 

@@ -1,6 +1,4 @@
-﻿//using Data_Access_Layer.Implement.UnitOfWork;
-//using DataAccessLayer.Interface.Interface.IUnitOfWork;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using BusinessLogicLayer.Implement.CustomExceptions;
@@ -15,10 +13,7 @@ using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.Setting.Microservices.EmailSender;
-using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using MongoDB.Bson;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -31,9 +26,9 @@ using Business_Logic_Layer.Services_Interface.Users;
 using BusinessLogicLayer.Implement.Services.Users;
 using MongoDB.Driver;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
+using System.Reflection;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -118,7 +113,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         public static void AddMemoryCache(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddMemoryCache();
-            services.AddScoped<ICacheCustom, CacheCustom>();
+            services.AddSingleton<ICacheCustom, CacheCustom>();
         }
 
         public static void AddServices(this IServiceCollection services, IConfiguration configuration)
@@ -158,7 +153,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSingleton(emailSenderSetting);
 
             // Register the EmailSender service
-            services.AddScoped<IEmailSenderCustom, EmailSender>();
+            //services.AddScoped<IEmailSenderCustom, EmailSender>();
+            services.AddSingleton<IEmailSenderCustom, EmailSender>();
         }
 
         public static void AddJWT(this IServiceCollection services, IConfiguration configuration)
@@ -336,7 +332,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         // Add AutoMapper configuration using Assembly
         public static void AddAutoMapper(this IServiceCollection services)
         {
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddAutoMapper(Assembly.Load("BusinessLogicLayer.Mapper"));
+
+            // Có thể cấu hình thêm như sau
+            //services.AddAutoMapper(Assembly.Load(typeof(BusinessLogicLayer.Mapper.AssemblyName).Assembly.FullName));
+            //services.AddAutoMapper(Assembly.Load(typeof(BusinessLogicLayer.Mapper.{anyClassInProject}).Assembly.FullName));
+
+            // Load Assembly ở vị trí hiện tại
+            //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+            // Dùng Explicitly nếu dùng assembly chưa được
         }
     }
 }

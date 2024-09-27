@@ -6,16 +6,18 @@ namespace SpotifyPool.Infrastructure.EnvironmentVariable
     {
         public static void LoadEnvironmentVariable()
         {
-            // Construct the full path to the .env file located in the "4. Application" folder
-            var envFilePath = Path.Combine(Directory.GetCurrentDirectory(), "4. Application", ".env");
+            // Xây dựng đường dẫn đầy đủ tới file .env nằm trong thư mục "4. Application"
+            string envFilePath = Path.Combine(Directory.GetCurrentDirectory(), "4. Application", ".env");
 
-            // Load the .env file from the specific path using DotEnvOptions
-            var options = new DotEnvOptions(
-                // Pass the path to the .env file
+            // Tải file .env từ đường dẫn cụ thể bằng DotEnvOptions
+            DotEnvOptions options = new(
+                // Truyền đường dẫn tới file .env
                 envFilePaths: [envFilePath],
-                // No need to probe for .env as we are specifying the path
+                // Không cần thăm dò .env vì đang chỉ định đường dẫn
                 probeForEnv: false
             );
+
+            // Load file .env
             DotEnv.Load(options);
         }
     }

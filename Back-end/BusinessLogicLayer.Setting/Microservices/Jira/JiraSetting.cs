@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BusinessLogicLayer.Setting.Microservices.Jira
+﻿namespace BusinessLogicLayer.Setting.Microservices.Jira
 {
     public class JiraSetting
     {

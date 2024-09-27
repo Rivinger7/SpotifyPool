@@ -11,6 +11,7 @@
     <Folder Include="Service Model Views\Artists\Request\" />
     <Folder Include="Service Model Views\Forgot Password\Response\" />
     <Folder Include="Service Model Views\Genres\Request\" />
+    <Folder Include="Service Model Views\Images\Request\" />
     <Folder Include="Service Model Views\JWTs\Response\" />
     <Folder Include="Service Model Views\Markets\Request\" />
     <Folder Include="Service Model Views\Reset Password\Response\" />
@@ -20,10 +21,6 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\DataAccessLayer.Repository\DataAccessLayer.Repository.csproj" />
   </ItemGroup>
 
 </Project>

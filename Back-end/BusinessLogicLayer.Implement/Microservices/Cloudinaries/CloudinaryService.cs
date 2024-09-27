@@ -50,7 +50,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             using Stream? stream = imageFile.OpenReadStream();
             ImageUploadParams uploadParams = new()
             {
-                Folder = "Image/Test",
+                Folder = "ImageResponseModel/Test",
                 File = new(imageFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
                 PublicId = $"{Uri.EscapeDataString(hashedData + '_' + timestamp)}",
@@ -135,7 +135,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             return uploadResult;
         }
 
-        // Get Image from Server
+        // Get ImageResponseModel from Server
         public GetResourceResult? GetImageResult(string publicID, bool isCache = false)
         {
             GetResourceResult? getResult = null;
@@ -156,7 +156,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             if ((int)getResult.StatusCode != StatusCodes.Status200OK)
             {
-                throw new DataNotFoundCustomException($"Not found any Image with Public ID {publicID}");
+                throw new DataNotFoundCustomException($"Not found any ImageResponseModel with Public ID {publicID}");
             }
 
             return getResult;
@@ -189,11 +189,11 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             return getResult;
         }
 
-        // Update Image / Video from Client
+        // Update ImageResponseModel / Video from Client
         // Update và Upload dùng chung
         // Chỉ cần xử lý DB bên Upload là được
 
-        // Delete Image from Server
+        // Delete ImageResponseModel from Server
         public DeletionResult? DeleteImage(string publicID)
         {
             DeletionParams deletionParams = new(publicID)
@@ -207,7 +207,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             if ((int)deletionResult.StatusCode != StatusCodes.Status200OK)
             {
-                throw new DataNotFoundCustomException($"Not found any Image with Public ID {publicID}");
+                throw new DataNotFoundCustomException($"Not found any ImageResponseModel with Public ID {publicID}");
             }
 
             // Xóa cache nếu tồn tại bằng cách sử dụng hàm RemoveCache
@@ -230,7 +230,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             if ((int)deletionResult.StatusCode != StatusCodes.Status200OK)
             {
-                throw new DataNotFoundCustomException($"Not found any Image with Public ID {publicID}");
+                throw new DataNotFoundCustomException($"Not found any ImageResponseModel with Public ID {publicID}");
             }
 
             // Xóa cache nếu tồn tại bằng cách sử dụng hàm RemoveCache

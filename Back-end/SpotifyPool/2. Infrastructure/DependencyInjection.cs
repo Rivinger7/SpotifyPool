@@ -3,6 +3,7 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using Microsoft.AspNetCore.Mvc;
 using Utility.Coding;
 using Microsoft.AspNetCore.Identity;
+using BusinessLogicLayer.Mapper.Mappers;
 
 namespace SpotifyPool.Infrastructure
 {
@@ -87,7 +88,7 @@ namespace SpotifyPool.Infrastructure
                 // Cấu hình trước khi trả về Response
                 options.OnBeforeWriteDetails = (ctx, details) =>
                 {
-                    // Khởi tạo môi trường hiện tại (Testing, Development, Production)
+                    // Khởi tạo môi trường hiện tại (PaymentModel, Development, Production)
                     //IHostEnvironment env = ctx.RequestServices.GetRequiredService<IHostEnvironment>();
 
                     //// Inject logger

@@ -2,7 +2,6 @@
 using System.Net;
 using System.Text.Encodings.Web;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using BusinessLogicLayer.Setting.Microservices.EmailSender;
 using DataAccessLayer.Repository.Entities;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;

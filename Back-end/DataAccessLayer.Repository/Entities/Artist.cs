@@ -9,7 +9,7 @@ namespace DataAccessLayer.Repository.Entities
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = null!;
 
-        public string SpotifyId { get; set; } = null!;
+        public string? SpotifyId { get; set; }
         public string Name { get; set; } = null!;
         public int Followers { get; set; }
         public int Popularity { get; set; }

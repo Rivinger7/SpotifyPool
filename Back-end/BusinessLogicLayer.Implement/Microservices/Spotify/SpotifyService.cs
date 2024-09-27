@@ -3,10 +3,12 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Genres.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Markets.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using System.Text.Json;
 
@@ -20,24 +22,33 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         private readonly IMapper _mapper = mapper;
         private readonly SpotifyPoolDBContext _context = context;
 
+        #region Spotify API Server-side
         public string Authorize()
         {
-            string authorizationEndpoint = "https://accounts.spotify.com/authorize";
-            string responseType = "code";
+            // Authorize Endpoint chính thức của Spotify
+            // OAuth 2.0
+            const string AUTHORIZATION_ENDPOINT = "https://accounts.spotify.com/authorize";
+
+            // Authorize Code để trao đổi lấy Access Token và Refresh Token
+            const string RESPONSE_TYPE = "code";
+
+            // Các scope để cho phép người yêu cầu truy cập vào các API nhất định của Spotify
             string scopes = "user-top-read playlist-read-private playlist-modify-public user-library-read";
 
-            // Build the authorization URL with multiple scopes
-            string authorizationUrl = $"{authorizationEndpoint}?client_id={clientID}&response_type={responseType}&redirect_uri={redirectUri}&scope={Uri.EscapeDataString(scopes)}";
+            // Xây dựng URL ủy quyền với nhiều scope
+            string authorizationUrl = $"{AUTHORIZATION_ENDPOINT}?client_id={clientID}&response_type={RESPONSE_TYPE}&redirect_uri={redirectUri}&scope={Uri.EscapeDataString(scopes)}";
 
             return authorizationUrl;
         }
 
         public async Task<(string accessToken, string refreshToken)> GetAccessTokenAsync(string authorizationCode)
         {
+            // Token Endpoint chính thức của Spotify
             const string TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
 
+            // Uỷ quyền bằng OAuth 2.0
             using HttpClient client = new();
-            var requestBody = new FormUrlEncodedContent(
+            FormUrlEncodedContent requestBody = new(
             [
                     new KeyValuePair<string, string>("grant_type", "authorization_code"),
                     new KeyValuePair<string, string>("code", authorizationCode),
@@ -46,187 +57,202 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                     new KeyValuePair<string, string>("client_secret", clientSecret)
             ]);
 
+            // Gọi API để trả về response
             HttpResponseMessage response = await client.PostAsync(TOKEN_ENDPOINT, requestBody);
             response.EnsureSuccessStatusCode();
 
+            // Đọc content của Response
             string responseContent = await response.Content.ReadAsStringAsync();
-            // You should parse the response and return the access token
+
+            // Parse chuỗi Response sang JSON
             JsonDocument tokenResponse = JsonDocument.Parse(responseContent);
+
+            // Lấy AccessToken thông qua thuộc tính access_token và refresh_token
             string accessToken = tokenResponse.RootElement.GetProperty("access_token").GetString() ?? throw new DataNotFoundCustomException("Access Token is not found");
             string refreshToken = tokenResponse.RootElement.GetProperty("refresh_token").GetString() ?? throw new DataNotFoundCustomException("Refresh Token is not found");
 
+            // Trả về cặp token
             return (accessToken, refreshToken);
         }
 
         public async Task<string> GetTopTracksAsync(string accessToken, int limit = 2, int offset = 2)
         {
+            // URI của Spotify
             string uri = $"https://api.spotify.com/v1/me/top/tracks?limit={limit}&offset={offset}";
 
+            // Goi API trả về Response
             string responseBody = await GetResponseAsync(uri, accessToken);
-
-            //JsonDocument responseBodyJson = JsonDocument.Parse(responseBody);
-
-            //var topTracks = JsonConvert.DeserializeObject(responseBody);
 
             return responseBody;
         }
 
-        public async Task<IEnumerable<TrackResponseModel>> GetUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0)
+        public async Task FetchUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0)
         {
+            // URI của Spotify
             string uri = $"https://api.spotify.com/v1/me/tracks?limit={limit}&offset={offset}";
 
+            // Gọi API trả về Response
             string responseBody = await GetResponseAsync(uri, accessToken);
 
-            // Deserialize the response body into a list of SpotifyTrack objects
-            var spotifyTracks = JsonConvert.DeserializeObject<SpotifyTrack>(responseBody) ?? throw new DataNotFoundCustomException("Not found any tracks");
+            // Deserialize Object theo Type là Response/Request Model
+            SpotifyTrack spotifyTracks = JsonConvert.DeserializeObject<SpotifyTrack>(responseBody) ?? throw new DataNotFoundCustomException("Not found any tracks");
 
-            // Create a list to store the selected track information
-            List<TrackResponseModel> trackModels = [];
+            // Khởi tạo danh sách
             List<string> artistIds = [];
+            List<Track> tracks = [];
 
-            // Loop through the items and select 'name' and 'preview_url'
-            foreach (var item in spotifyTracks.Items)
+            // Truy cập các thuộc tính của Response
+            foreach (Item item in spotifyTracks.Items)
             {
-                // Các phần tử trong TrackDetails được sắp xếp theo thứ tự do dùng loop
-                var trackModel = new TrackResponseModel
+                // Fetch sang Model
+                var trackModel = new SpotifyTrackResponseModel
                 {
                     TrackId = item.TrackDetails?.TrackId,
                     Name = item.TrackDetails?.Name,
                     Duration = item.TrackDetails?.Duration,
                     Popularity = item.TrackDetails?.Popularity,
                     PreviewURL = item.TrackDetails?.PreviewUrl,
-                    ReleaseDate = item.TrackDetails?.ReleaseDate ?? DateTime.MinValue,
+                    ReleaseDate = item.TrackDetails?.ReleaseDate,
                     Images = item.TrackDetails.AlbumDetails.Images,
                     Artists = item.TrackDetails.Artists
                 };
 
                 // Chuyển đổi từng phần tử của AvailableMarkets từ chuỗi thành đối tượng AvailableMarkets
-                foreach (var market in item.TrackDetails?.AvailableMarkets)
+                foreach (string market in item.TrackDetails?.AvailableMarkets)
                 {
                     trackModel.AvailableMarkets.Add(new AvailableMarkets { Id = market });
                 }
 
-                // Thu thập ID của các nghệ sĩ
-                artistIds.AddRange(item.TrackDetails.Artists.Select(a => a.Id));
+                // Sử dụng AutoMapper để ánh xạ từ SpotifyTrackResponseModel sang Track
+                Track trackEntity = _mapper.Map<Track>(trackModel);
 
-                trackModels.Add(trackModel);
+                // Do Images là thuộc tính Array of String
+                // Nên sẽ có tới 2 Images Object ở 2 assembly khác nhau
+                // Do đó sẽ cần phải map thêm 1 lần nữa với thuộc tính Images
+                trackEntity.Images = _mapper.Map<List<Image>>(trackModel.Images); // Có thể thay thế cách này bằng cách map trực tiếp trong Assembly chứa Mapping Class
+
+                // Thêm Track Entity vào danh sách đã khởi tạo
+                tracks.Add(trackEntity);
+
+                // Lấy ra ID của các nghệ sĩ
+                artistIds.AddRange(item.TrackDetails.Artists.Select(a => a.Id));
             }
 
-            // Bước 3: Lọc các artistIds để chỉ giữ lại các ID duy nhất
-            var distinctArtistIds = artistIds.Distinct().ToList();
+            // Lưu danh sách các Track Entity vào Database
+            await _context.Tracks.InsertManyAsync(tracks);
 
-            // Bước 4: Gọi API Spotify để lấy thông tin chi tiết về các nghệ sĩ
+            // Lọc các artistIds để giữ lại các ID duy nhất
+            List<string> distinctArtistIds = artistIds.Distinct().ToList();
+
+            // Kiểm tra danh sách có rỗng không
+            // Không cần thiết
             if (distinctArtistIds.Any())
             {
-                await SaveArtistsToDatabaseAsync(distinctArtistIds, accessToken);
+                // Dùng danh sách Id của các nghệ sĩ để gọi API Spotify để lấy thông tin chi tiết về các nghệ sĩ
+                // Đồng thời lưu vào Database
+                await FetchArtistsByUserSaveTracksAsync(distinctArtistIds, accessToken);
             }
 
-            // Return the list of track models
-            return trackModels;
+            return;
         }
 
-        private async Task SaveArtistsToDatabaseAsync(List<string> artistIds, string accessToken)
+        private async Task FetchArtistsByUserSaveTracksAsync(List<string> artistIds, string accessToken)
         {
-            // Bước 4.1: Tạo URL để gọi API lấy thông tin nghệ sĩ
+            // Nối các phần tử trong list bằng ký tự ',' theo định dạng request URI của Spotify
             string ids = string.Join(",", artistIds);
-            await Console.Out.WriteLineAsync($"========================= {ids} ===================");
+
+            // URI Several Artists của Spotify
             string uri = $"https://api.spotify.com/v1/artists?ids={ids}";
 
-            // Bước 4.2: Gọi API và deserializing kết quả
+            // Gọi API để trả về response
             string responseBody = await GetResponseAsync(uri, accessToken);
 
-            var spotifyArtistsResponse = JsonConvert.DeserializeObject<SpotifyArtist>(responseBody);
+            // Deserialize Object theo Type là Response/Request Model
+            SpotifyArtist? spotifyArtistsResponse = JsonConvert.DeserializeObject<SpotifyArtist>(responseBody);
 
-            //string responseAsJson = JsonConvert.SerializeObject(spotifyArtistsResponse, Formatting.Indented);
-
-            //await Console.Out.WriteLineAsync($"============= {responseAsJson} ============");
-
-            //Artist a = new()
-            //{
-            //    SpotifyId = "aaaa",
-            //    Name = "bbbb"
-            //};
-
-            //await _context.Artists.InsertOneAsync(a);
-
+            // Khởi tạo danh sách Artist
             List<Artist> artists = [];
 
+            // Kiểm tra Resonse có null không
+            // Bước này không cần thiết
             if (spotifyArtistsResponse?.Artists != null)
             {
+                // Truy cập vào từng thuộc tính của Response
+                // Type của artistDetails là ModelView.Service_Model_Views.Artists.Response
                 foreach (var artistDetails in spotifyArtistsResponse.Artists)
                 {
-                    //ArtistResponseModel artistResponseModel = new()
-                    //{
-                    //    SpotifyId = artistDetails.Id,
-                    //    Name = artistDetails.Name,
-                    //    Followers = artistDetails.Followers.Total,
-                    //    Popularity = artistDetails.Popularity,
-                    //    Images = artistDetails.Images,
-                    //    Genres = artistDetails.Genres,
-                    //};
-
-                    Artist artistEntity = new()
+                    // Fetch sang Model
+                    SpotifyArtistResponseModel artistResponseModel = new()
                     {
                         SpotifyId = artistDetails.Id,
                         Name = artistDetails.Name,
                         Followers = artistDetails.Followers.Total,
                         Popularity = artistDetails.Popularity,
                         Images = artistDetails.Images,
-                        GenreIds = artistDetails.Genres,
+                        Genres = artistDetails.Genres,
                     };
 
+                    // Sử dụng AutoMapper để ánh xạ từ SpotifyArtistResponseModel sang Artist
+                    Artist artistEntity = _mapper.Map<Artist>(artistResponseModel);
+
+                    // Do Images là thuộc tính Array of String
+                    // Nên sẽ có tới 2 Images Object ở 2 assembly khác nhau
+                    // Do đó sẽ cần phải map thêm 1 lần nữa với thuộc tính Images
+                    artistEntity.Images = _mapper.Map<List<Image>>(artistResponseModel.Images); // Có thể thay thế cách này bằng cách map trực tiếp trong Assembly chứa Mapping Class
+
+                    // Thêm Artist Entity vào danh sách đã khởi tạo
                     artists.Add(artistEntity);
-
-                    //// Chuyển đối tượng thành JSON và in ra console
-                    //string artistAsJson = JsonConvert.SerializeObject(artistResponseModel, Formatting.Indented);
-                    //await Console.Out.WriteLineAsync($"================ {artistAsJson} ==================");
-
-                    //Sử dụng AutoMapper để ánh xạ từ ArtistResponseModel sang Artist
-                    //var artistEntity = _mapper.Map<Artist>(artistResponseModel);
-
-                    // Bước 4.3: Lưu thông tin nghệ sĩ vào cơ sở dữ liệu
-                    // Giả sử bạn có một phương thức AddArtistAsync trong repository của bạn
-                    //await _context.Artists.InsertOneAsync(artistEntity);
                 }
+
+                // Lưu danh sách các Artist Entity vào Database
                 await _context.Artists.InsertManyAsync(artists);
             }
         }
 
         public async Task GetAllGenreSeedsAsync(string accessToken)
         {
+            // URI của Spotify
             string uri = "https://api.spotify.com/v1/recommendations/available-genre-seeds";
 
+            // Gọi API trả về Response
             string responseBody = await GetResponseAsync(uri, accessToken);
 
-            // Deserialize the response body into a list of SpotifyTrack objects
-            var spotifyGenres = JsonConvert.DeserializeObject<GenreResponseModel>(responseBody) ?? throw new DataNotFoundCustomException("Not found any genres");
+            // Deserialize Object theo Type là Response/Request Model
+            GenreResponseModel spotifyGenres = JsonConvert.DeserializeObject<GenreResponseModel>(responseBody) ?? throw new DataNotFoundCustomException("Not found any genres");
 
+            // Khởi tạo danh sách Genre
             List<Genre> genreList = [];
 
-            foreach(var genreName in spotifyGenres.Name)
+            // Truy cập thuộc tính Name
+            foreach (string genreName in spotifyGenres.Name)
             {
+                // Custom Data
+                // Thay vì Genre chứa mãng chuỗi thì tạo thành 1 Object riêng biệt
                 Genre genre = new()
                 {
                     Name = genreName
                 };
 
+                // Thêm Genre Entity vào danh sách đã khởi tạo
                 genreList.Add(genre);
             }
 
+            // Lưu danh sách các Genre Entity vào Database
             await _context.Genres.InsertManyAsync(genreList);
         }
 
+        // Như trên, lười comment quá
         public async Task GetAllMarketsAsync(string accessToken)
         {
-            string uri = "\r\nhttps://api.spotify.com/v1/markets";
+            string uri = "https://api.spotify.com/v1/markets";
 
             string responseBody = await GetResponseAsync(uri, accessToken);
 
-            var spotifyMarkets = JsonConvert.DeserializeObject<MarketResponseModel>(responseBody) ?? throw new DataNotFoundCustomException("Not found any markets");
+            MarketResponseModel spotifyMarkets = JsonConvert.DeserializeObject<MarketResponseModel>(responseBody) ?? throw new DataNotFoundCustomException("Not found any markets");
 
             List<Market> marketList = [];
 
-            foreach( var marketCode in spotifyMarkets.MarketCode)
+            foreach (string marketCode in spotifyMarkets.MarketCode)
             {
                 Market market = new()
                 {
@@ -241,17 +267,48 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
         private static async Task<string> GetResponseAsync(string uri, string accessToken)
         {
+            // Gửi yêu cầu HTTP Header với Bearer tới Spotify App của người dùng
+            // Để được ủy quyền thông qua máy chủ khách
             using HttpClient client = new();
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
+            // Trả về Response sau khi được ủy quyền thành công
             HttpResponseMessage response = await client.GetAsync(uri);
             response.EnsureSuccessStatusCode();
 
+            // Đọc content của Response
             string responseBody = await response.Content.ReadAsStringAsync();
 
-            //await Console.Out.WriteLineAsync($"=============== {responseBody} =========================");
-
             return responseBody;
+        }
+        #endregion
+
+        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
+        {
+            var tracksWithArtists = await _context.Tracks.Aggregate()
+                .Lookup<Track, Artist, TrackWithArtists>(
+                    _context.Artists, // The foreign collection
+                    track => track.ArtistIds, // The field in Track that we're joining on
+                    artist => artist.SpotifyId, // The field in Artist that we're matching against
+                    result => result.Artists // The field in TrackWithArtists to hold the matched artists
+                )
+                .ToListAsync();
+
+            // Map the aggregate result to TrackResponseModel
+            var trackModelList = tracksWithArtists.Select(track =>
+            {
+                var trackResponse = _mapper.Map<TrackResponseModel>(track);
+                trackResponse.Artists = _mapper.Map<List<ArtistResponseModel>>(track.Artists);
+                return trackResponse;
+            });
+
+            return trackModelList;
+        }
+
+        // Helper class to hold the aggregate result
+        private class TrackWithArtists : Track
+        {
+            public List<Artist> Artists { get; set; } = [];
         }
     }
 }
