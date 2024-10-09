@@ -29,11 +29,28 @@ using System.Diagnostics;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
 using System.Reflection;
+using Hellang.Middleware.ProblemDetails;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Utility.Coding;
+using Microsoft.Extensions.Logging;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
     public static class BusinessDependencyInjection
     {
+        private static readonly ILogger _logger;
+
+        static BusinessDependencyInjection()
+        {
+            // Initialize the logger
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole(); // You can add other logging providers like file, etc.
+            });
+            _logger = loggerFactory.CreateLogger("BusinessDependencyInjectionLogger");
+        }
+
         public static void AddBusinessInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             var stopwatch = new Stopwatch();
@@ -94,13 +111,280 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             Console.WriteLine($"AddCloudinary took {stopwatch.ElapsedMilliseconds} ms");
 
             // Spotify
+            stopwatch.Restart();
             services.AddSpotify(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddSpotify took {stopwatch.ElapsedMilliseconds} ms");
 
             // Caching (In-memory cache)
             stopwatch.Restart();
             services.AddMemoryCache(configuration);
             stopwatch.Stop();
             Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+
+            // Problem Details
+            stopwatch.Restart();
+            services.AddProblemDetails();
+            stopwatch.Stop();
+            Console.WriteLine($"ProblemDetails took {stopwatch.ElapsedMilliseconds} ms");
+
+            // Config Session HtppContext
+            stopwatch.Restart();
+            services.AddDistributedMemoryCache();
+            stopwatch.Stop();
+            Console.WriteLine($"AddDistributedMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
+            services.AddSession(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+            });
+            stopwatch.Stop();
+            Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
+
+            // Log an informational message
+            _logger.LogInformation("Services have been configured.");
+        }
+
+        public static void AddProblemDetails(this IServiceCollection services)
+        {
+            services.AddProblemDetails(options =>
+            {
+                // Đảm bảo chi tiết lỗi không được trả về cho client
+                options.IncludeExceptionDetails = (ctx, ex) => false;
+
+                // Cấu hình trước khi trả về Response
+                options.OnBeforeWriteDetails = (ctx, details) =>
+                {
+                    // Khởi tạo môi trường hiện tại (PaymentModel, Development, Production)
+                    //IHostEnvironment env = ctx.RequestServices.GetRequiredService<IHostEnvironment>();
+
+                    //// Inject logger
+                    //var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+
+                    // Tạo TraceId
+                    var traceId = ctx.TraceIdentifier;
+                    details.Extensions["traceId"] = traceId;
+
+                    // Log thông tin chi tiết của lỗi
+                    _logger.LogError($"Error occurred. TraceId: {traceId}, StatusCode: {details.Status}, Title: {details.Title}, Error: {details.Detail}");
+                };
+
+                // Map các lỗi cụ thể từ custom exception
+                options.Map<ArgumentNullCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = Util.GetTitleCustomException(ex.ParamName, "Null Reference"),
+                        Status = ex.StatusCode,
+                        Detail = ex.Message,
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<CustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = ex.Title,
+                        Status = ex.StatusCode,
+                        Detail = ex.Message,
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<BadRequestCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = Util.GetTitleCustomException(ex.Title, "Bad Rquest"),
+                        Status = StatusCodes.Status400BadRequest,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<BusinessRuleViolationCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Business Rule Violation",
+                        Status = StatusCodes.Status400BadRequest,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<ConcurrencyCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Concurrency",
+                        Status = StatusCodes.Status400BadRequest,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<DataExistCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Conflict",
+                        Status = StatusCodes.Status409Conflict,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<DataNotFoundCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Data Not Found",
+                        Status = StatusCodes.Status404NotFound,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<ForbbidenCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Forbbiden",
+                        Status = StatusCodes.Status403Forbidden,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<InternalServerErrorCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Internal Server Error",
+                        Status = StatusCodes.Status500InternalServerError,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<InvalidDataCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Invalid Data",
+                        Status = StatusCodes.Status400BadRequest,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<RequestTimeoutCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Request Timeout",
+                        Status = StatusCodes.Status408RequestTimeout,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<ServiceUnavailableCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Service Unavailable",
+                        Status = StatusCodes.Status503ServiceUnavailable,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                options.Map<UnAuthorizedCustomException>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = Util.GetTitleCustomException(ex.Title, "Unauthorized"),
+                        Status = StatusCodes.Status401Unauthorized,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+
+                // Xử lý lỗi chung chung, không bắt được loại lỗi cụ thể
+                //options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
+                options.Map<Exception>(ex =>
+                {
+                    ProblemDetails details = new()
+                    {
+                        Title = "Internal Server Error",
+                        Status = StatusCodes.Status500InternalServerError,
+                        Detail = ex.Message
+                    };
+
+                    // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
+                    _logger.LogError($"Full error details: {ex}");
+
+                    return details;
+                });
+            });
         }
 
         public static void AddSpotify(this IServiceCollection services, IConfiguration configuration)

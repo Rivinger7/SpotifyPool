@@ -75,7 +75,7 @@ app.Run();
 //using Hellang.Middleware.ProblemDetails;
 //using SpotifyPool.Infrastructure;
 //using System.Diagnostics;
-//using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
+//using BusinessLogicLayer.ControllerDependencyInjection.Dependency_Injections;
 //using SpotifyPool.Infrastructure.EnvironmentVariable;
 
 //// Stopwatch Start for entire application
