@@ -21,5 +21,6 @@ namespace DataAccessLayer.Repository.Entities
         public List<Image> Images { get; set; } = [];
         public List<string> AlbumIds { get; set; } = [];
         public List<string> MarketsIds { get; set; } = [];
+        public List<Artist> Artists { get; set; } = [];
     }
 }

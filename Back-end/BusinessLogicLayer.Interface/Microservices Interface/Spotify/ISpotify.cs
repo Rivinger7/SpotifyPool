@@ -1,8 +1,9 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using DataAccessLayer.Repository.Entities;
 
 namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
 {
-    public interface ISpotify
+    public  interface ISpotify 
     {
         Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync();
 
@@ -12,5 +13,6 @@ namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
         Task FetchUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0);
         Task GetAllGenreSeedsAsync(string accessToken);
         Task GetAllMarketsAsync(string accessToken);
+        Task<List<Track>> TestLookup();
     }
 }

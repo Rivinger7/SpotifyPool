@@ -159,5 +159,12 @@ namespace SpotifyPool.Controllers.Media
             return Ok();
         }
         #endregion
+
+        [HttpGet("test/lookup")]
+        public async Task<IActionResult> TestLookup()
+        {
+            var trackArtist = await _spotifyService.TestLookup();
+            return Ok(trackArtist);
+        }
     }
 }

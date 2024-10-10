@@ -8,6 +8,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Markets.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using System.Text.Json;
@@ -309,6 +310,31 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         private class TrackWithArtists : Track
         {
             public List<Artist> Artists { get; set; } = [];
+        }
+
+        public async Task<List<Track>> TestLookup()
+        {
+            IAggregateFluent<Track> trackCollection = _context.Tracks.Aggregate();
+
+
+            IAggregateFluent<Track> artistTrackPipeline = trackCollection.Lookup<Track, Track>(nameof(Artist), "ArtistIds", "SpotifyId", "Artists");
+
+            //List<Artist> a = await artistTrackPipeline.Project<Track>(Builders<Track>.Projection.Include("Artists")).ToListAsync();
+            
+
+            //ProjectionDefinition<Track> projection = Builders<Track>.Projection.Exclude("Artists");
+
+            // IAggregateFluent<Track> trackArtistPipelines = artistTrackPipeline.Project<Track>(projection);
+
+
+            List<Track> track = await artistTrackPipeline.ToListAsync();
+
+            List<Artist> artists = track.SelectMany(track => track.Artists).ToList();
+
+
+            List<ArtistResponseModel> artistResponseModels = _mapper.Map<List<ArtistResponseModel>>(artists);
+            List<TrackResponseModel> responseModel = _mapper.Map<List<TrackResponseModel>>(track);
+            return track;
         }
     }
 }
