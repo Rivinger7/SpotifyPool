@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using AspNetCore.Identity.MongoDbCore.Models;
 using MongoDB.Bson.Serialization.Attributes;
+using BusinessLogicLayer.Enum.Services.User;
 
 namespace DataAccessLayer.Repository.Entities
 {
@@ -12,19 +13,24 @@ namespace DataAccessLayer.Repository.Entities
 
         public string UserName { get; set; } = null!;
         public string Password { get; set; } = null!;
+        public string Email { get; set; } = null!;
         public string Role {  get; set; } = null!;
+
+        [BsonRepresentation(BsonType.String)]
+        public UserProduct Product { get; set; }
+        public string CountryId { get; set; } = null!;
+
         public string? PhoneNumber { get; set; }
         public string? FullName { get; set; }
-
-        public Market CountryId { get; set; } = null!;
         public string? DisplayName { get; set; }
-        public string Email { get; set; } = null!;
         public int Followers { get; set; }
         public List<Image> Images { get; set; } = [];
-        public string Product { get; set; } = null!;
+        
         public DateOnly? Birthdate { get; set; }
         public string? Gender { get; set; }
-        public string Status { get; set; } = null!;
+
+        [BsonRepresentation(BsonType.String)]
+        public UserStatus Status { get; set; }
         public string? TokenEmailConfirm { get; set; }
         public bool? IsLinkedWithGoogle { get; set; } = null;
         public string? RefreshToken { get; set; }

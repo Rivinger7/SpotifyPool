@@ -13,7 +13,10 @@ namespace DataAccessLayer.Repository.Entities
 
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
+
         public List<string> ArtistIds { get; set; } = [];
+        //public List<Artist> Artists { get; set; } = [];
+
         public int? Popularity { get; set; }
         public string? PreviewURL { get; set; }
         public int? Duration { get; set; }
@@ -21,6 +24,5 @@ namespace DataAccessLayer.Repository.Entities
         public List<Image> Images { get; set; } = [];
         public List<string> AlbumIds { get; set; } = [];
         public List<string> MarketsIds { get; set; } = [];
-        public List<Artist> Artists { get; set; } = [];
     }
 }

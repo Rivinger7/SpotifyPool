@@ -6,6 +6,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Genres.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Markets.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
 using MongoDB.Bson;
@@ -286,7 +287,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
         {
-            var tracksWithArtists = await _context.Tracks.Aggregate()
+            List<TrackWithArtists> tracksWithArtists = await _context.Tracks.Aggregate()
                 .Lookup<Track, Artist, TrackWithArtists>(
                     _context.Artists, // The foreign collection
                     track => track.ArtistIds, // The field in Track that we're joining on
@@ -312,29 +313,15 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             public List<Artist> Artists { get; set; } = [];
         }
 
-        public async Task<List<Track>> TestLookup()
+        public async Task<IEnumerable<TrackResponseModel>> TestLookup()
         {
             IAggregateFluent<Track> trackCollection = _context.Tracks.Aggregate();
 
+            IEnumerable<ASTrack> artistTrackPipeline = await trackCollection.Lookup<Track, Artist, ASTrack>(_context.Artists, track => track.ArtistIds, artist => artist.SpotifyId, result => result.Artists).ToListAsync();
 
-            IAggregateFluent<Track> artistTrackPipeline = trackCollection.Lookup<Track, Track>(nameof(Artist), "ArtistIds", "SpotifyId", "Artists");
+            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(artistTrackPipeline);
 
-            //List<Artist> a = await artistTrackPipeline.Project<Track>(Builders<Track>.Projection.Include("Artists")).ToListAsync();
-            
-
-            //ProjectionDefinition<Track> projection = Builders<Track>.Projection.Exclude("Artists");
-
-            // IAggregateFluent<Track> trackArtistPipelines = artistTrackPipeline.Project<Track>(projection);
-
-
-            List<Track> track = await artistTrackPipeline.ToListAsync();
-
-            List<Artist> artists = track.SelectMany(track => track.Artists).ToList();
-
-
-            List<ArtistResponseModel> artistResponseModels = _mapper.Map<List<ArtistResponseModel>>(artists);
-            List<TrackResponseModel> responseModel = _mapper.Map<List<TrackResponseModel>>(track);
-            return track;
+            return responseModel;
         }
     }
 }

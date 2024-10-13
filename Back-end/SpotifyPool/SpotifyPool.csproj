@@ -16,10 +16,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="3. Middleware\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\BusinessLogicLayer.DependencyInjection\BusinessLogicLayer.DependencyInjection.csproj" />
 	</ItemGroup>
 

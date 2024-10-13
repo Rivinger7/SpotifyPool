@@ -13,6 +13,6 @@ namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
         Task FetchUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0);
         Task GetAllGenreSeedsAsync(string accessToken);
         Task GetAllMarketsAsync(string accessToken);
-        Task<List<Track>> TestLookup();
+        Task<IEnumerable<TrackResponseModel>> TestLookup();
     }
 }

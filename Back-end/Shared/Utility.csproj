@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="IronSoftware.System.Drawing" Version="2024.9.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="MimeKit" Version="4.8.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
   </ItemGroup>
 
 </Project>

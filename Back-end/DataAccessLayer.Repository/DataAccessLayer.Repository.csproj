@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BusinessLogicLayer.Enum\BusinessLogicLayer.Enum.csproj" />
     <ProjectReference Include="..\DataAccessLayer.Implement\DataAccessLayer.Implement.csproj" />
   </ItemGroup>
 

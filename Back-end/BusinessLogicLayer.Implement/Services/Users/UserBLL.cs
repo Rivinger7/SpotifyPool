@@ -63,7 +63,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     Birthdate = users.Birthdate,
                     //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
-                    Status = users.Status
+                    Status = users.Status.ToString(),
                 })
                 .ToListAsync());
             }
@@ -79,7 +79,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     Birthdate = users.Birthdate,
                     //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
-                    Status = users.Status
+                    Status = users.Status.ToString()
                 })
                 .ToListAsync();
             }
@@ -105,7 +105,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     Birthdate = user.Birthdate,
                     //ImageResponseModel = user.Images,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
-                    Status = user.Status
+                    Status = user.Status.ToString(),
                 }).FirstOrDefaultAsync());
             }
             else
@@ -119,7 +119,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     Birthdate = user.Birthdate,
                     //ImageResponseModel = user.ImageResponseModel,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
-                    Status = user.Status
+                    Status = user.Status.ToString()
 
                 }).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException($"Not found User with ID {id}");
             }

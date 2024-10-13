@@ -3,6 +3,9 @@ using SpotifyPool.Infrastructure;
 using System.Diagnostics;
 using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
+using Utility.Coding;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 // Stopwatch Start
 var stopwatch = new Stopwatch();
@@ -19,6 +22,13 @@ EnvironmentVariableLoader.LoadEnvironmentVariable();
 var port = Environment.GetEnvironmentVariable("PORT") ?? "7018";
 builder.WebHost.UseUrls($"https://localhost:{port}");
 
+// Real-time IP Address
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    //options.KnownProxies.Add(IPAddress.Parse("::ffff:127.0.0.1")); // Thay địa chỉ này bằng địa chỉ proxy nếu cần
+});
+
 // Config appsettings by env
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -28,7 +38,6 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -37,7 +46,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddBusinessInfrastructure(builder.Configuration);
 
+
+
 var app = builder.Build();
+
+
+
+// Cấu hình IpAddressHelper với IHttpContextAccessor từ DI
+Util.Configure(app.Services.GetRequiredService<IHttpContextAccessor>());
 
 app.UseProblemDetails();
 
@@ -50,6 +66,8 @@ app.UseProblemDetails();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseForwardedHeaders();
 
 app.UseHttpsRedirection();
 

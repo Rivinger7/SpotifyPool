@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
+using System.Drawing;
+using Microsoft.AspNetCore.Http;
 
 namespace Utility.Coding
 {
@@ -102,5 +104,39 @@ namespace Utility.Coding
         }
 
         public static string? GetTitleCustomException(string? title, string baseTitle) => string.IsNullOrEmpty(title) ? baseTitle : title;
+
+        public static async Task<Image> GetImageInfoFromUrl(string url)
+        {
+            using HttpClient client = new();
+
+            // Tải dữ liệu ảnh từ URL
+            var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            // Đọc nội dung dưới dạng byte
+            var imageData = await response.Content.ReadAsByteArrayAsync();
+
+            // Tạo đối tượng Image từ dữ liệu byte
+            using var ms = new MemoryStream(imageData);
+
+            // Sử dụng System.Drawing.Image
+            var image = Image.FromStream(ms); 
+            return image;
+        }
+
+
+        private static IHttpContextAccessor _httpContextAccessor;
+
+        // Hàm này để truyền IHttpContextAccessor từ DI vào lớp static
+        public static void Configure(IHttpContextAccessor httpContextAccessor)
+        {
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        public static string GetIpAddress()
+        {
+            var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+            return ipAddress ?? "IP address not available";
+        }
     }
 }

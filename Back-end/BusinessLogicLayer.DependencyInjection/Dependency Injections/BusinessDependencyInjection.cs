@@ -34,6 +34,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Utility.Coding;
 using Microsoft.Extensions.Logging;
+using BusinessLogicLayer.Setting.Microservices.Geolocation;
+using BusinessLogicLayer.Implement.Microservices.Geolocation;
+using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -54,6 +57,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         public static void AddBusinessInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             var stopwatch = new Stopwatch();
+
+            // Register HttpClient
+            stopwatch.Start();
+            services.AddHttpClient();
+            stopwatch.Stop();
+            Console.WriteLine($"AddHttpClient took {stopwatch.ElapsedMilliseconds} ms");
 
             // Register IHttpContextAccessor
             stopwatch.Start();
@@ -116,6 +125,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             stopwatch.Stop();
             Console.WriteLine($"AddSpotify took {stopwatch.ElapsedMilliseconds} ms");
 
+            // Geolocation
+            stopwatch.Restart();
+            services.AddGeolocation(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddGeolocation took {stopwatch.ElapsedMilliseconds} ms");
+
             // Caching (In-memory cache)
             stopwatch.Restart();
             services.AddMemoryCache(configuration);
@@ -143,6 +158,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             });
             stopwatch.Stop();
             Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
+            services.AddAuthorization(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
+            services.AddAuthentication(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddAuthentication took {stopwatch.ElapsedMilliseconds} ms");
 
             // Log an informational message
             _logger.LogInformation("Services have been configured.");
@@ -576,6 +601,28 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Register Cloudinary in DI container as a scoped service
             services.AddScoped<CloudinaryService>();
+        }
+
+        public static void AddGeolocation(this IServiceCollection services, IConfiguration configuration)
+        {
+            string? geolocationApiKey = Environment.GetEnvironmentVariable("IPGEOLOCATION_API_KEY");
+            if (string.IsNullOrEmpty(geolocationApiKey))
+            {
+                throw new DataNotFoundCustomException("Geolocation API Key is not set in the environment variables");
+            }
+
+            // Initialize Cloudinary instance
+            GeolocationSettings geolocationSettings = new()
+            {
+                ApiKey = geolocationApiKey
+            };
+
+            // Register the Geolocation with DI
+            services.AddScoped(provider => geolocationSettings);
+
+            // Register Geolocation in DI container as a scoped service
+            services.AddScoped<IGeolocation, GeolocationService>();
+
         }
 
         // Config the database
