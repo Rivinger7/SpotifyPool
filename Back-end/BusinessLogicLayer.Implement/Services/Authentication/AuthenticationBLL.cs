@@ -35,12 +35,13 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         private readonly IConfiguration _configuration = configuration;
         private readonly ILogger<AuthenticationBLL> _logger = logger;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IGeolocation _geolocation;
+        private readonly IGeolocation _geolocation = geolocation;
 
         public async Task CreateAccount(RegisterRequestModel registerModel)
         {
             string username = registerModel.UserName;
             string password = registerModel.Password;
+            string displayName = registerModel.DisplayName;
             string email = registerModel.Email;
             string confirmedPassword = registerModel.ConfirmedPassword;
 
@@ -66,13 +67,19 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
 
+            // Lấy thông tin IP Address
+            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
+
             User newUser = new()
             {
+                DisplayName = displayName,
                 UserName = username,
                 Password = passwordHash,
                 Email = email,
                 PhoneNumber = registerModel.PhoneNumber,
                 Role = "Customer",
+                Product = UserProduct.Free,
+                CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                 Status = UserStatus.Inactive,
                 TokenEmailConfirm = encryptedToken
             };
@@ -215,15 +222,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             int? imageWidth = imageInfo.Width;
 
             // Lấy thông tin IP Address
-            // Dùng SDK đi!!!
-            //GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationAsync();
+            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
 
             // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
             if (retrieveUser is null)
             {
                 retrieveUser = new User()
                 {
-                    FullName = fullName,
+                    DisplayName = fullName,
                     Email = email,
                     Images =
                     [
@@ -236,7 +242,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     ],
                     Role = "Customer",
                     Product = UserProduct.Free,
-                    //CountryId = geolocationResponseModel.CountryCode2,
+                    CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                     Status = UserStatus.Active,
                 };
                 await _context.Users.InsertOneAsync(retrieveUser);
