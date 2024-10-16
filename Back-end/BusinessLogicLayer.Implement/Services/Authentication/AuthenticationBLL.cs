@@ -22,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
@@ -401,9 +402,42 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return;
         }
 
-        public Task<string> SendTokenForgotPasswordAsync(ForgotPasswordRequestModel model)
+        public async Task SendOTPForgotPasswordAsync(ForgotPasswordRequestModel model)
         {
-            throw new NotImplementedException();
+            User retrieveUser = await _context.Users.Find(user => user.Email == model.Email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
+            string otpToEmail = await CreateOTPAsync(retrieveUser.Email);
+
+            Message message = new Message([retrieveUser.Email], "OTP forgot password", $"Your OTP is: {otpToEmail}");
+
+            await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
+        }
+
+       
+        public async Task ConfirmOTP(string email, string otpCode)
+        {
+            OTP otp = await _context.OTPs.Find(otp => otp.Email == email && otp.OTPCode == otpCode)
+                                         .FirstOrDefaultAsync() 
+                    ?? throw new DataNotFoundCustomException("OTP is not correct!");
+            
+            if(otp.ExpiryTime < DateTimeOffset.UtcNow)
+            {
+                throw new BadRequestCustomException("OTP has expired!");
+            }
+
+            UpdateDefinition<OTP> update = Builders<OTP>.Update.Set(otp => otp.IsUsed, true);
+            await _context.OTPs.UpdateOneAsync(otp => otp.Email == email, update);
+
+            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
+            
+            //set lại mk mặc định, lấy 6 kí tự cuối của Id =))
+            retrieveUser.Password = BCrypt.Net.BCrypt.HashPassword("SpotifyPool@" + retrieveUser.Id.Substring(18));
+
+            UpdateDefinition<User> updatePassword = Builders<User>.Update.Set(user => user.Password, retrieveUser.Password);
+            await _context.Users.UpdateOneAsync(user => user.Email == email, updatePassword);
+
+            Message message = new Message([email], "Reset Password", $"Your new password is: SpotifyPool@{retrieveUser.Id.Substring(18)}");
+            await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
+
         }
 
         public Task ResetPasswordAsync(ResetPasswordRequestModel model)
@@ -411,32 +445,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             throw new NotImplementedException();
         }
 
-        //public async Task<string> SendTokenForgotPasswordAsync(ForgotPasswordRequestModel model)
-        //{
-        //    // Lấy thông tin người dùng
-        //    User retrieveUser = await _userManager.FindByEmailAsync(model.Email)
-        //                                        ?? throw new DataNotFoundCustomException("There's no account match with this email!");
-
-        //    // Tạo token cho forgot password
-        //    string? token = await _userManager.GeneratePasswordResetTokenAsync(retrieveUser);
-
-        //    Dictionary<string, string?> parameter = new()
-        //    {
-        //        {"token", token },
-        //        {"email", model.Email }
-        //    };
-
-        //    // tạo chuỗi url có 2 tham số trên 
-        //    string? callback = QueryHelpers.AddQueryString(model.ClientUrl, parameter);
-
-        //    // tạo message để gửi email
-        //    Message message = new Message([retrieveUser.Email], "Reset Password", callback);
-
-        //    await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
-
-
-        //    return token;
-        //}
 
         //public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
         //{
@@ -458,5 +466,43 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         //        throw new BadRequestCustomException("Reset password failed!");
         //    }
         //}
+
+        private string GenerateOTP()
+        {
+            //using thay cho .Dispose, rng sẽ được giải phóng sau khi đóng using
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                var otpBytes = new byte[4];
+                rng.GetBytes(otpBytes);
+                //chuyển mảng byte sang int và chia lấy dư cho 1000000 để lấy đúng 6 chữ số sau dấu phẩy
+                int otpCode = BitConverter.ToInt32(otpBytes, 0) % 1000000;
+                return Math.Abs(otpCode).ToString("D6"); // chuyển thành chuỗi 6 chữ số
+            }
+        }
+
+        private async Task<string> CreateOTPAsync(string email){
+            string otpCode = GenerateOTP();
+            //user đã có otp thì update lại, chưa thì tạo mới
+            if(await _context.OTPs.Find(otp => otp.Email == email).AnyAsync())
+            {
+                UpdateDefinition<OTP> update = Builders<OTP>.Update.Set(otp => otp.OTPCode, otpCode)
+                                                                   .Set(otp => otp.IsUsed, false)
+                                                                   .Set(otp => otp.ExpiryTime, DateTimeOffset.UtcNow.AddMinutes(5));
+                await _context.OTPs.UpdateOneAsync(otp => otp.Email == email, update);
+            }
+            else
+            {
+                OTP otp = new OTP()
+                {
+                    Email = email,
+                    OTPCode = otpCode,
+                    ExpiryTime = DateTimeOffset.UtcNow.AddMinutes(5)
+                };
+                //Console.WriteLine(otp.ExpiryTime.LocalDateTime);
+                await _context.OTPs.InsertOneAsync(otp);
+            }
+            return otpCode;
+        }
+
     }
 }

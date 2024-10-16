@@ -83,8 +83,15 @@ namespace SpotifyPool.Controllers.Authentication
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel model)
         {
-            var token = await authenticationBLL.SendTokenForgotPasswordAsync(model);
-            return Ok(new { message = "Success! Please check message in your mail.", token });
+            await authenticationBLL.SendOTPForgotPasswordAsync(model);
+            return Ok();
+        }
+
+        [HttpPost("confirm-otp")]
+        public async Task<IActionResult> ValidateOTP([FromBody] string email, string otpCode) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
+        {
+            await authenticationBLL.ConfirmOTP(email, otpCode);
+            return Ok(new { message = "Reset password successfully, please check your email to get new password." });
         }
 
         [HttpPost("reset-password")]

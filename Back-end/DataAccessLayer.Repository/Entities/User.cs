@@ -1,5 +1,4 @@
 ﻿using MongoDB.Bson;
-using AspNetCore.Identity.MongoDbCore.Models;
 using MongoDB.Bson.Serialization.Attributes;
 using BusinessLogicLayer.Enum.Services.User;
 

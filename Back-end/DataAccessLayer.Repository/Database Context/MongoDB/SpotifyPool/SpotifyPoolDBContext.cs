@@ -16,5 +16,6 @@ namespace DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool
         public IMongoCollection<Payment> Payment => _database.GetCollection<Payment>("Payment");
         public IMongoCollection<Genre> Genres => _database.GetCollection<Genre>("Genre");
         public IMongoCollection<Market> Markets => _database.GetCollection<Market>("Market");
+        public IMongoCollection<OTP> OTPs => _database.GetCollection<OTP>("OTP");
     }
 }

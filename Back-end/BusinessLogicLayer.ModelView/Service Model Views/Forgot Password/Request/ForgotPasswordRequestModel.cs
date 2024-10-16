@@ -6,9 +6,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Reque
 	{
         [Required(ErrorMessage = "The email can not be empty!")]
         [EmailAddress(ErrorMessage = "The email does not have right format")]
-        public string? Email { get; set; }
+        public string Email { get; set; } = null!;
 
-        [Required]
-        public string? ClientUrl { get; set; }
     }
 }
