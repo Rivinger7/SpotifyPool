@@ -15,6 +15,11 @@ namespace SpotifyPool.Controllers.Authentication
     {
         private readonly IAuthenticationBLL authenticationBLL = authenticationBLL;
 
+        /// <summary>
+        /// Register
+        /// </summary>
+        /// <param name="registerModel"></param>
+        /// <returns>Test</returns>
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)
         {
@@ -87,6 +92,12 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok();
         }
 
+        /// <summary>
+        /// Note here or comment on swagger
+        /// </summary>
+        /// <param name="email"></param>
+        /// <param name="otpCode"></param>
+        /// <returns></returns>
         [HttpPost("confirm-otp")]
         public async Task<IActionResult> ValidateOTP([FromBody] string otpCode, string email) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
         {

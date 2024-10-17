@@ -475,6 +475,18 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Spotify Pool", Version = "v1" });
 
+                // Include the XML comments (path to the XML file)
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+
+                // Path to XML documentation file for the controller project
+                var controllerXmlFile = Path.Combine(AppContext.BaseDirectory, "SpotifyPool.xml");
+                if (File.Exists(controllerXmlFile))
+                {
+                    c.IncludeXmlComments(controllerXmlFile);
+                }
+
                 // Add JWT Authentication
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
@@ -499,6 +511,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                         Array.Empty<string>()
                     }
                 });
+
+
             });
 
             services.AddTransient<IJwtBLL, JwtBLL>();

@@ -459,14 +459,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         private string GenerateOTP()
         {
             //using thay cho .Dispose, rng sẽ được giải phóng sau khi đóng using
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                var otpBytes = new byte[4];
-                rng.GetBytes(otpBytes);
-                //chuyển mảng byte sang int và chia lấy dư cho 1000000 để lấy đúng 6 chữ số sau dấu phẩy
-                int otpCode = BitConverter.ToInt32(otpBytes, 0) % 1000000;
-                return Math.Abs(otpCode).ToString("D6"); // chuyển thành chuỗi 6 chữ số
-            }
+            using var rng = RandomNumberGenerator.Create();
+            var otpBytes = new byte[4];
+            rng.GetBytes(otpBytes);
+            //chuyển mảng byte sang int và chia lấy dư cho 1000000 để lấy đúng 6 chữ số sau dấu phẩy
+            int otpCode = BitConverter.ToInt32(otpBytes, 0) % 1000000;
+            return Math.Abs(otpCode).ToString("D6"); // chuyển thành chuỗi 6 chữ số
         }
 
         private async Task<string> CreateOTPAsync(string email){
@@ -481,7 +479,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             }
             else
             {
-                OTP otp = new OTP()
+                OTP otp = new()
                 {
                     Email = email,
                     OTPCode = otpCode,
