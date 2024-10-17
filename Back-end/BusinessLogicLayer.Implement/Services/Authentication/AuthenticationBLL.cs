@@ -375,6 +375,8 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 RefreshToken = refreshToken
             };
 
+            _httpContextAccessor.HttpContext.Session.SetString("userId", retrieveUser.Id);
+
             return authenticationModel;
         }
 
@@ -430,43 +432,30 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
             
-            //set lại mk mặc định, lấy 6 kí tự cuối của Id =))
-            retrieveUser.Password = BCrypt.Net.BCrypt.HashPassword("SpotifyPool@" + retrieveUser.Id.Substring(18));
+            //set lại mk mặc định, lấy 6 kí tự cuối theo thời gian hiện tại 
+            string password = "SpotifyPool" + DateTimeOffset.UtcNow.ToString("ffffff");
 
-            UpdateDefinition<User> updatePassword = Builders<User>.Update.Set(user => user.Password, retrieveUser.Password);
+            UpdateDefinition<User> updatePassword = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(password));
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Email == email, updatePassword);
 
-            Message message = new Message([email], "Reset Password", $"Your new password is: SpotifyPool@{retrieveUser.Id.Substring(18)}");
+            Message message = new Message([email], "Reset Password", $"Your new password is: {password}");
             await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
 
         }
 
-        public Task ResetPasswordAsync(ResetPasswordRequestModel model)
+        public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
         {
-            throw new NotImplementedException();
+            string userId = httpContextAccessor.HttpContext.Session.GetString("userId"); // chỗ này lấy từ login
+
+           if (model.NewPassword != model.ConfirmPassword)
+           {
+               throw new BadRequestCustomException("Confirm password does not match with new password!");
+           }
+
+           // reset password
+           UpdateDefinition<User> update = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(model.NewPassword));
+           await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == userId, update);
         }
-
-
-        //public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
-        //{
-        //    // tìm user theo email
-        //    User user = await _userManager.FindByEmailAsync(model.Email) ?? throw new DataNotFoundCustomException("Email does not match with any account!");
-
-
-
-        //    if (model.NewPassword != model.ConfirmPassword)
-        //    {
-        //        throw new BadRequestCustomException("New password and confirm password do not match!");
-        //    }
-
-        //    // reset password
-        //    IdentityResult result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
-
-        //    if (!result.Succeeded)
-        //    {
-        //        throw new BadRequestCustomException("Reset password failed!");
-        //    }
-        //}
 
         private string GenerateOTP()
         {

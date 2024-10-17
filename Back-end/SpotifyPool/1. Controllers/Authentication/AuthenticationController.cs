@@ -88,7 +88,7 @@ namespace SpotifyPool.Controllers.Authentication
         }
 
         [HttpPost("confirm-otp")]
-        public async Task<IActionResult> ValidateOTP([FromBody] string email, string otpCode) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
+        public async Task<IActionResult> ValidateOTP([FromBody] string otpCode, string email) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
         {
             await authenticationBLL.ConfirmOTP(email, otpCode);
             return Ok(new { message = "Reset password successfully, please check your email to get new password." });
@@ -98,7 +98,7 @@ namespace SpotifyPool.Controllers.Authentication
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel model)
         {
             await authenticationBLL.ResetPasswordAsync(model);
-            return Ok("Reset password successfully");
+            return Ok(new{message = "Reset password successfully"});
         }
     }
 }
