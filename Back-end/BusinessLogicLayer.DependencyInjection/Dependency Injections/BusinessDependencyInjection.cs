@@ -37,6 +37,8 @@ using Microsoft.Extensions.Logging;
 using BusinessLogicLayer.Setting.Microservices.Geolocation;
 using BusinessLogicLayer.Implement.Microservices.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
+using DataAccessLayer.Implement.MongoDB.UOW;
+using DataAccessLayer.Interface.MongoDB.UOW;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -658,6 +660,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Register the MongoDB context (or client)
             services.AddSingleton<SpotifyPoolDBContext>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
         }
 
         // Add AutoMapper configuration using Assembly

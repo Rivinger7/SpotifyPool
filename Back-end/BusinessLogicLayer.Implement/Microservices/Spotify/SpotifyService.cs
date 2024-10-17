@@ -6,6 +6,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Genres.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Markets.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
@@ -16,13 +17,13 @@ using System.Text.Json;
 
 namespace BusinessLogicLayer.Implement.Microservices.Spotify
 {
-    public class SpotifyService(IMapper mapper, SpotifyPoolDBContext context) : ISpotify
+    public class SpotifyService(IMapper mapper, IUnitOfWork unitOfWork) : ISpotify
     {
         private readonly string clientID = Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_ID") ?? throw new DataNotFoundCustomException("Client ID property is not set in environment or not found");
         private readonly string clientSecret = Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_SECRET") ?? throw new DataNotFoundCustomException("Client Secret property is not set in environment or not found");
         private readonly string redirectUri = Environment.GetEnvironmentVariable("SPOTIFY_REDIRECT_URI") ?? throw new DataNotFoundCustomException("Redirect URI property is not set in environment or not found");
         private readonly IMapper _mapper = mapper;
-        private readonly SpotifyPoolDBContext _context = context;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         #region Spotify API Server-side
         public string Authorize()
@@ -141,7 +142,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             }
 
             // Lưu danh sách các Track Entity vào Database
-            await _context.Tracks.InsertManyAsync(tracks);
+            await _unitOfWork.GetCollection<Track>().InsertManyAsync(tracks);
 
             // Lọc các artistIds để giữ lại các ID duy nhất
             List<string> distinctArtistIds = artistIds.Distinct().ToList();
@@ -207,7 +208,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 }
 
                 // Lưu danh sách các Artist Entity vào Database
-                await _context.Artists.InsertManyAsync(artists);
+                await _unitOfWork.GetCollection<Artist>().InsertManyAsync(artists);
             }
         }
 
@@ -240,7 +241,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             }
 
             // Lưu danh sách các Genre Entity vào Database
-            await _context.Genres.InsertManyAsync(genreList);
+            await _unitOfWork.GetCollection<Genre>().InsertManyAsync(genreList);
         }
 
         // Như trên, lười comment quá
@@ -264,7 +265,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 marketList.Add(market);
             }
 
-            await _context.Markets.InsertManyAsync(marketList);
+            await _unitOfWork.GetCollection<Market>().InsertManyAsync(marketList);
         }
 
         private static async Task<string> GetResponseAsync(string uri, string accessToken)
@@ -287,9 +288,9 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
         {
-            List<TrackWithArtists> tracksWithArtists = await _context.Tracks.Aggregate()
+            List<TrackWithArtists> tracksWithArtists = await _unitOfWork.GetCollection<Track>().Aggregate()
                 .Lookup<Track, Artist, TrackWithArtists>(
-                    _context.Artists, // The foreign collection
+                    _unitOfWork.GetCollection<Artist>(), // The foreign collection
                     track => track.ArtistIds, // The field in Track that we're joining on
                     artist => artist.SpotifyId, // The field in Artist that we're matching against
                     result => result.Artists // The field in TrackWithArtists to hold the matched artists
@@ -315,9 +316,9 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
         public async Task<IEnumerable<TrackResponseModel>> TestLookup()
         {
-            IAggregateFluent<Track> trackCollection = _context.Tracks.Aggregate();
+            IAggregateFluent<Track> trackCollection = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            IEnumerable<ASTrack> artistTrackPipeline = await trackCollection.Lookup<Track, Artist, ASTrack>(_context.Artists, track => track.ArtistIds, artist => artist.SpotifyId, result => result.Artists).ToListAsync();
+            IEnumerable<ASTrack> artistTrackPipeline = await trackCollection.Lookup<Track, Artist, ASTrack>(_unitOfWork.GetCollection<Artist>(), track => track.ArtistIds, artist => artist.SpotifyId, result => result.Artists).ToListAsync();
 
             IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(artistTrackPipeline);
 

@@ -1,6 +1,7 @@
 ﻿using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
+using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.Extensions.Configuration;
@@ -15,9 +16,9 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.JWTs
 {
-    public class JwtBLL(SpotifyPoolDBContext context) : IJwtBLL
+    public class JwtBLL(IUnitOfWork unitOfWork) : IJwtBLL
     {
-        private readonly SpotifyPoolDBContext _context = context;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         /// <summary>
         /// Generate access token with claims (user's informations)
@@ -131,8 +132,8 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             UpdateDefinition<User> refreshTokenExpiryTimeUpdate = Builders<User>.Update.Set(user => user.RefreshTokenExpiryTime, refreshTokenExpiryTime);
 
             // Update
-            UpdateResult refeshTokenUpdateResult = _context.Users.UpdateOne(user => user.Id == userID, refeshTokenUpdate);
-            UpdateResult refreshTokenExpiryTimeUpdateResult = _context.Users.UpdateOne(user => user.Id == userID, refreshTokenExpiryTimeUpdate);
+            UpdateResult refeshTokenUpdateResult = _unitOfWork.GetCollection<User>().UpdateOne(user => user.Id == userID, refeshTokenUpdate);
+            UpdateResult refreshTokenExpiryTimeUpdateResult = _unitOfWork.GetCollection<User>().UpdateOne(user => user.Id == userID, refreshTokenExpiryTimeUpdate);
 
             if (refeshTokenUpdateResult.ModifiedCount < 1 || refreshTokenExpiryTimeUpdateResult.ModifiedCount < 1)
             {
@@ -150,11 +151,11 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         public async void RevokeToken(string Id)
         {
             // Retrieve an user from the database
-            User retrieveUser = await _context.Users.Find(user => user.Id.ToString() == Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any available user");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Id.ToString() == Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any available user");
 
             // Update
             UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, null);
-            UpdateResult refeshTokenUpdateResult = await _context.Users.UpdateOneAsync(user => user.Id.ToString() == Id, refeshTokenUpdate);
+            UpdateResult refeshTokenUpdateResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id.ToString() == Id, refeshTokenUpdate);
 
             return;
         }
@@ -182,7 +183,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             //ObjectId userID = ObjectId.Parse(userIDString);
             string userID = userIDString;
 
-            User retrieveUser = _context.Users.Find(user => user.Id == userID).FirstOrDefault() ?? throw new ArgumentException("User's ID is not found");
+            User retrieveUser = _unitOfWork.GetCollection<User>().Find(user => user.Id == userID).FirstOrDefault() ?? throw new ArgumentException("User's ID is not found");
 
             //check valid for refresh token and expiry time
             if (retrieveUser.RefreshToken == null || retrieveUser.RefreshToken != refreshToken || retrieveUser.RefreshTokenExpiryTime <= Util.GetUtcPlus7Time())
@@ -195,7 +196,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             newRefreshToken = GenerateRefreshToken();
 
             UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, newRefreshToken);
-            UpdateResult refeshTokenUpdateResult = _context.Users.UpdateOne(user => user.Id == userID, refeshTokenUpdate);
+            UpdateResult refeshTokenUpdateResult = _unitOfWork.GetCollection<User>().UpdateOne(user => user.Id == userID, refeshTokenUpdate);
         }
 
         public string GenerateJWTTokenForConfirmEmail(string email, string encrpytedToken)

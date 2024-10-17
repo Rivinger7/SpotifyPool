@@ -8,12 +8,13 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.ModelView.Service_Model_Views;
+using DataAccessLayer.Interface.MongoDB.UOW;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
-    public class UserBLL(SpotifyPoolDBContext context, IMapper mapper, ICacheCustom cache) : IUserBLL
+    public class UserBLL(IUnitOfWork unitOfWork, IMapper mapper, ICacheCustom cache) : IUserBLL
     {
-        private readonly SpotifyPoolDBContext _context = context;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly ICacheCustom _cache = cache;
 
@@ -53,7 +54,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             IEnumerable<UserResponseModel> users;
             if (isCache)
             {
-                users = await _cache.GetOrSetAsync(cacheKey, () => _context.Users.Find(filter)
+                users = await _cache.GetOrSetAsync(cacheKey, () => _unitOfWork.GetCollection<User>().Find(filter)
                 .Project(users => new UserResponseModel
                 {
                     UserId = users.Id.ToString(),
@@ -69,7 +70,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             }
             else
             {
-                users = await _context.Users.Find(filter)
+                users = await _unitOfWork.GetCollection<User>().Find(filter)
                 .Project(users => new UserResponseModel
                 {
                     UserId = users.Id.ToString(),
@@ -96,7 +97,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
 
             if (isCache)
             {
-                user = await _cache.GetOrSetAsync(id.ToString(), () => _context.Users.Find(user => user.Id == id).Project(user => new UserResponseModel
+                user = await _cache.GetOrSetAsync(id.ToString(), () => _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
                 {
                     UserId = user.Id.ToString(),
                     Role = user.Role,
@@ -110,7 +111,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             }
             else
             {
-                user = await _context.Users.Find(user => user.Id == id).Project(user => new UserResponseModel
+                user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
                 {
                     UserId = user.Id.ToString(),
                     Role = user.Role,

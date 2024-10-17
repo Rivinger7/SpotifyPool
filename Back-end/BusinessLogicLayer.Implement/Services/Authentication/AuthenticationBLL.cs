@@ -10,13 +10,11 @@ using BusinessLogicLayer.ModelView.Microservice_Model_Views.Geolocation.Response
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
-using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
+using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -27,10 +25,10 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(ILogger<AuthenticationBLL> logger, IMapper mapper, SpotifyPoolDBContext context, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation) : IAuthenticationBLL
+    public class AuthenticationBLL(ILogger<AuthenticationBLL> logger, IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation) : IAuthenticationBLL
     {
         private readonly IMapper _mapper = mapper;
-        private readonly SpotifyPoolDBContext _context = context;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
         private readonly IEmailSenderCustom _emailSender = emailSender;
         private readonly IConfiguration _configuration = configuration;
@@ -85,7 +83,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 TokenEmailConfirm = encryptedToken
             };
 
-            await _context.Users.InsertOneAsync(newUser);
+            await _unitOfWork.GetCollection<User>().InsertOneAsync(newUser);
             //var result = await _userManager.CreateAsync(newUser, password);
 
             //if (!result.Succeeded)
@@ -114,7 +112,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             );
 
             // Thực hiện truy vấn tới MongoDB để tìm xem có tài khoản nào khớp không
-            IEnumerable<User> existingUsers = await _context.Users.Find(filter).ToListAsync();
+            IEnumerable<User> existingUsers = await _unitOfWork.GetCollection<User>().Find(filter).ToListAsync();
 
             // Kiểm tra từng điều kiện và ném lỗi phù hợp
             if (existingUsers.Any(user => user.UserName == username))
@@ -153,7 +151,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             //_logger.LogInformation("TokenEmailConfirm decoded successfully");
             //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
 
-            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
             if (retrieveUser.TokenEmailConfirm != encryptedToken)
             {
                 throw new InvalidDataCustomException("TokenEmailConfirm and Retrieve TokenEmailConfirm do not match");
@@ -168,7 +166,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         {
             UpdateDefinition<User> update = Builders<User>.Update.Set(user => user.Status, UserStatus.Active).Set(user => user.TokenEmailConfirm, null);
 
-            UpdateResult result = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, update);
+            UpdateResult result = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, update);
 
             if (result.ModifiedCount < 1)
             {
@@ -214,7 +212,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new ArgumentNullCustomException(nameof(email), "Email is null");
 
             // Lấy thông tin người dùng
-            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync();
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync();
 
             // Lấy thông tin ảnh từ URL
             // var = System.Drawing.Image
@@ -246,7 +244,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                     Status = UserStatus.Active,
                 };
-                await _context.Users.InsertOneAsync(retrieveUser);
+                await _unitOfWork.GetCollection<User>().InsertOneAsync(retrieveUser);
             }
             else // Kiểm tra user có liên kết google account chưa
             {
@@ -287,11 +285,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         public async Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email)
         {
             // Lấy thông tin người dùng
-            User retrieveUser = await _context.Users.Find(user => user.Email == email && user.IsLinkedWithGoogle == false).FirstOrDefaultAsync() ?? throw new CustomException("Google Account Linking", 44, "Not found user or user has been linked with google account");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email && user.IsLinkedWithGoogle == false).FirstOrDefaultAsync() ?? throw new CustomException("Google Account Linking", 44, "Not found user or user has been linked with google account");
 
             // Cập nhật trạng thái liên kết tài khoản Google
             UpdateDefinition<User> isLinkedWithGoogleUpdate = Builders<User>.Update.Set(user => user.IsLinkedWithGoogle, true);
-            UpdateResult isLinkedWithGoogleUpdateResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, isLinkedWithGoogleUpdate);
+            UpdateResult isLinkedWithGoogleUpdateResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, isLinkedWithGoogleUpdate);
 
             // Kiểm tra nếu có ít nhất một field_name được cập nhật
             if (isLinkedWithGoogleUpdateResult.ModifiedCount < 1)
@@ -338,7 +336,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string username = loginModel.Username;
             string password = loginModel.Password;
 
-            User retrieveUser = await _context.Users.Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
+            //User retrieveUser = await _context.Users.Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
+
+            User aaaa = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
 
             switch (retrieveUser.Status)
             {
@@ -380,7 +381,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         public async Task ReActiveAccountByToken(string username)
         {
 
-            User retrieveUser = await _context.Users.Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
 
             string email = retrieveUser.Email;
 
@@ -390,7 +391,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
 
             UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, token);
-            UpdateResult tokenResult = await _context.Users.UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
+            UpdateResult tokenResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
 
             if (tokenResult.ModifiedCount < 1)
             {
@@ -404,7 +405,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
         public async Task SendOTPForgotPasswordAsync(ForgotPasswordRequestModel model)
         {
-            User retrieveUser = await _context.Users.Find(user => user.Email == model.Email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == model.Email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
             string otpToEmail = await CreateOTPAsync(retrieveUser.Email);
 
             Message message = new Message([retrieveUser.Email], "OTP forgot password", $"Your OTP is: {otpToEmail}");
@@ -415,7 +416,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
        
         public async Task ConfirmOTP(string email, string otpCode)
         {
-            OTP otp = await _context.OTPs.Find(otp => otp.Email == email && otp.OTPCode == otpCode)
+            OTP otp = await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email && otp.OTPCode == otpCode)
                                          .FirstOrDefaultAsync() 
                     ?? throw new DataNotFoundCustomException("OTP is not correct!");
             
@@ -425,15 +426,15 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             }
 
             UpdateDefinition<OTP> update = Builders<OTP>.Update.Set(otp => otp.IsUsed, true);
-            await _context.OTPs.UpdateOneAsync(otp => otp.Email == email, update);
+            await _unitOfWork.GetCollection<OTP>().UpdateOneAsync(otp => otp.Email == email, update);
 
-            User retrieveUser = await _context.Users.Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
             
             //set lại mk mặc định, lấy 6 kí tự cuối của Id =))
             retrieveUser.Password = BCrypt.Net.BCrypt.HashPassword("SpotifyPool@" + retrieveUser.Id.Substring(18));
 
             UpdateDefinition<User> updatePassword = Builders<User>.Update.Set(user => user.Password, retrieveUser.Password);
-            await _context.Users.UpdateOneAsync(user => user.Email == email, updatePassword);
+            await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Email == email, updatePassword);
 
             Message message = new Message([email], "Reset Password", $"Your new password is: SpotifyPool@{retrieveUser.Id.Substring(18)}");
             await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
@@ -483,12 +484,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         private async Task<string> CreateOTPAsync(string email){
             string otpCode = GenerateOTP();
             //user đã có otp thì update lại, chưa thì tạo mới
-            if(await _context.OTPs.Find(otp => otp.Email == email).AnyAsync())
+            if(await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email).AnyAsync())
             {
                 UpdateDefinition<OTP> update = Builders<OTP>.Update.Set(otp => otp.OTPCode, otpCode)
                                                                    .Set(otp => otp.IsUsed, false)
                                                                    .Set(otp => otp.ExpiryTime, DateTimeOffset.UtcNow.AddMinutes(5));
-                await _context.OTPs.UpdateOneAsync(otp => otp.Email == email, update);
+                await _unitOfWork.GetCollection<OTP>().UpdateOneAsync(otp => otp.Email == email, update);
             }
             else
             {
@@ -499,7 +500,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     ExpiryTime = DateTimeOffset.UtcNow.AddMinutes(5)
                 };
                 //Console.WriteLine(otp.ExpiryTime.LocalDateTime);
-                await _context.OTPs.InsertOneAsync(otp);
+                await _unitOfWork.GetCollection<OTP>().InsertOneAsync(otp);
             }
             return otpCode;
         }
