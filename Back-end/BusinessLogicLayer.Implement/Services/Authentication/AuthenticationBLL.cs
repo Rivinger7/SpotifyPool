@@ -148,8 +148,8 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             //var role = roleClaim.Value;
             string encryptedToken = encryptedTokenClaim.Value;
 
-            //_logger.LogInformation("TokenEmailConfirm decoded successfully");
-            //_logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
+            // _logger.LogInformation("TokenEmailConfirm decoded successfully");
+            // _logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
 
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
             if (retrieveUser.TokenEmailConfirm != encryptedToken)
@@ -336,21 +336,20 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string username = loginModel.Username;
             string password = loginModel.Password;
 
-            //User retrieveUser = await _context.Users.Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
-
-            User aaaa = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new ArgumentException("Username or Password is incorrect");
-
-            switch (retrieveUser.Status)
-            {
-                case UserStatus.Inactive: throw new UnAuthorizedCustomException("Not active");
-                case UserStatus.Banned: throw new UnAuthorizedCustomException("Banned");
-            }
 
             bool isPasswordHashed = BCrypt.Net.BCrypt.Verify(loginModel.Password, retrieveUser.Password);
             if (!isPasswordHashed)
             {
                 throw new ArgumentException("Username or Password is incorrect");
+            }
+
+            switch (retrieveUser.Status)
+            {
+                case UserStatus.Inactive:
+                    _httpContextAccessor.HttpContext.Session.SetString("UserName", retrieveUser.UserName);
+                    throw new UnAuthorizedCustomException("Not active");
+                case UserStatus.Banned: throw new UnAuthorizedCustomException("Banned");
             }
 
             // JWT
@@ -387,12 +386,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             string email = retrieveUser.Email;
 
-            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, _configuration.GetSection("JWTSettings:SecretKey").Value);
+            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
 
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
 
-            UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, token);
+            UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, encryptedToken);
             UpdateResult tokenResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
 
             if (tokenResult.ModifiedCount < 1)

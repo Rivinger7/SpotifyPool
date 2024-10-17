@@ -23,6 +23,7 @@ namespace SpotifyPool.Infrastructure
             services.ConfigRoute();
             services.AddSwaggerGen();
             services.AddCors();
+            services.AddHttpContextAccessor();
 
             // Log an informational message
             _logger.LogInformation("Controllers have been configured.");
