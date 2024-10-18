@@ -288,41 +288,48 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
         {
-            List<TrackWithArtists> tracksWithArtists = await _unitOfWork.GetCollection<Track>().Aggregate()
-                .Lookup<Track, Artist, TrackWithArtists>(
-                    _unitOfWork.GetCollection<Artist>(), // The foreign collection
-                    track => track.ArtistIds, // The field in Track that we're joining on
-                    artist => artist.SpotifyId, // The field in Artist that we're matching against
-                    result => result.Artists // The field in TrackWithArtists to hold the matched artists
-                )
-                .ToListAsync();
-
-            // Map the aggregate result to TrackResponseModel
-            var trackModelList = tracksWithArtists.Select(track =>
-            {
-                var trackResponse = _mapper.Map<TrackResponseModel>(track);
-                trackResponse.Artists = _mapper.Map<List<ArtistResponseModel>>(track.Artists);
-                return trackResponse;
-            });
-
-            return trackModelList;
-        }
-
-        // Helper class to hold the aggregate result
-        private class TrackWithArtists : Track
-        {
-            public List<Artist> Artists { get; set; } = [];
-        }
-
-        public async Task<IEnumerable<TrackResponseModel>> TestLookup()
-        {
+            // Empty Pipeline
             IAggregateFluent<Track> trackCollection = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            IEnumerable<ASTrack> artistTrackPipeline = await trackCollection.Lookup<Track, Artist, ASTrack>(_unitOfWork.GetCollection<Artist>(), track => track.ArtistIds, artist => artist.SpotifyId, result => result.Artists).ToListAsync();
+            // Lookup
+            IAggregateFluent<ASTrack> artistTrackPipeline = trackCollection.Lookup<Track, Artist, ASTrack>
+                (_unitOfWork.GetCollection<Artist>(), // The foreign collection
+                track => track.ArtistIds, // The field in Track that are joining on
+                artist => artist.SpotifyId, // The field in Artist that are matching against
+                result => result.Artists) // The field in ASTrack to hold the matched artists
+                .Project(Builders<ASTrack>.Projection  // Project
+                .Include(ast => ast.Name) // Get only necessary fields
+                .Include(ast => ast.Description)
+                .Include(ast => ast.PreviewURL)
+                .Include(ast => ast.Duration)
+                .Include(ast => ast.Images)
+                .Include(ast => ast.Artists)
+                ).As<ASTrack>();
 
-            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(artistTrackPipeline);
+            // Pipeline to list
+            IEnumerable<ASTrack> artistTracks = await artistTrackPipeline.ToListAsync();
+
+            // Map the aggregate result to TrackResponseModel
+            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(artistTracks);
 
             return responseModel;
         }
+
+        //public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
+        //{
+        //    // Gọi phương thức generic GetAllDocumentsWithLookupAsync
+        //    // Gọi phương thức generic từ repository
+        //    IEnumerable<ASTrack> tracksWithArtists = await _unitOfWork.GetRepository<Track>()
+        //        .GetAllDocumentsWithLookupAsync<Artist, ASTrack>(
+        //        track => track.ArtistIds,       // Local field in Track (join on ArtistIds)
+        //        artist => artist.SpotifyId,     // Foreign field in Artist (match on SpotifyId)
+        //        ast => ast.Artists              // Result field in ASTrack to store joined Artists
+        //    );
+
+        //    // Map the aggregate result to TrackResponseModel
+        //    IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracksWithArtists);
+
+        //    return responseModel;
+        //}
     }
 }

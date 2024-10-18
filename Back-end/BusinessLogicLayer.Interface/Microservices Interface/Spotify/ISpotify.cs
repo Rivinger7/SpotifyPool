@@ -7,12 +7,12 @@ namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
     {
         Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync();
 
+        // API Server-side
         string Authorize();
         Task<(string accessToken, string refreshToken)> GetAccessTokenAsync(string authorizationCode);
         Task<string> GetTopTracksAsync(string accessToken, int limit = 2, int offset = 2);
         Task FetchUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0);
         Task GetAllGenreSeedsAsync(string accessToken);
         Task GetAllMarketsAsync(string accessToken);
-        Task<IEnumerable<TrackResponseModel>> TestLookup();
     }
 }

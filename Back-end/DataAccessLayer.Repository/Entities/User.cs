@@ -21,7 +21,7 @@ namespace DataAccessLayer.Repository.Entities
 
         public string? PhoneNumber { get; set; }
         public string? FullName { get; set; }
-        public string? DisplayName { get; set; }
+        public required string DisplayName { get; set; }
         public int Followers { get; set; }
         public List<Image> Images { get; set; } = [];
         

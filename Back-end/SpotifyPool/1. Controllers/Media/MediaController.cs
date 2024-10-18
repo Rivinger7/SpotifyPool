@@ -13,6 +13,11 @@ namespace SpotifyPool.Controllers.Media
         private readonly CloudinaryService cloudinaryService = cloudinaryService;
         private readonly ISpotify _spotifyService = spotifyService;
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="formFile"></param>
+        /// <returns></returns>
         #region Cloudinary
         [HttpPost("test-content-type-file")]
         public IActionResult GetContentTypeFile(IFormFile formFile)
@@ -29,6 +34,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { ContentType = contentType, Type = type });
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="imageFile"></param>
+        /// <returns></returns>
         [HttpPost("upload-image")]
         public IActionResult UploadImage(IFormFile imageFile)
         {
@@ -36,6 +46,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = "Upload ImageResponseModel Successfully", uploadResult });
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="trackFile"></param>
+        /// <returns></returns>
         [HttpPost("upload-track")]
         public IActionResult UploadTrack(IFormFile trackFile)
         {
@@ -43,6 +58,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = "Upload Video Successfully", uploadResult });
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="publicID"></param>
+        /// <returns></returns>
         [HttpGet("get-image/{publicID}")]
         public IActionResult GetImageResult(string publicID)
         {
@@ -50,6 +70,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = "Get ImageResponseModel Successfully", getResult });
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="publicID"></param>
+        /// <returns></returns>
         [HttpGet("get-track/{publicID}")]
         public IActionResult GetTrackResult(string publicID)
         {
@@ -57,6 +82,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = "Get Track Successfully", getResult });
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="publicID"></param>
+        /// <returns></returns>
         [HttpDelete("delete-image/{publicID}")]
         public IActionResult DeleteImage(string publicID)
         {
@@ -64,6 +94,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new { message = $"Delete ImageResponseModel Successfully with Public ID {publicID}", deleteResult });
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="publicID"></param>
+        /// <returns></returns>
         [HttpDelete("delete-track/{publicID}")]
         public IActionResult DeleteTrack(string publicID)
         {
@@ -80,6 +115,10 @@ namespace SpotifyPool.Controllers.Media
             return Ok(result);
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("spotify/authorize")]
         public IActionResult Authorize()
         {
@@ -88,6 +127,11 @@ namespace SpotifyPool.Controllers.Media
         }
 
         // Handle Spotify authorization callback and get the access token
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
         [HttpGet("callback")]
         public async Task<IActionResult> Callback([FromQuery] string code)
         {
@@ -109,6 +153,11 @@ namespace SpotifyPool.Controllers.Media
         }
 
         // Get the top tracks
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <returns></returns>
         [HttpGet("spotify/top-tracks")]
         public async Task<IActionResult> GetTopTracks([FromQuery] string accessToken)
         {
@@ -123,6 +172,13 @@ namespace SpotifyPool.Controllers.Media
             return Ok(topTracks); // Return the top tracks as the response
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
         [HttpGet("spotify/fetch/saved-tracks")]
         public async Task<IActionResult> GetUserSaveTracks([FromQuery] string accessToken, [FromQuery] int limit, [FromQuery] int offset)
         {
@@ -135,6 +191,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new {message = "Fetched Data Successfully"});
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <returns></returns>
         [HttpGet("spotify/genre-seeds")]
         public async Task<IActionResult> GetAllGenreSeeds([FromQuery] string accessToken)
         {
@@ -147,6 +208,11 @@ namespace SpotifyPool.Controllers.Media
             return Ok();
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <returns></returns>
         [HttpGet("spotify/markets")]
         public async Task<IActionResult> GetAllMarkets([FromQuery] string accessToken)
         {
@@ -159,12 +225,5 @@ namespace SpotifyPool.Controllers.Media
             return Ok();
         }
         #endregion
-
-        [HttpGet("test/lookup")]
-        public async Task<IActionResult> TestLookup()
-        {
-            var trackArtist = await _spotifyService.TestLookup();
-            return Ok(trackArtist);
-        }
     }
 }

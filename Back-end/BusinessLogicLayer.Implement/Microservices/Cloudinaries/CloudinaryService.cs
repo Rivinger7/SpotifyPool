@@ -12,7 +12,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         private readonly Cloudinary _cloudinary = cloudinary;
         private readonly ICacheCustom _cache = cache;
 
-        public ImageUploadResult UploadImage(IFormFile imageFile, string tags = "AvatarUserProfile")
+        public ImageUploadResult UploadImage(IFormFile imageFile, string tags = "AvatarUserProfile", string folder = "Image")
         {
             if (imageFile is null || imageFile.Length == 0)
             {
@@ -37,6 +37,12 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 throw new BadRequestCustomException("Unsupported file type");
             }
 
+            tags = tags switch
+            {
+                "AvatarUserProfile" => "/User's Profiles",
+                _ => "/Test",
+            };
+
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string userID = "testing";
 
@@ -50,7 +56,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             using Stream? stream = imageFile.OpenReadStream();
             ImageUploadParams uploadParams = new()
             {
-                Folder = "ImageResponseModel/Test",
+                Folder = "Image" + tags,
                 File = new(imageFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
                 PublicId = $"{Uri.EscapeDataString(hashedData + '_' + timestamp)}",
