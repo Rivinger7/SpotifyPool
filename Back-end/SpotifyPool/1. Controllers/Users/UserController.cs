@@ -9,6 +9,13 @@ namespace SpotifyPool._1._Controllers.Users
     {
         private readonly IUserBLL _userBLL = userBLL;
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="fullname"></param>
+        /// <param name="gender"></param>
+        /// <param name="email"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetAllUsersAsync([FromQuery] string? fullname, [FromQuery] string? gender, [FromQuery] string? email)
         {
@@ -16,6 +23,11 @@ namespace SpotifyPool._1._Controllers.Users
             return Ok(users);
         }
 
+        /// <summary>
+        /// FOR BACK-END
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserByIDAsync(string id)
         {

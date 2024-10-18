@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
-using System.Text;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
@@ -15,11 +14,6 @@ namespace SpotifyPool.Controllers.Authentication
     {
         private readonly IAuthenticationBLL authenticationBLL = authenticationBLL;
 
-        /// <summary>
-        /// Register
-        /// </summary>
-        /// <param name="registerModel"></param>
-        /// <returns>Test</returns>
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)
         {
@@ -41,17 +35,10 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
         }
 
-        [HttpPost("reactive-account")]
-        public async Task<IActionResult> ReactiveAccount()
+        [HttpPost("resend-email-comfirm")]
+        public async Task<IActionResult> ResendEmailConfirm()
         {
-            string? username = HttpContext.Session.GetString("UserName");
-
-            if (string.IsNullOrEmpty(username))
-            {
-                return Unauthorized(new { message = "No username found in session. Please log in again." });
-            }
-
-            await authenticationBLL.ReActiveAccountByToken(username);
+            await authenticationBLL.ReActiveAccountByToken();
 
             return Ok(new { message = "Email has sent to user's mail" });
         }

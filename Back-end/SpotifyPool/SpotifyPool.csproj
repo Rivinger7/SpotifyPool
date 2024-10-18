@@ -7,6 +7,13 @@
 		<UserSecretsId>e3fbd921-41f2-46cd-bddd-763a1286c7cd</UserSecretsId>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<DocumentationFile>bin\Debug\net8.0\SpotifyPool.xml</DocumentationFile>
+		<!-- Suppress the warning CS1591 (XML Comment) -->
+		<NoWarn>$(NoWarn);1591</NoWarn>
+	</PropertyGroup>
+	
 	<ItemGroup>
 		<PackageReference Include="AspNetCore.Identity.MongoDbCore" Version="3.1.2" />
 		<PackageReference Include="dotenv.net" Version="3.2.1" />

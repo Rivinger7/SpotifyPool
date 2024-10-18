@@ -52,12 +52,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-            //bool isExistingUser = await _context.Users.Find(user => user.UserName == username).AnyAsync();
-            //if (isExistingUser)
-            //{
-            //    throw new DataExistCustomException("UserName already exists");
-            //}
-
             await CheckAccountExists(registerModel);
 
             // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
@@ -68,6 +62,9 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
+
+            // User's avatar (Temp)
+            string avatarURL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1729184101/Image/User%27s%20Profiles/RaQXMK0XJlX0bZbUyHcSfA%253D%253D_638647809024468188.webp";
 
             User newUser = new()
             {
@@ -80,18 +77,21 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Product = UserProduct.Free,
                 CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                 Status = UserStatus.Inactive,
-                TokenEmailConfirm = encryptedToken
+                TokenEmailConfirm = encryptedToken,
+                Images =
+                [
+                    new()
+                    {
+                        URL = avatarURL,
+                        Height = 500,
+                        Width = 313,
+                    },
+                ]
             };
 
             await _unitOfWork.GetCollection<User>().InsertOneAsync(newUser);
-            //var result = await _userManager.CreateAsync(newUser, password);
 
-            //if (!result.Succeeded)
-            //{
-            //    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            //    throw new BadRequestCustomException($"Cannot handle password: {errors}");
-            //}
-
+            // Gửi email
             await _emailSender.SendEmailConfirmationAsync(newUser, "Xác nhận Email", confirmationLink);
 
             // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
@@ -228,7 +228,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             {
                 retrieveUser = new User()
                 {
-                    DisplayName = fullName,
+                    DisplayName = fullName ?? "Ẩn Danh",
                     Email = email,
                     Images =
                     [
@@ -321,7 +321,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
             IEnumerable<Claim> claimsList =
                 [
-                    new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
                     new Claim(ClaimTypes.Role, retrieveUser.Role)
                 ];
 
@@ -355,8 +355,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // JWT
             IEnumerable<Claim> claims =
                 [
-                    new Claim(ClaimTypes.Name, retrieveUser.Id.ToString()),
-                    new Claim(ClaimTypes.Role, retrieveUser.Role)
+                    new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, retrieveUser.Role),
+                    new Claim(ClaimTypes.Name, retrieveUser.DisplayName),
+                    new Claim("Avatar", retrieveUser.Images[0].URL)
                 ];
 
             //Call method to generate access token
@@ -379,10 +381,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return authenticationModel;
         }
 
-        public async Task ReActiveAccountByToken(string username)
+        public async Task ReActiveAccountByToken()
         {
-
-            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
+            string username = _httpContextAccessor.HttpContext.Session.GetString("UserName");
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("No username found in session. Please log in again.");
 
             string email = retrieveUser.Email;
 
@@ -414,14 +416,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
         }
 
-       
+
         public async Task ConfirmOTP(string email, string otpCode)
         {
             OTP otp = await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email && otp.OTPCode == otpCode)
-                                         .FirstOrDefaultAsync() 
+                                         .FirstOrDefaultAsync()
                     ?? throw new DataNotFoundCustomException("OTP is not correct!");
-            
-            if(otp.ExpiryTime < DateTimeOffset.UtcNow)
+
+            if (otp.ExpiryTime < DateTimeOffset.UtcNow)
             {
                 throw new BadRequestCustomException("OTP has expired!");
             }
@@ -430,7 +432,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             await _unitOfWork.GetCollection<OTP>().UpdateOneAsync(otp => otp.Email == email, update);
 
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
-            
+
             //set lại mk mặc định, lấy 6 kí tự cuối theo thời gian hiện tại 
             string password = "SpotifyPool" + DateTimeOffset.UtcNow.ToString("ffffff");
 
@@ -446,14 +448,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         {
             string userId = httpContextAccessor.HttpContext.Session.GetString("userId"); // chỗ này lấy từ login
 
-           if (model.NewPassword != model.ConfirmPassword)
-           {
-               throw new BadRequestCustomException("Confirm password does not match with new password!");
-           }
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                throw new BadRequestCustomException("Confirm password does not match with new password!");
+            }
 
-           // reset password
-           UpdateDefinition<User> update = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(model.NewPassword));
-           await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == userId, update);
+            // reset password
+            UpdateDefinition<User> update = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(model.NewPassword));
+            await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == userId, update);
         }
 
         private string GenerateOTP()
@@ -467,10 +469,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return Math.Abs(otpCode).ToString("D6"); // chuyển thành chuỗi 6 chữ số
         }
 
-        private async Task<string> CreateOTPAsync(string email){
+        private async Task<string> CreateOTPAsync(string email)
+        {
             string otpCode = GenerateOTP();
             //user đã có otp thì update lại, chưa thì tạo mới
-            if(await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email).AnyAsync())
+            if (await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email).AnyAsync())
             {
                 UpdateDefinition<OTP> update = Builders<OTP>.Update.Set(otp => otp.OTPCode, otpCode)
                                                                    .Set(otp => otp.IsUsed, false)
