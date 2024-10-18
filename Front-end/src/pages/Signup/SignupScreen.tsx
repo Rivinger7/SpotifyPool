@@ -1,4 +1,4 @@
-import SignupForm from './SignupForm'
+import SignupForm from "./Form/SignupForm"
 
 const SignupScreen = () => {
 	return <SignupForm />
