@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BusinessLogicLayer.Enum\BusinessLogicLayer.Enum.csproj" />
+    <ProjectReference Include="..\Shared\Utility.csproj" />
   </ItemGroup>
 
   <ItemGroup>
