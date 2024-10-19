@@ -1,4 +1,4 @@
-﻿namespace BusinessLogicLayer.Setting.Microservices.Jira
+﻿namespace SetupLayer.Setting.Microservices.Jira
 {
     public class JiraSetting
     {

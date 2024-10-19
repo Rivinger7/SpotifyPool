@@ -1,9 +1,9 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
-using BusinessLogicLayer.Setting.Microservices.Jira;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using SetupLayer.Setting.Microservices.Jira;
 
 namespace BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues
 {

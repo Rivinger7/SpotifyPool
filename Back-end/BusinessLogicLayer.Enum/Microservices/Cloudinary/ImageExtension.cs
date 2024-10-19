@@ -1,4 +1,4 @@
-﻿namespace BusinessLogicLayer.Enum.Microservices.Cloudinary
+﻿namespace SetupLayer.Enum.Microservices.Cloudinary
 {
     public enum ImageExtension
     {

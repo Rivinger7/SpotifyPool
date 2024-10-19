@@ -1,4 +1,4 @@
-﻿namespace BusinessLogicLayer.Setting.Microservices.EmailSender
+﻿namespace SetupLayer.Setting.Microservices.EmailSender
 {
     public class SmtpSettings
     {

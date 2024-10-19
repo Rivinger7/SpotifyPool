@@ -13,7 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BusinessLogicLayer.Enum\BusinessLogicLayer.Enum.csproj" />
+    <ProjectReference Include="..\BusinessLogicLayer.Enum\SetupLayer.Enum.csproj" />
+    <ProjectReference Include="..\BusinessLogicLayer.Setting\SetupLayer.Setting.csproj" />
     <ProjectReference Include="..\Shared\Utility.csproj" />
   </ItemGroup>
 

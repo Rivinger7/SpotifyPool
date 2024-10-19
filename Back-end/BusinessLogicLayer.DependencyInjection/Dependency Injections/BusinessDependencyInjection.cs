@@ -12,14 +12,12 @@ using BusinessLogicLayer.Implement.Services.JWTs;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
-using BusinessLogicLayer.Setting.Microservices.EmailSender;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
-using BusinessLogicLayer.Setting.Microservices.Jira;
 using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using BusinessLogicLayer.Implement.Services.InMemoryCache;
 using Business_Logic_Layer.Services_Interface.Users;
@@ -34,11 +32,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Utility.Coding;
 using Microsoft.Extensions.Logging;
-using BusinessLogicLayer.Setting.Microservices.Geolocation;
 using BusinessLogicLayer.Implement.Microservices.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using DataAccessLayer.Implement.MongoDB.UOW;
 using DataAccessLayer.Interface.MongoDB.UOW;
+using SetupLayer.Setting.Microservices.Geolocation;
+using SetupLayer.Setting.Microservices.EmailSender;
+using SetupLayer.Setting.Microservices.Jira;
+using SetupLayer.Setting.Database;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {

@@ -1,4 +1,4 @@
-﻿namespace DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool
+﻿namespace SetupLayer.Setting.Database
 {
     public class MongoDBSetting
     {

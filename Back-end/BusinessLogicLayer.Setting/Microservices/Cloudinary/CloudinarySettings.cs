@@ -1,4 +1,4 @@
-﻿namespace BusinessLogicLayer.Setting.Microservices.Cloudinaries
+﻿namespace SetupLayer.Setting.Microservices.Cloudinary
 {
     public class CloudinarySettings
     {
