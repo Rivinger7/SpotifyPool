@@ -15,9 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BusinessLogicLayer.Enum\BusinessLogicLayer.Enum.csproj" />
+    <ProjectReference Include="..\BusinessLogicLayer.Enum\SetupLayer.Enum.csproj" />
     <ProjectReference Include="..\BusinessLogicLayer.Interface\BusinessLogicLayer.Interface.csproj" />
-    <ProjectReference Include="..\BusinessLogicLayer.Setting\BusinessLogicLayer.Setting.csproj" />
+    <ProjectReference Include="..\BusinessLogicLayer.Setting\SetupLayer.Setting.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
 ﻿using MongoDB.Driver;
 using Microsoft.Extensions.Logging;
+using SetupLayer.Setting.Database;
 
 namespace DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool
 {

@@ -1,4 +1,4 @@
-﻿namespace BusinessLogicLayer.Setting.Microservices.Geolocation
+﻿namespace SetupLayer.Setting.Microservices.Geolocation
 {
     public class GeolocationSettings
     {

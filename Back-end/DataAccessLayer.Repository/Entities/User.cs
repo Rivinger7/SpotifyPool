@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using BusinessLogicLayer.Enum.Services.User;
+using SetupLayer.Enum.Services.User;
 
 namespace DataAccessLayer.Repository.Entities
 {

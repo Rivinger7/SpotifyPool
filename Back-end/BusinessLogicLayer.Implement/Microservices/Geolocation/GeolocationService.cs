@@ -1,9 +1,9 @@
 ﻿using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.ModelView.Microservice_Model_Views.Geolocation.Response;
-using BusinessLogicLayer.Setting.Microservices.Geolocation;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using SetupLayer.Setting.Microservices.Geolocation;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Microservices.Geolocation
