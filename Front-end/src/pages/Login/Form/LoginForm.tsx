@@ -54,7 +54,6 @@ export default function LoginForm() {
 				console.log(data)
 				dispatch(
 					login({
-						userData: { username: values.username },
 						userToken: data.authenticatedResponseModel,
 					})
 				)
@@ -160,9 +159,18 @@ export default function LoginForm() {
 					<Button
 						className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-8 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
 						type="submit"
+						asChild
 					>
-						<GoogleIcon />
-						Sign up with Google
+						{/* LOGIN GOOGLE USING CUSTOM URL */}
+						<a
+							href={
+								import.meta.env.VITE_API_ENDPOINT +
+								"/api/authentication/login-by-google?returnUrl=%2F"
+							}
+						>
+							<GoogleIcon />
+							Sign up with Google
+						</a>
 					</Button>
 					<div className="h-[1px] bg-[#292929] w-full mt-8 mb-8"></div>
 					<div className="text-center w-full text-[#a7a7a7]">
