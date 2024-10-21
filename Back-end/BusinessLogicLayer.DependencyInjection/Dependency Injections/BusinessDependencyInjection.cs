@@ -40,6 +40,8 @@ using SetupLayer.Setting.Microservices.Geolocation;
 using SetupLayer.Setting.Microservices.EmailSender;
 using SetupLayer.Setting.Microservices.Jira;
 using SetupLayer.Setting.Database;
+using BusinessLogicLayer.Interface.Services_Interface.Tracks;
+using BusinessLogicLayer.Implement.Services.Tracks;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -437,6 +439,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // User
             services.AddScoped<IUserBLL, UserBLL>();
+
+            // Track
+            services.AddScoped<ITrack, TrackBLL>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)

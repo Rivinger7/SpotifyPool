@@ -1,6 +1,7 @@
 ﻿using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,10 +9,11 @@ namespace SpotifyPool.Controllers.Media
 {
     [Route("api/media")]
     [ApiController]
-    public class MediaController(CloudinaryService cloudinaryService, ISpotify spotifyService) : ControllerBase
+    public class MediaController(CloudinaryService cloudinaryService, ISpotify spotifyService, ITrack trackService) : ControllerBase
     {
         private readonly CloudinaryService cloudinaryService = cloudinaryService;
         private readonly ISpotify _spotifyService = spotifyService;
+        private readonly ITrack _trackService = trackService;
 
         /// <summary>
         /// FOR BACK-END
@@ -112,6 +114,13 @@ namespace SpotifyPool.Controllers.Media
         public async Task<IActionResult> GetAllTracksAsync()
         {
             var result = await _spotifyService.GetAllTracksAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("tracks/{query}")]
+        public async Task<IActionResult> SearchTracksAsync(string query)
+        {
+            var result = await _trackService.SearchTracksAsync(query);
             return Ok(result);
         }
 

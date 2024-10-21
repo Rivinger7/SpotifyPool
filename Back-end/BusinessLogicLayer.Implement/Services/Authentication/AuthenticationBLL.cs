@@ -58,7 +58,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Dùng mã hóa cho email khi tạo link
             string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
-            string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+            string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";
 
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
@@ -322,6 +322,8 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             IEnumerable<Claim> claimsList =
                 [
                     new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
+                    new Claim(ClaimTypes.Name, retrieveUser.DisplayName),
+                    new Claim("Avatar", retrieveUser.Images[0].URL),
                     new Claim(ClaimTypes.Role, retrieveUser.Role)
                 ];
 
@@ -391,7 +393,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
 
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
-            string confirmationLink = $"https://myfrontend.com/confirm-email?token={token}";
+            string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";
 
             UpdateDefinition<User> tokenUpdate = Builders<User>.Update.Set(user => user.TokenEmailConfirm, encryptedToken);
             UpdateResult tokenResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, tokenUpdate);
