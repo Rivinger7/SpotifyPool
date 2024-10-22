@@ -10,7 +10,7 @@ interface DecodedToken {
 
 // Interface for the user data stored in the state
 interface UserData {
-	fullname: string
+	displayName: string
 	role: string
 	avatar: string
 }
@@ -49,7 +49,7 @@ const authSlice = createSlice({
 			const decodedToken = jwtDecode<DecodedToken>(userToken.accessToken)
 
 			state.userData = {
-				fullname: decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"],
+				displayName: decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"],
 				role: decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
 				avatar: decodedToken.Avatar,
 			}

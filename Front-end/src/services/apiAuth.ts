@@ -18,7 +18,28 @@ export const authApi = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Auth"],
 		}),
+		emailConfirm: build.mutation({
+			query: (token) => ({
+				url: "/authentication/confirm-email",
+				method: "POST",
+				body: JSON.stringify(token),
+			}),
+			invalidatesTags: ["Auth"],
+		}),
+		getGoogleResponse: build.query({
+			query: () => ({
+				url: "/authentication/google-response",
+				method: "GET",
+			}),
+			transformResponse: (res) => res,
+			providesTags: ["Auth"],
+		}),
 	}),
 })
 
-export const { useLoginMutation, useRegisterMutation } = authApi
+export const {
+	useLoginMutation,
+	useRegisterMutation,
+	useEmailConfirmMutation,
+	useGetGoogleResponseQuery,
+} = authApi
