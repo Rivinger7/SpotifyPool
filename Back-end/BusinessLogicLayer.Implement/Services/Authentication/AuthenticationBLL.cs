@@ -378,7 +378,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 RefreshToken = refreshToken
             };
 
-            _httpContextAccessor.HttpContext.Session.SetString("userId", retrieveUser.Id);
+            _httpContextAccessor.HttpContext.Session.SetString("UserName", retrieveUser.UserName);
 
             return authenticationModel;
         }
@@ -448,7 +448,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
         public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
         {
-            string userId = httpContextAccessor.HttpContext.Session.GetString("userId"); // chỗ này lấy từ login
+            string userName = _httpContextAccessor.HttpContext.Session.GetString("UserName"); // chỗ này lấy từ login
 
             if (model.NewPassword != model.ConfirmPassword)
             {
@@ -457,7 +457,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             // reset password
             UpdateDefinition<User> update = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(model.NewPassword));
-            await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == userId, update);
+            await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.UserName == userName, update);
         }
 
         private string GenerateOTP()
