@@ -1,4 +1,5 @@
 ﻿using Business_Logic_Layer.Services_Interface.Users;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SpotifyPool._1._Controllers.Users
@@ -34,5 +35,12 @@ namespace SpotifyPool._1._Controllers.Users
             var user = await _userBLL.GetUserByIDAsync(id, true);
             return Ok(user);
         }
-    }
+
+        [HttpPost("edit-profile")]
+        public async Task<IActionResult> EditProfileAsync([FromForm] EditProfileRequestModel request)
+		{
+			await _userBLL.EditProfileAsync(request);
+			return Ok("Update profile successfully!");
+		}
+	}
 }
