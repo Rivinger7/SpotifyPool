@@ -145,19 +145,19 @@ namespace BusinessLogicLayer.Implement.Services.Users
 				throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 			}
 
-			// Lấy thông tin user từ database
+
 			User user = await _unitOfWork.GetCollection<User>()
 				.Find(user => user.UserName == userName)
 				.FirstOrDefaultAsync();
 
-			// Kiểm tra và giữ nguyên giá trị nếu không điền
+			// nếu không điền dữ liệu mới thì lấy lại cái cũ
 			requestModel.DisplayName = requestModel.DisplayName ?? user.DisplayName;
 			requestModel.FullName = requestModel.FullName ?? user.FullName;
 			requestModel.PhoneNumber = requestModel.PhoneNumber ?? user.PhoneNumber;
 			requestModel.Birthdate = requestModel.Birthdate ?? user.Birthdate;
 			requestModel.Gender = requestModel.Gender ?? user.Gender;
 
-			// Cập nhật các trường khác
+			// tạo cập nhật field khác trc
 			UpdateDefinition<User> update = Builders<User>.Update
 				.Set(u => u.FullName, requestModel.FullName)
 				.Set(u => u.DisplayName, requestModel.DisplayName)
@@ -165,15 +165,14 @@ namespace BusinessLogicLayer.Implement.Services.Users
 				.Set(u => u.Birthdate, requestModel.Birthdate)
 				.Set(u => u.Gender, requestModel.Gender);
 
-			// Kiểm tra nếu có hình ảnh được upload
 			if (requestModel.Image is not null)
 			{
 				string linkImage = user.Images.Last().URL;
 
-				// Decode từ URL ra
+				// decode từ URL 
 				string textNormalizedFromUrl = HttpUtility.UrlDecode(linkImage);
 
-				// Regex để lấy publicID từ đường dẫn ảnh
+				// regex để lấy publicID
 				Regex regex = new Regex(@"User's Profiles\/([a-zA-Z0-9%_=]+)\.webp$");
 				Match match = regex.Match(textNormalizedFromUrl);
 
@@ -185,20 +184,16 @@ namespace BusinessLogicLayer.Implement.Services.Users
 					_cloudinaryService.DeleteImage(publicIDImage);
 				}
 
-				// Upload ảnh mới lên Cloudinary
 				ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image);
 
-				// Xóa danh sách ảnh cũ
 				user.Images.Clear();
-
-				// Thêm ảnh mới vào danh sách
 				user.Images.Add(new Image { URL = result.SecureUrl.ToString(), Height = 500, Width = 313 });
 
-				// Cập nhật danh sách ảnh mới
+				// cập nhật danh sách ảnh mới
 				update = update.Set(u => u.Images, user.Images);
 			}
 
-			// Thực hiện cập nhật vào database
+
 			await _unitOfWork.GetCollection<User>()
 				.UpdateOneAsync(user => user.UserName == userName, update);
 		}
