@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Login</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        function handleCredentialResponse(response) {
+            // Nhận IdToken từ Google
+            const idToken = response.credential;
+            console.log("ID Token từ Google: " + idToken);
+
+            // Gửi IdToken này lên server để xác thực và nhận JWT Token
+            fetch('/api/authentication/login-by-google', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    idToken: idToken,
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Thành công:', data);
+                    // Sau khi xác thực thành công, có thể lưu JWT token
+                    localStorage.setItem("accessToken", data.token);
+                })
+                .catch((error) => {
+                    console.error('Lỗi:', error);
+                });
+        }
+
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: '703002735105-aqigvgecb8r4k8p9ppfkod5tg9moadm0.apps.googleusercontent.com', // Thay YOUR_GOOGLE_CLIENT_ID bằng Client ID của bạn
+                callback: handleCredentialResponse // Hàm callback xử lý khi nhận được IdToken
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById("buttonDiv"), // Vị trí nút đăng nhập
+                {
+                    theme: "outline",
+                    size: "large" // Tùy chỉnh giao diện của nút
+                }
+            );
+        };
+    </script>
+</head>
+<body>
+    <h1>Đăng nhập bằng Google</h1>
+
+    <!-- Nút Đăng nhập bằng Google -->
+    <div id="buttonDiv"></div>
+</body>
+</html>

@@ -9,6 +9,8 @@
 	<PropertyGroup>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<DocumentationFile>bin\Debug\net8.0\BusinessLogicLayer.DependencyInjection.xml</DocumentationFile>
+		<!-- Suppress the warning CS1591 (XML Comment) -->
+		<NoWarn>$(NoWarn);1591</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

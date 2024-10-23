@@ -1,14 +1,14 @@
-﻿using Business_Logic_Layer.Services_Interface.InMemoryCache;
-using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
+﻿using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SpotifyPool.Controllers.Media
 {
     [Route("api/media")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public class MediaController(CloudinaryService cloudinaryService, ISpotify spotifyService, ITrack trackService) : ControllerBase
     {
         private readonly CloudinaryService cloudinaryService = cloudinaryService;
@@ -113,14 +113,20 @@ namespace SpotifyPool.Controllers.Media
         [HttpGet("tracks")]
         public async Task<IActionResult> GetAllTracksAsync()
         {
-            var result = await _spotifyService.GetAllTracksAsync();
+            var result = await _trackService.GetAllTracksAsync();
             return Ok(result);
         }
 
-        [HttpGet("tracks/{query}")]
-        public async Task<IActionResult> SearchTracksAsync(string query)
+        /// <summary>
+        /// Tìm theo tên bài hát
+        /// </summary>
+        /// <param name="trackName"></param>
+        /// <returns></returns>
+        [Authorize(Roles = "Customer")]
+        [HttpGet("tracks/search")]
+        public async Task<IActionResult> SearchTracksAsync([FromQuery] string trackName)
         {
-            var result = await _trackService.SearchTracksAsync(query);
+            var result = await _trackService.SearchTracksAsync(trackName);
             return Ok(result);
         }
 

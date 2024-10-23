@@ -64,7 +64,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 .Project(users => new UserResponseModel
                 {
                     UserId = users.Id.ToString(),
-                    Role = users.Role,
+                    Role = users.Role.ToString(),
                     FullName = users.FullName,
                     Gender = users.Gender,
                     Birthdate = users.Birthdate,
@@ -80,7 +80,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 .Project(users => new UserResponseModel
                 {
                     UserId = users.Id.ToString(),
-                    Role = users.Role,
+                    Role = users.Role.ToString(),
                     FullName = users.FullName,
                     Gender = users.Gender,
                     Birthdate = users.Birthdate,
@@ -106,7 +106,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 user = await _cache.GetOrSetAsync(id.ToString(), () => _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
                 {
                     UserId = user.Id.ToString(),
-                    Role = user.Role,
+                    Role = user.Role.ToString(),
                     FullName = user.FullName,
                     Gender = user.Gender,
                     Birthdate = user.Birthdate,
@@ -120,7 +120,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
                 {
                     UserId = user.Id.ToString(),
-                    Role = user.Role,
+                    Role = user.Role.ToString(),
                     FullName = user.FullName,
                     Gender = user.Gender,
                     Birthdate = user.Birthdate,

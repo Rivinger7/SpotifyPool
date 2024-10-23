@@ -285,51 +285,5 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             return responseBody;
         }
         #endregion
-
-        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
-        {
-            // Empty Pipeline
-            IAggregateFluent<Track> trackCollection = _unitOfWork.GetCollection<Track>().Aggregate();
-
-            // Lookup
-            IAggregateFluent<ASTrack> artistTrackPipeline = trackCollection.Lookup<Track, Artist, ASTrack>
-                (_unitOfWork.GetCollection<Artist>(), // The foreign collection
-                track => track.ArtistIds, // The field in Track that are joining on
-                artist => artist.SpotifyId, // The field in Artist that are matching against
-                result => result.Artists) // The field in ASTrack to hold the matched artists
-                .Project(Builders<ASTrack>.Projection  // Project
-                .Include(ast => ast.Name) // Get only necessary fields
-                .Include(ast => ast.Description)
-                .Include(ast => ast.PreviewURL)
-                .Include(ast => ast.Duration)
-                .Include(ast => ast.Images)
-                .Include(ast => ast.Artists)
-                ).As<ASTrack>();
-
-            // Pipeline to list
-            IEnumerable<ASTrack> artistTracks = await artistTrackPipeline.ToListAsync();
-
-            // Map the aggregate result to TrackResponseModel
-            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(artistTracks);
-
-            return responseModel;
-        }
-
-        //public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
-        //{
-        //    // Gọi phương thức generic GetAllDocumentsWithLookupAsync
-        //    // Gọi phương thức generic từ repository
-        //    IEnumerable<ASTrack> tracksWithArtists = await _unitOfWork.GetRepository<Track>()
-        //        .GetAllDocumentsWithLookupAsync<Artist, ASTrack>(
-        //        track => track.ArtistIds,       // Local field in Track (join on ArtistIds)
-        //        artist => artist.SpotifyId,     // Foreign field in Artist (match on SpotifyId)
-        //        ast => ast.Artists              // Result field in ASTrack to store joined Artists
-        //    );
-
-        //    // Map the aggregate result to TrackResponseModel
-        //    IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracksWithArtists);
-
-        //    return responseModel;
-        //}
     }
 }

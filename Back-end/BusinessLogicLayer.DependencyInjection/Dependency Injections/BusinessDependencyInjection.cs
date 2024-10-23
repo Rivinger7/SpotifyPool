@@ -42,6 +42,7 @@ using SetupLayer.Setting.Microservices.Jira;
 using SetupLayer.Setting.Database;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.Implement.Services.Tracks;
+using System.Security.Claims;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -165,14 +166,14 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
 
             stopwatch.Restart();
-            services.AddAuthorization(configuration);
-            stopwatch.Stop();
-            Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
-
-            stopwatch.Restart();
             services.AddAuthentication(configuration);
             stopwatch.Stop();
             Console.WriteLine($"AddAuthentication took {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
+            services.AddAuthorization(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
 
             // Log an informational message
             _logger.LogInformation("Services have been configured.");
@@ -436,6 +437,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Authentication
             services.AddScoped<IAuthenticationBLL, AuthenticationBLL>();
+            services.AddScoped<IAuthGoogle, AuthGoogle>();
 
             // User
             services.AddScoped<IUserBLL, UserBLL>();
@@ -538,13 +540,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Config the Google Identity
             services.AddAuthentication(options =>
             {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                //options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 //options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                //options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
                 //options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 //options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 //options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
             }).AddCookie("Cookies").AddGoogle(options =>
             {
                 options.ClientId = Environment.GetEnvironmentVariable("Authentication_Google_ClientId") ?? throw new DataNotFoundCustomException("Client ID property is not set in environment or not found");
@@ -569,7 +574,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"))),
 
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+
+                    // Đặt RoleClaimType
+                    RoleClaimType = ClaimTypes.Role
                 };
             });
         }

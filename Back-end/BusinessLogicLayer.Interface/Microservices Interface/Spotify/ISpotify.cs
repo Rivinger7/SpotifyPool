@@ -5,8 +5,6 @@ namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
 {
     public  interface ISpotify 
     {
-        Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync();
-
         // API Server-side
         string Authorize();
         Task<(string accessToken, string refreshToken)> GetAccessTokenAsync(string authorizationCode);

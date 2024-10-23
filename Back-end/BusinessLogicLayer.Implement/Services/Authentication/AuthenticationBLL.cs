@@ -11,6 +11,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -73,8 +74,9 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Password = passwordHash,
                 Email = email,
                 PhoneNumber = registerModel.PhoneNumber,
-                Role = "Customer",
+                Role = UserRole.Customer,
                 Product = UserProduct.Free,
+                IsLinkedWithGoogle = false,
                 CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                 Status = UserStatus.Inactive,
                 TokenEmailConfirm = encryptedToken,
@@ -176,40 +178,26 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return;
         }
 
-        public async Task<AuthenticatedResponseModel> LoginByGoogle()
+        public async Task<AuthenticatedResponseModel> LoginByGoogle(string googleToken)
         {
-            AuthenticateResult result = await _httpContextAccessor.HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            if (result?.Principal == null)
+            if (string.IsNullOrEmpty(googleToken))
             {
-                throw new ArgumentNullCustomException(nameof(result.Principal), "Principal is null");
+                throw new CustomException("Google Token is null or empty", StatusCodes.Status500InternalServerError, "Google Token is null or empty");
             }
 
-            //var claimss = result.Principal.Identities
-            //    .FirstOrDefault()?.Claims
-            //    .Select(claim => new
-            //    {
-            //        claim.Type,
-            //        claim.Value
-            //    });
-            //foreach(var claim in claimss)
-            //{
-            //    Console.WriteLine("===========");
-            //    Console.WriteLine(claim);
-            //    Console.WriteLine("===========");
-            //}
+            // Lấy token từ FE
+            // Xác thực token của Google và lấy thông tin người dùng
+            GoogleJsonWebSignature.Payload payload = await VerifyGoogleToken(googleToken) ?? throw new UnauthorizedAccessException("Invalid Google token.");
 
-            IEnumerable<Claim>? claims = result.Principal.Identities.FirstOrDefault()?.Claims.ToList();
-
-            string? givenName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value; // Given Name can be null
-            string? surName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value; // Sur Name can be null
+            string? givenName = payload.GivenName; // Given Name can be null
+            string? surName = payload.FamilyName; // Sur Name can be null
             string? fullName = Util.ValidateAndCombineName(givenName, surName);
 
             // Lấy URL ảnh người dùng
-            string avatar = claims?.FirstOrDefault(c => c.Type == "urn:google:picture")?.Value ?? throw new ArgumentNullCustomException(nameof(avatar), "Avatar is null");
+            string avatar = payload.Picture;
 
             // Lấy Email người dùng
-            string email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new ArgumentNullCustomException(nameof(email), "Email is null");
+            string email = payload.Email;
 
             // Lấy thông tin người dùng
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync();
@@ -239,7 +227,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                             Width = imageWidth ?? 96,
                         },
                     ],
-                    Role = "Customer",
+                    Role = UserRole.Customer,
                     Product = UserProduct.Free,
                     CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                     Status = UserStatus.Active,
@@ -270,7 +258,20 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Nếu có liên kết thì đăng nhập bình thường
             // Trường hợp đã đăng nhập vào hệ thống trước đó rồi
             // Tạo JWT access token và refresh token
-            JWTGenerator(retrieveUser, out string accessToken, out string refreshToken);
+
+            // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
+            IEnumerable<Claim> claimsList =
+            [
+                new Claim(JwtRegisteredClaimNames.Email, payload.Email),
+                new Claim(JwtRegisteredClaimNames.GivenName, payload.GivenName),
+                new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName),
+                new Claim(JwtRegisteredClaimNames.Name, payload.Name),
+                new Claim(JwtRegisteredClaimNames.Picture, payload.Picture),
+                new Claim(ClaimTypes.Role, retrieveUser.Role.ToString())
+            ];
+
+            // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
+            _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out string accessToken, out string refreshToken);
 
             // New object ModelView
             AuthenticatedResponseModel authenticationModel = new()
@@ -282,6 +283,18 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return authenticationModel;
         }
 
+        private static async Task<GoogleJsonWebSignature.Payload> VerifyGoogleToken(string googleToken)
+        {
+            GoogleJsonWebSignature.ValidationSettings settings = new()
+            {
+                Audience = [Environment.GetEnvironmentVariable("Authentication_Google_ClientId")]
+            };
+
+            GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(googleToken, settings);
+            return payload;
+        }
+
+        // Khi người dùng xác nhận liên kết tài khoản Google FE sẽ gọi API này
         public async Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email)
         {
             // Lấy thông tin người dùng
@@ -297,8 +310,17 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 throw new CustomException("Update Fail", StatusCodes.Status500InternalServerError, "Found user but can not update");
             }
 
-            // Tạo JWT access token và refresh token
-            JWTGenerator(retrieveUser, out string accessToken, out string refreshToken);
+            // Claim list
+            IEnumerable<Claim> claims =
+                [
+                    new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, retrieveUser.Role.ToString()),
+                    new Claim(ClaimTypes.Name, retrieveUser.DisplayName),
+                    new Claim("Avatar", retrieveUser.Images[0].URL)
+                ];
+
+            // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
+            _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
 
             // New object ModelView
             AuthenticatedResponseModel authenticationModel = new()
@@ -308,29 +330,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             return authenticationModel;
-        }
-
-        /// <summary>
-        /// Phương thức này dùng để tạo ra JWT access token và refresh token dựa trên các claim của người dùng.
-        /// </summary>
-        /// <param name="retrieveUser">Đối tượng người dùng đã được lấy từ cơ sở dữ liệu hoặc hệ thống.</param>
-        /// <param name="accessToken">Biến out dùng để lưu JWT access token được tạo ra.</param>
-        /// <param name="refreshToken">Biến out dùng để lưu refresh token được tạo ra.</param>
-        private void JWTGenerator(User retrieveUser, out string accessToken, out string refreshToken)
-        {
-            // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
-            IEnumerable<Claim> claimsList =
-                [
-                    new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
-                    new Claim(ClaimTypes.Name, retrieveUser.DisplayName),
-                    new Claim("Avatar", retrieveUser.Images[0].URL),
-                    new Claim(ClaimTypes.Role, retrieveUser.Role)
-                ];
-
-            // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
-            _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out accessToken, out refreshToken);
-
-            return;
         }
 
         public async Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel)
@@ -358,7 +357,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             IEnumerable<Claim> claims =
                 [
                     new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
-                    new Claim(ClaimTypes.Role, retrieveUser.Role),
+                    new Claim(ClaimTypes.Role, retrieveUser.Role.ToString()),
                     new Claim(ClaimTypes.Name, retrieveUser.DisplayName),
                     new Claim("Avatar", retrieveUser.Images[0].URL)
                 ];

@@ -11,7 +11,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
         Task ActivateAccountByToken(string token);
         Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel);
         Task ReActiveAccountByToken();
-        Task<AuthenticatedResponseModel> LoginByGoogle();
+        Task<AuthenticatedResponseModel> LoginByGoogle(string googleToken);
         Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email);
         Task SendOTPForgotPasswordAsync(ForgotPasswordRequestModel model);
         Task ConfirmOTP(string userId, string otpCode);
