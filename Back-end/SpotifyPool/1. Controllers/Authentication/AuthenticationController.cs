@@ -5,6 +5,7 @@ using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using BusinessLogicLayer.ModelView;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace SpotifyPool.Controllers.Authentication
 {
@@ -43,23 +44,15 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { message = "Email has sent to user's mail" });
         }
 
-        [HttpGet("login-by-google")]
-        public Task<IActionResult> LoginByGoogle(string returnUrl = "/")
+        [HttpPost("login-by-google")]
+        public async Task<IActionResult> LoginByGoogle([FromBody] GoogleLoginRequestModel googleToken)
         {
-            var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse", new { returnUrl }) };
-            return Task.FromResult<IActionResult>(Challenge(properties, GoogleDefaults.AuthenticationScheme));
-        }
-
-        [HttpGet("google-response")]
-        public async Task<IActionResult> GoogleResponse(string returnUrl = "/")
-        {
-            var authenticatedResponseModel = await authenticationBLL.LoginByGoogle();
-            return Ok(new { message = "Login Successfully", authenticatedResponseModel });
-            //return Redirect(returnUrl); // Tự động chuyển hướng đến returnURL không cần phải nhờ FE chuyển FE chỉ cần bỏ URL vào biến returnURL
+            var token = await authenticationBLL.LoginByGoogle(googleToken.GoogleToken);
+            return Ok(new { token });
         }
 
         [HttpPost("confirm-link-with-google-account")]
-        public async Task<IActionResult> ConfirmLinkWithGoogleAccount([FromBody] string email, [FromQuery] string returnUrl = "/")
+        public async Task<IActionResult> ConfirmLinkWithGoogleAccount([FromBody] string email)
         {
             var authenticatedResponseModel = await authenticationBLL.ConfirmLinkWithGoogleAccount(email);
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });

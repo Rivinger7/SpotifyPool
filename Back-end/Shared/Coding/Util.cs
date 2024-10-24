@@ -2,6 +2,7 @@
 using System.Text;
 using System.Drawing;
 using Microsoft.AspNetCore.Http;
+using System.Text.RegularExpressions;
 
 namespace Utility.Coding
 {
@@ -124,6 +125,10 @@ namespace Utility.Coding
             return image;
         }
 
+        public static string EscapeSpecialCharacters(string input)
+        {
+            return Regex.Escape(input);  // Thoát toàn bộ ký tự đặc biệt trong Regular Expression
+        }
 
         private static IHttpContextAccessor _httpContextAccessor;
 

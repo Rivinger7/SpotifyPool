@@ -32,4 +32,8 @@
 	  </None>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Include="wwwroot\html.html" />
+	</ItemGroup>
+
 </Project>

@@ -13,7 +13,9 @@ namespace DataAccessLayer.Repository.Entities
         public string UserName { get; set; } = null!;
         public string Password { get; set; } = null!;
         public string Email { get; set; } = null!;
-        public string Role {  get; set; } = null!;
+
+        [BsonRepresentation(BsonType.String)]
+        public UserRole Role {  get; set; }
 
         [BsonRepresentation(BsonType.String)]
         public UserProduct Product { get; set; }
