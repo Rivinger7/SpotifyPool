@@ -6,8 +6,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import {
 	Form,
 	FormControl,
@@ -15,38 +15,36 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Input } from "@/components/ui/input";
-import { useRef } from "react";
-import axios from "axios";
-import toast from "react-hot-toast";
+} from "@/components/ui/form"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { Input } from "@/components/ui/input"
+import { useRef } from "react"
 
 interface ProfileModalProps {
-	children: React.ReactNode;
+	children: React.ReactNode
 }
 
 const EditIcon = (
 	<svg viewBox="0 0 24 24" className="w-12 h-12" fill="currentcolor">
 		<path d="M17.318 1.975a3.329 3.329 0 1 1 4.707 4.707L8.451 20.256c-.49.49-1.082.867-1.735 1.103L2.34 22.94a1 1 0 0 1-1.28-1.28l1.581-4.376a4.726 4.726 0 0 1 1.103-1.735L17.318 1.975zm3.293 1.414a1.329 1.329 0 0 0-1.88 0L5.159 16.963c-.283.283-.5.624-.636 1l-.857 2.372 2.371-.857a2.726 2.726 0 0 0 1.001-.636L20.611 5.268a1.329 1.329 0 0 0 0-1.879z" />
 	</svg>
-);
+)
 
 const formSchema = z.object({
 	// username: z.string(),
 	imageFile: z.instanceof(File).optional(),
-});
+})
 
 function ProfileModal({ children }: ProfileModalProps) {
-	const fileInputRef = useRef<HTMLInputElement | null>(null);
+	const fileInputRef = useRef<HTMLInputElement | null>(null)
 
 	const handleClick = () => {
 		if (fileInputRef.current) {
-			fileInputRef.current.click();
+			fileInputRef.current.click()
 		}
-	};
+	}
 
 	// 1. Define your form.
 	const form = useForm<z.infer<typeof formSchema>>({
@@ -55,37 +53,37 @@ function ProfileModal({ children }: ProfileModalProps) {
 			// username: "",
 			imageFile: undefined,
 		},
-	});
+	})
 
 	// 2. Define a submit handler.
 	function onSubmit(values: z.infer<typeof formSchema>) {
-		const formData = new FormData();
+		const formData = new FormData()
 
 		// Check if the image file exists
-		const file = fileInputRef.current?.files ? fileInputRef.current.files[0] : null;
+		const file = fileInputRef.current?.files ? fileInputRef.current.files[0] : null
 
-		console.log("file", file);
+		console.log("file", file)
 
 		// If there is a file, add the file to FormData, otherwise add the URL
 		if (file) {
-			formData.append("imageFile", file); // Add file to FormData
+			formData.append("imageFile", file) // Add file to FormData
 		}
 
 		// formData.append("username", values.username); // Add other fields
 
 		// Send data to the API
-		axios
-			.post("https://localhost:7018/api/media/upload-video", formData, {
-				headers: {
-					"Content-Type": "multipart/form-data",
-				},
-			})
-			.then((response) => {
-				toast.success("Image uploaded successfully");
-			})
-			.catch((error) => {
-				console.error("Error uploading:", error);
-			});
+		// axios
+		// 	.post("https://localhost:7018/api/media/upload-video", formData, {
+		// 		headers: {
+		// 			"Content-Type": "multipart/form-data",
+		// 		},
+		// 	})
+		// 	.then((response) => {
+		// 		toast.success("Image uploaded successfully");
+		// 	})
+		// 	.catch((error) => {
+		// 		console.error("Error uploading:", error);
+		// 	});
 	}
 
 	return (
@@ -127,8 +125,8 @@ function ProfileModal({ children }: ProfileModalProps) {
 												accept=".mp3"
 												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
 												onChange={(e) => {
-													const file = e.target.files ? e.target.files[0] : null;
-													field.onChange(file);
+													const file = e.target.files ? e.target.files[0] : null
+													field.onChange(file)
 												}}
 												ref={fileInputRef} // Attach the ref to the file input
 											/>
@@ -174,7 +172,7 @@ function ProfileModal({ children }: ProfileModalProps) {
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
-	);
+	)
 }
 
-export default ProfileModal;
+export default ProfileModal
