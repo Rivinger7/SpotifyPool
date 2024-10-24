@@ -15,12 +15,14 @@ import { Input } from "@/components/ui/input"
 import { Link } from "react-router-dom"
 import { Switch } from "@/components/ui/switch"
 import { useNavigate } from "react-router-dom"
-import GoogleIcon from "@/assets/icons/GoogleIcon"
+// import GoogleIcon from "@/assets/icons/GoogleIcon"
 
-import { login } from "@/store/slice/authSlice"
-import { useLoginMutation } from "@/services/apiAuth"
-import { useDispatch } from "react-redux"
 import toast from "react-hot-toast"
+import { useDispatch } from "react-redux"
+import { login } from "@/store/slice/authSlice"
+import { useLoginByGoogleMutation, useLoginMutation } from "@/services/apiAuth"
+
+import { GoogleLogin } from "@react-oauth/google"
 
 const formSchema = z.object({
 	username: z.string(),
@@ -35,6 +37,7 @@ export default function LoginForm() {
 	const dispatch = useDispatch()
 
 	const [loginMutation] = useLoginMutation()
+	const [loginByGoogleMutation] = useLoginByGoogleMutation()
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -53,6 +56,7 @@ export default function LoginForm() {
 				dispatch(
 					login({
 						userToken: data.authenticatedResponseModel,
+						isGoogle: false,
 					})
 				)
 				navigate("/")
@@ -154,22 +158,36 @@ export default function LoginForm() {
 							or
 						</span>
 					</div>
-					<Button
-						className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-3 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
-						type="submit"
-						asChild
+					<div
+						className="mt-3"
+						// className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-3 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
+						// type="submit"
 					>
 						{/* LOGIN GOOGLE USING CUSTOM URL */}
-						<a
-							href={
-								import.meta.env.VITE_API_ENDPOINT +
-								"/api/authentication/login-by-google?returnUrl=%2F"
-							}
-						>
+						{/* <a href={import.meta.env.VITE_API_ENDPOINT + "/api/authentication/login-by-google"}>
 							<GoogleIcon />
 							Sign up with Google
-						</a>
-					</Button>
+						</a> */}
+						<GoogleLogin
+							shape="pill"
+							size="large"
+							onSuccess={(credentialResponse) => {
+								loginByGoogleMutation({ googleToken: credentialResponse.credential })
+									.unwrap()
+									.then((data) => {
+										dispatch(login({ userToken: data.token, isGoogle: true }))
+										navigate("/")
+										toast.success("Login successful")
+									})
+									.catch((error) => {
+										console.error(error)
+									})
+							}}
+							onError={() => {
+								console.log("Login Failed")
+							}}
+						/>
+					</div>
 
 					<div className="text-center mt-3 w-full text-[#a7a7a7]">
 						Don't have an account?{" "}

@@ -1,12 +1,30 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { Link } from "react-router-dom"
 import { RootState } from "@/store/store"
-import { useSelector } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
+import { logout } from "@/store/slice/authSlice"
+import toast from "react-hot-toast"
 
 const MainHeader = () => {
+	const dispatch = useDispatch()
 	const { userData, isAuthenticated } = useSelector((state: RootState) => state.auth)
+
+	const handleLogout = () => {
+		dispatch(logout())
+		toast.success("Logout successful")
+		window.location.reload()
+	}
 
 	return (
 		<>
@@ -62,21 +80,59 @@ const MainHeader = () => {
 							) : (
 								<>
 									<TooltipProvider>
-										<Tooltip>
-											<TooltipTrigger>
-												<Avatar className="bg-[#1f1f1f] items-center justify-center cursor-pointer hover:scale-110 transition-all w-12 h-12">
-													<AvatarImage
-														src={userData?.avatar}
-														className="object-cover rounded-full w-8 h-8"
-													/>
-													<AvatarFallback>
-														{userData?.displayName.charAt(0).toUpperCase()}
-													</AvatarFallback>
-												</Avatar>
-											</TooltipTrigger>
-											<TooltipContent side="bottom" align="center">
-												<p>{userData?.displayName}</p>
-											</TooltipContent>
+										<Tooltip delayDuration={50}>
+											<DropdownMenu>
+												<DropdownMenuTrigger>
+													<TooltipTrigger asChild>
+														{/* AVATAR IMAGE */}
+														<Avatar className="bg-[#1f1f1f] items-center justify-center cursor-pointer hover:scale-110 transition-all w-12 h-12">
+															<AvatarImage
+																referrerPolicy="no-referrer"
+																src={userData?.avatar}
+																className="object-cover rounded-full w-8 h-8"
+															/>
+
+															<AvatarFallback className="bg-green-500 text-sky-100 font-bold w-8 h-8">
+																{userData?.displayName.charAt(0).toUpperCase()}
+															</AvatarFallback>
+														</Avatar>
+													</TooltipTrigger>
+
+													<TooltipContent side="bottom" align="center">
+														<p>{userData?.displayName}</p>
+													</TooltipContent>
+												</DropdownMenuTrigger>
+
+												<DropdownMenuContent className="border-none bg-[#282828] w-52">
+													<DropdownMenuLabel className="w-full text-lg font-bold">
+														{userData?.displayName}
+													</DropdownMenuLabel>
+
+													<DropdownMenuSeparator />
+
+													{/* PROFILE BUTTON */}
+													<DropdownMenuItem className="p-3 pr-2">
+														<Link to={"/user"} className="w-full text-lg">
+															Profile
+														</Link>
+													</DropdownMenuItem>
+
+													<DropdownMenuItem className="p-3 pr-2">
+														<Link to={"/settings"} className="w-full text-lg">
+															Settings
+														</Link>
+													</DropdownMenuItem>
+
+													<DropdownMenuSeparator />
+
+													{/* LOGOUT BUTTON */}
+													<DropdownMenuItem className="p-3 pr-2">
+														<div onClick={handleLogout} className="w-full text-lg">
+															Logout
+														</div>
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
 										</Tooltip>
 									</TooltipProvider>
 								</>

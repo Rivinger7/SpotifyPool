@@ -26,13 +26,13 @@ export const authApi = apiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Auth"],
 		}),
-		getGoogleResponse: build.query({
-			query: () => ({
-				url: "/authentication/google-response",
-				method: "GET",
+		loginByGoogle: build.mutation({
+			query: (data) => ({
+				url: "/authentication/login-by-google",
+				method: "POST",
+				body: JSON.stringify(data),
 			}),
-			transformResponse: (res) => res,
-			providesTags: ["Auth"],
+			invalidatesTags: ["Auth"],
 		}),
 	}),
 })
@@ -41,5 +41,5 @@ export const {
 	useLoginMutation,
 	useRegisterMutation,
 	useEmailConfirmMutation,
-	useGetGoogleResponseQuery,
+	useLoginByGoogleMutation,
 } = authApi

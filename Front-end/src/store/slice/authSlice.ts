@@ -8,6 +8,13 @@ interface DecodedToken {
 	Avatar: string
 }
 
+// Interface for the decoded Google JWT token
+interface DecodedGoogleToken {
+	name: string
+	"http://schemas.microsoft.com/ws/2008/06/identity/claims/role": string
+	picture: string
+}
+
 // Interface for the user data stored in the state
 interface UserData {
 	displayName: string
@@ -44,15 +51,25 @@ const authSlice = createSlice({
 	name: "auth",
 	initialState,
 	reducers: {
-		login: (state, action: PayloadAction<{ userToken: UserToken }>) => {
-			const { userToken } = action.payload
+		login: (state, action: PayloadAction<{ userToken: UserToken; isGoogle: boolean }>) => {
+			const { userToken, isGoogle } = action.payload
 			const decodedToken = jwtDecode<DecodedToken>(userToken.accessToken)
+			const decodedGoogleToken = jwtDecode<DecodedGoogleToken>(userToken.accessToken)
 
-			state.userData = {
-				displayName: decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"],
-				role: decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
-				avatar: decodedToken.Avatar,
+			if (!isGoogle) {
+				state.userData = {
+					displayName: decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"],
+					role: decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
+					avatar: decodedToken.Avatar,
+				}
+			} else {
+				state.userData = {
+					displayName: decodedGoogleToken.name,
+					role: decodedGoogleToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
+					avatar: decodedGoogleToken.picture,
+				}
 			}
+
 			state.userToken = userToken
 			state.isAuthenticated = true
 
