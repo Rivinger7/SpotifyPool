@@ -2,6 +2,6 @@
 {
     public class GoogleLoginRequestModel
     {
-        public string GoogleToken { get; set; } = string.Empty;
+        public string GoogleToken { get; set; }
     }
 }

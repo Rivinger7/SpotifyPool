@@ -1,6 +1,5 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 using DataAccessLayer.Repository.Entities;
-using Google.Apis.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 

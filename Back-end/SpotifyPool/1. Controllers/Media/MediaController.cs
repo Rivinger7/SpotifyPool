@@ -1,6 +1,7 @@
 ﻿using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,7 +9,7 @@ namespace SpotifyPool.Controllers.Media
 {
     [Route("api/media")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = "Bearer")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class MediaController(CloudinaryService cloudinaryService, ISpotify spotifyService, ITrack trackService) : ControllerBase
     {
         private readonly CloudinaryService cloudinaryService = cloudinaryService;
@@ -41,6 +42,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="imageFile"></param>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpPost("upload-image")]
         public IActionResult UploadImage(IFormFile imageFile)
         {
@@ -65,6 +67,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpGet("get-image/{publicID}")]
         public IActionResult GetImageResult(string publicID)
         {
@@ -89,6 +92,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpDelete("delete-image/{publicID}")]
         public IActionResult DeleteImage(string publicID)
         {
@@ -118,15 +122,15 @@ namespace SpotifyPool.Controllers.Media
         }
 
         /// <summary>
-        /// Tìm theo tên bài hát
+        /// Tìm theo tên bài hát hoặc nghệ sĩ
         /// </summary>
-        /// <param name="trackName"></param>
+        /// <param name="searchTerm"></param>
         /// <returns></returns>
         [Authorize(Roles = "Customer")]
         [HttpGet("tracks/search")]
-        public async Task<IActionResult> SearchTracksAsync([FromQuery] string trackName)
+        public async Task<IActionResult> SearchTracksAsync([FromQuery] string searchTerm)
         {
-            var result = await _trackService.SearchTracksAsync(trackName);
+            var result = await _trackService.SearchTracksAsync(searchTerm);
             return Ok(result);
         }
 

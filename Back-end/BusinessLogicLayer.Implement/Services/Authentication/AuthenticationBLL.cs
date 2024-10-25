@@ -12,8 +12,6 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Google.Apis.Auth;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -182,7 +180,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         {
             if (string.IsNullOrEmpty(googleToken))
             {
-                throw new CustomException("Google Token is null or empty", StatusCodes.Status500InternalServerError, "Google Token is null or empty");
+                throw new CustomException("Google Token", StatusCodes.Status500InternalServerError, "Google Token is null or empty");
             }
 
             // Lấy token từ FE
@@ -378,6 +376,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             _httpContextAccessor.HttpContext.Session.SetString("UserName", retrieveUser.UserName);
+            _httpContextAccessor.HttpContext.Session.SetString("UserID", retrieveUser.Id);
 
             return authenticationModel;
         }

@@ -437,7 +437,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Authentication
             services.AddScoped<IAuthenticationBLL, AuthenticationBLL>();
-            services.AddScoped<IAuthGoogle, AuthGoogle>();
 
             // User
             services.AddScoped<IUserBLL, UserBLL>();

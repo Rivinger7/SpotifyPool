@@ -4,16 +4,31 @@ using Microsoft.AspNetCore.Http;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using Utility.Coding;
 using Business_Logic_Layer.Services_Interface.InMemoryCache;
+using DataAccessLayer.Interface.MongoDB.UOW;
+using DataAccessLayer.Repository.Entities;
+using MongoDB.Driver;
+using System.Text.RegularExpressions;
+using System.Web;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
-    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache)
+    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
     {
         private readonly Cloudinary _cloudinary = cloudinary;
         private readonly ICacheCustom _cache = cache;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         public ImageUploadResult UploadImage(IFormFile imageFile, string tags = "AvatarUserProfile", string folder = "Image")
         {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string userID = _httpContextAccessor.HttpContext.Session.GetString("UserID");
+
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
             if (imageFile is null || imageFile.Length == 0)
             {
                 throw new ArgumentNullCustomException(nameof(imageFile), "No file uploaded");
@@ -39,27 +54,25 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             tags = tags switch
             {
-                "AvatarUserProfile" => "/User's Profiles",
+                "AvatarUserProfile" => "/User's_Profiles",
                 _ => "/Test",
             };
 
-            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string userID = "testing";
-
             // Hashing Metadata
-            string hashedData = DataEncryptionExtensions.Encrypt($"image_{userID}");
+            string hashedData = DataEncryptionExtensions.Encrypt($"image_{tags}_{userID}");
 
             // Nếu người dùng đang ở khác muối giờ thì cách này hiệu quả hơn
             // Không nhất thiết phải là UTC+7 vì còn tùy thuộc theo hệ thống trên máy của người dùng
-            string timestamp = DateTime.UtcNow.Ticks.ToString();
+            //string timestamp = DateTime.UtcNow.Ticks.ToString();
+            // Không cần timestamp để giữ tính nhất quán nếu có update
 
             using Stream? stream = imageFile.OpenReadStream();
             ImageUploadParams uploadParams = new()
             {
-                Folder = "Image" + tags,
+                AssetFolder = folder + tags, // Dùng assetFolder sẽ không yêu cầu publicPrefixID
                 File = new(imageFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
-                PublicId = $"{Uri.EscapeDataString(hashedData + '_' + timestamp)}",
+                PublicId = $"{Uri.EscapeDataString(hashedData)}",
                 DisplayName = imageFile.FileName,
                 UniqueFilename = false, // Đã custom nên không cần Unique từ Server nữa
                 Tags = tags,
@@ -81,6 +94,14 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
         public VideoUploadResult UploadTrack(IFormFile trackFile)
         {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string userID = _httpContextAccessor.HttpContext.Session.GetString("UserID");
+
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
             if (trackFile is null || trackFile.Length == 0)
             {
                 throw new ArgumentNullCustomException(nameof(trackFile), "No file uploaded");
@@ -106,23 +127,21 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 default: throw new BadRequestCustomException("Unsupported file type");
             }
 
-            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string userID = "testing";
-
             // Hashing Metadata
             string hashedData = DataEncryptionExtensions.Encrypt($"track_{userID}");
 
             // Nếu người dùng đang ở khác muối giờ thì cách này hiệu quả hơn
             // Không nhất thiết phải là UTC+7 vì còn tùy thuộc theo hệ thống trên máy của người dùng
-            string timestamp = DateTime.UtcNow.Ticks.ToString();
+            //string timestamp = DateTime.UtcNow.Ticks.ToString();
+            // Không cần timestamp để giữ tính nhất quán nếu có update
 
             using Stream? stream = trackFile.OpenReadStream();
             VideoUploadParams uploadParams = new()
             {
-                Folder = "Audio/Test",
+                AssetFolder = "Audio/Test", // Dùng assetFolder sẽ không yêu cầu publicPrefixID
                 File = new(trackFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
-                PublicId = $"{Uri.EscapeDataString(hashedData + '_' + timestamp)}",
+                PublicId = $"{Uri.EscapeDataString(hashedData)}",
                 DisplayName = trackFile.FileName,
                 UniqueFilename = false, // Đã custom nên không cần Unique từ Server nữa
                 Format = "mp3",
@@ -198,6 +217,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         // Update ImageResponseModel / Video from Client
         // Update và Upload dùng chung
         // Chỉ cần xử lý DB bên Upload là được
+        // Vì chỉ cần upload trùng với publicID cũ là nó sẽ ghi đè lên thay vì tạo mới
 
         // Delete ImageResponseModel from Server
         public DeletionResult? DeleteImage(string publicID)

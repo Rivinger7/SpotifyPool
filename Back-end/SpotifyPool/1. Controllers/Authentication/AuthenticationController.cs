@@ -1,11 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using BusinessLogicLayer.ModelView;
-using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace SpotifyPool.Controllers.Authentication
 {

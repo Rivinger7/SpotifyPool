@@ -8,8 +8,8 @@
     <script>
         function handleCredentialResponse(response) {
             // Nhận IdToken từ Google
-            const idToken = response.credential;
-            console.log("ID Token từ Google: " + idToken);
+            const googleToken = response.credential;
+            console.log("ID Token từ Google: " + googleToken);
 
             // Gửi IdToken này lên server để xác thực và nhận JWT Token
             fetch('/api/authentication/login-by-google', {
@@ -18,7 +18,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    idToken: idToken,
+                    googleToken: googleToken,
                 }),
             })
                 .then(response => response.json())

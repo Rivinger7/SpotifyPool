@@ -2,12 +2,8 @@
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 using DataAccessLayer.Interface.MongoDB.UOW;
-using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
-using Google.Apis.Auth;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -126,19 +122,18 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
             refreshToken = GenerateRefreshToken();
 
-            //set refresh token, expirytime for refreshtoken to user and save to database
-            UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, refreshToken);
-
             DateTime refreshTokenExpiryTime = Util.GetUtcPlus7Time().AddDays(5);
-            UpdateDefinition<User> refreshTokenExpiryTimeUpdate = Builders<User>.Update.Set(user => user.RefreshTokenExpiryTime, refreshTokenExpiryTime);
 
-            // Update
-            UpdateResult refeshTokenUpdateResult = _unitOfWork.GetCollection<User>().UpdateOne(user => user.Id == userID, refeshTokenUpdate);
-            UpdateResult refreshTokenExpiryTimeUpdateResult = _unitOfWork.GetCollection<User>().UpdateOne(user => user.Id == userID, refreshTokenExpiryTimeUpdate);
+            UpdateDefinition<User> updateDefinition = Builders<User>.Update
+                .Set(user => user.RefreshToken, refreshToken)
+                .Set(user => user.RefreshTokenExpiryTime, refreshTokenExpiryTime);
 
-            if (refeshTokenUpdateResult.ModifiedCount < 1 || refreshTokenExpiryTimeUpdateResult.ModifiedCount < 1)
+            UpdateResult updateResult = _unitOfWork.GetCollection<User>().UpdateOne(
+                user => user.Id == userID, updateDefinition);
+
+            if (updateResult.ModifiedCount < 1)
             {
-                throw new ArgumentException("Found User but can not update");
+                throw new ArgumentException("Found User but cannot update");
             }
 
             return;
@@ -208,11 +203,12 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
             var tokenDescription = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[] {
-                            new Claim("Email", email),
-                            new Claim(ClaimTypes.Role, "Customer"),
-                            new Claim("EncrpytedToken", encrpytedToken)
-                }),
+                Subject = new ClaimsIdentity(
+                [
+                    new Claim("Email", email),
+                    new Claim(ClaimTypes.Role, "Customer"),
+                    new Claim("EncrpytedToken", encrpytedToken)
+                ]),
                 Expires = DateTime.UtcNow.AddHours(24),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKeyBytes), SecurityAlgorithms.HmacSha256Signature)
             };

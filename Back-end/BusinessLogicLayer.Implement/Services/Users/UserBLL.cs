@@ -172,14 +172,22 @@ namespace BusinessLogicLayer.Implement.Services.Users
 				// decode từ URL 
 				string textNormalizedFromUrl = HttpUtility.UrlDecode(linkImage);
 
-				// regex để lấy publicID
-				Regex regex = new Regex(@"User's Profiles\/([a-zA-Z0-9%_=]+)\.webp$");
+                Console.WriteLine("==========================");
+                Console.WriteLine($"{textNormalizedFromUrl}");
+                Console.WriteLine("==========================");
+
+                // regex để lấy publicID
+                Regex regex = new(@"User's_Profiles\/([a-zA-Z0-9%_=]+)\.webp$");
 				Match match = regex.Match(textNormalizedFromUrl);
 
 				string publicIDImage = match.Groups[1].Value;
 
-				// Xóa ảnh cũ nếu ảnh không phải ảnh mặc định
-				if (publicIDImage != "RaQXMK0XJlX0bZbUyHcSfA%3D%3D_638647809024468188")
+                Console.WriteLine("==========================");
+                Console.WriteLine($"{publicIDImage}");
+                Console.WriteLine("==========================");
+
+                // Xóa ảnh cũ nếu ảnh không phải ảnh mặc định
+                if (publicIDImage != "RaQXMK0XJlX0bZbUyHcSfA%3D%3D_638647809024468188")
 				{
 					_cloudinaryService.DeleteImage(publicIDImage);
 				}
