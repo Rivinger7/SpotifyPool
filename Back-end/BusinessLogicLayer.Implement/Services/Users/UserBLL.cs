@@ -13,6 +13,7 @@ using System.Web;
 using System.Text.RegularExpressions;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using CloudinaryDotNet.Actions;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
@@ -138,72 +139,46 @@ namespace BusinessLogicLayer.Implement.Services.Users
 
 		public async Task EditProfileAsync(EditProfileRequestModel requestModel)
 		{
-			string userName = _httpContextAccessor.HttpContext.Session.GetString("UserName");
-
-			if (string.IsNullOrEmpty(userName))
-			{
-				throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
-			}
-
+			string userId = _httpContextAccessor.HttpContext.Session.GetString("UserID");
 
 			User user = await _unitOfWork.GetCollection<User>()
-				.Find(user => user.UserName == userName)
-				.FirstOrDefaultAsync();
+                                         .Find(user => user.Id == userId)
+                                         .Project(Builders<User>.Projection.Include(user => user.Images))
+                                         .As<User>()
+                                         .FirstOrDefaultAsync()
+                        ?? throw new DataNotFoundCustomException("Not found any user");
 
 			// nếu không điền dữ liệu mới thì lấy lại cái cũ
-			requestModel.DisplayName = requestModel.DisplayName ?? user.DisplayName;
-			requestModel.FullName = requestModel.FullName ?? user.FullName;
-			requestModel.PhoneNumber = requestModel.PhoneNumber ?? user.PhoneNumber;
-			requestModel.Birthdate = requestModel.Birthdate ?? user.Birthdate;
-			requestModel.Gender = requestModel.Gender ?? user.Gender;
+			requestModel.DisplayName ??= user.DisplayName;
+			requestModel.FullName ??= user.FullName;
+			requestModel.PhoneNumber ??= user.PhoneNumber;
+			requestModel.Birthdate ??= user.Birthdate;
+			requestModel.Gender ??= user.Gender;
 
-			// tạo cập nhật field khác trc
-			UpdateDefinition<User> update = Builders<User>.Update
-				.Set(u => u.FullName, requestModel.FullName)
-				.Set(u => u.DisplayName, requestModel.DisplayName)
-				.Set(u => u.PhoneNumber, requestModel.PhoneNumber)
-				.Set(u => u.Birthdate, requestModel.Birthdate)
-				.Set(u => u.Gender, requestModel.Gender);
+            //map từ model qua user
+            _mapper.Map<EditProfileRequestModel, User>(requestModel, user);
 
 			if (requestModel.Image is not null)
 			{
-				string linkImage = user.Images.Last().URL;
-
-				// decode từ URL 
-				string textNormalizedFromUrl = HttpUtility.UrlDecode(linkImage);
-
-                Console.WriteLine("==========================");
-                Console.WriteLine($"{textNormalizedFromUrl}");
-                Console.WriteLine("==========================");
-
-                // regex để lấy publicID
-                Regex regex = new(@"User's_Profiles\/([a-zA-Z0-9%_=]+)\.webp$");
-				Match match = regex.Match(textNormalizedFromUrl);
-
-				string publicIDImage = match.Groups[1].Value;
-
-                Console.WriteLine("==========================");
-                Console.WriteLine($"{publicIDImage}");
-                Console.WriteLine("==========================");
-
-                // Xóa ảnh cũ nếu ảnh không phải ảnh mặc định
-                if (publicIDImage != "RaQXMK0XJlX0bZbUyHcSfA%3D%3D_638647809024468188")
-				{
-					_cloudinaryService.DeleteImage(publicIDImage);
-				}
-
-				ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image);
-
+                ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image);
 				user.Images.Clear();
 				user.Images.Add(new Image { URL = result.SecureUrl.ToString(), Height = 500, Width = 313 });
-
-				// cập nhật danh sách ảnh mới
-				update = update.Set(u => u.Images, user.Images);
 			}
 
+            await _unitOfWork.GetCollection<User>().ReplaceOneAsync(user => user.Id == userId, user);
+		}
 
-			await _unitOfWork.GetCollection<User>()
-				.UpdateOneAsync(user => user.UserName == userName, update);
+        //test method
+        public async Task<BasePaginatedList<BsonDocument>> Test(int index, int page)
+		{
+            IMongoCollection<User> collection = _unitOfWork.GetCollection<User>();
+
+            ProjectionDefinition<User> user = Builders<User>.Projection
+                .Exclude(u => u.Id)
+                .Include(u => u.FullName);
+
+            return await _unitOfWork.GetRepository<User>().Paging(collection, user, index, page);
+
 		}
 	}
 }

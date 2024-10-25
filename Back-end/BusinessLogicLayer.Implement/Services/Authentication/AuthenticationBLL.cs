@@ -13,6 +13,7 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -448,7 +449,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         {
             string userName = _httpContextAccessor.HttpContext.Session.GetString("UserName"); // chỗ này lấy từ login
 
-            if (model.NewPassword != model.ConfirmPassword)
+			if (model.NewPassword != model.ConfirmPassword)
             {
                 throw new BadRequestCustomException("Confirm password does not match with new password!");
             }
@@ -458,20 +459,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.UserName == userName, update);
         }
 
-        private string GenerateOTP()
-        {
-            //using thay cho .Dispose, rng sẽ được giải phóng sau khi đóng using
-            using var rng = RandomNumberGenerator.Create();
-            var otpBytes = new byte[4];
-            rng.GetBytes(otpBytes);
-            //chuyển mảng byte sang int và chia lấy dư cho 1000000 để lấy đúng 6 chữ số sau dấu phẩy
-            int otpCode = BitConverter.ToInt32(otpBytes, 0) % 1000000;
-            return Math.Abs(otpCode).ToString("D6"); // chuyển thành chuỗi 6 chữ số
-        }
+
 
         private async Task<string> CreateOTPAsync(string email)
         {
-            string otpCode = GenerateOTP();
+            string otpCode = Util.GenerateOTP();
             //user đã có otp thì update lại, chưa thì tạo mới
             if (await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email).AnyAsync())
             {

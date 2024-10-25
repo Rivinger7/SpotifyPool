@@ -1,7 +1,10 @@
 ﻿using DataAccessLayer.Interface.MongoDB.Generic_Repository;
+using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
+using Utility.Coding;
 
 namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 {
@@ -59,5 +62,38 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
         {
             await Collection.DeleteOneAsync(Builders<TDocument>.Filter.Eq("_id", id));
         }
+
+  //      public BasePaginatedList<TDocument> Paging (IQueryable<TDocument> query, int currentPageIndex, int itemsPerPage) //IMongoCollection<TDocument> collection, ProjectionDefinition<TDocument> projection
+		//{
+		//	//var result =  await collection.Find(Builders<TDocument>.Filter.Empty)
+  // //                                       .Project(projection)
+  // //                                       .Skip((currentPageIndex - 1) * itemsPerPage)
+  // //                                       .Limit(itemsPerPage)
+  // //                                       .ToListAsync();
+
+  //          var result = query.Skip((currentPageIndex - 1) * itemsPerPage)
+		//							.Take(itemsPerPage)
+		//							.ToList();
+		//	int count = result.Count;
+
+		//	return new BasePaginatedList<TDocument>(result, count, currentPageIndex, itemsPerPage);
+
+		//}
+        //
+
+        //ĐAG LÀM DỞ *****************
+        public async Task<BasePaginatedList<BsonDocument>> Paging (IMongoCollection<TDocument> collection, ProjectionDefinition<TDocument> projection, int currentPageIndex, int itemsPerPage) //
+		{
+            var result = await collection.Find(Builders<TDocument>.Filter.Empty)
+                                          .Project(projection)
+                                          .Skip((currentPageIndex - 1) * itemsPerPage)
+                                          .Limit(itemsPerPage)
+                                          .ToListAsync();
+
+			int count = result.Count;
+
+			return new BasePaginatedList<BsonDocument>(result, count, currentPageIndex, itemsPerPage);
+
+		}
     }
 }

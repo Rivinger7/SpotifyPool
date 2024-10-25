@@ -1,8 +1,8 @@
 ﻿namespace Utility.Coding
 {
-    public class BasePaginatedList<T>
+    public class BasePaginatedList<TDocument>
     {
-        public IReadOnlyCollection<T> Items { get; private set; }
+        public IReadOnlyCollection<TDocument> Items { get; private set; }
 
         // Thuộc tính để lưu trữ tổng số phần tử
         public int TotalItems { get; private set; }
@@ -16,13 +16,19 @@
         // Thuộc tính để lưu trữ số phần tử trên mỗi trang
         public int PageSize { get; private set; }
 
-        // Constructor để khởi tạo danh sách phân trang
-        public BasePaginatedList(IReadOnlyCollection<T> items, int count, int pageNumber, int pageSize)
+        /// <summary>
+        /// Constructor để khởi tạo danh sách phân trang
+        /// </summary>
+        /// <param name="items">Câu query trả về danh sách tất cả những thứ cần show ra</param>
+        /// <param name="itemsAmount">Thuộc tính lưu trữ tổng số phần tử</param>
+        /// <param name="currentPageIndex">Thuộc tính lưu trữ số trang hiện tại</param>
+        /// <param name="itemsPerPage">Thuộc tính lưu trữ số phần tử trên mỗi trang</param>
+        public BasePaginatedList(IReadOnlyCollection<TDocument> items, int itemsAmount, int currentPageIndex, int itemsPerPage)
         {
-            TotalItems = count;
-            CurrentPage = pageNumber;
-            PageSize = pageSize;
-            TotalPages = (int)Math.Ceiling(count / (double)pageSize);
+            TotalItems = itemsAmount;
+            CurrentPage = currentPageIndex;
+            PageSize = itemsPerPage;
+            TotalPages = (int)Math.Ceiling(itemsAmount / (double)itemsPerPage);
             Items = items;
         }
 

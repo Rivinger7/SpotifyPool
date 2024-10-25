@@ -42,5 +42,12 @@ namespace SpotifyPool._1._Controllers.Users
 			await _userBLL.EditProfileAsync(request);
 			return Ok("Update profile successfully!");
 		}
+
+        [HttpGet("get-user-paging")]
+		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int index, [FromQuery] int page)
+		{
+			var users = await _userBLL.Test(index, page);
+			return Ok(users);
+		}
 	}
 }

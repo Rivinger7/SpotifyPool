@@ -1,5 +1,7 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
 using System.Linq.Expressions;
+using Utility.Coding;
 
 namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
 {
@@ -12,7 +14,10 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         Task UpdateAsync(string id, TDocument entity);
         Task DeleteAsync(string id);
 
-        Task<IEnumerable<TResult>> GetAllDocumentsWithLookupAsync<TForeignDocument, TResult>(
+        Task<BasePaginatedList<BsonDocument>> Paging(IMongoCollection<TDocument> collection, ProjectionDefinition<TDocument> projection, int currentPageIndex, int itemsPerPage);
+
+
+		Task<IEnumerable<TResult>> GetAllDocumentsWithLookupAsync<TForeignDocument, TResult>(
             Expression<Func<TDocument, IEnumerable<object>>> localField,
             Expression<Func<TForeignDocument, object>> foreignField,
             Expression<Func<TResult, IEnumerable<TForeignDocument>>> resultField);

@@ -3,6 +3,7 @@ using System.Text;
 using System.Drawing;
 using Microsoft.AspNetCore.Http;
 using System.Text.RegularExpressions;
+using System.Security.Cryptography;
 
 namespace Utility.Coding
 {
@@ -142,6 +143,17 @@ namespace Utility.Coding
         {
             var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
             return ipAddress ?? "IP address not available";
+        }
+
+        public static  string GenerateOTP()
+        {
+            //using thay cho .Dispose, rng sẽ được giải phóng sau khi đóng using
+            using var rng = RandomNumberGenerator.Create();
+            var otpBytes = new byte[4];
+            rng.GetBytes(otpBytes);
+            //chuyển mảng byte sang int và chia lấy dư cho 1000000 để lấy đúng 6 chữ số sau dấu phẩy
+            int otpCode = BitConverter.ToInt32(otpBytes, 0) % 1000000;
+            return Math.Abs(otpCode).ToString("D6"); // chuyển thành chuỗi 6 chữ số
         }
     }
 }
