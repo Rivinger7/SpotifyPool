@@ -43,6 +43,13 @@ using SetupLayer.Setting.Database;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.Implement.Services.Tracks;
 using System.Security.Claims;
+using BusinessLogicLayer.Interface.Services_Interface.Playlists.Favorites;
+using BusinessLogicLayer.Implement.Services.Playlists.Favorites;
+using MongoDB.Bson.Serialization;
+using SetupLayer.Enum.EnumMemberSerializer;
+using SetupLayer.Enum.Services.Playlist;
+using SetupLayer.Enum.Services.User;
+using SetupLayer.Enum.Microservices.Cloudinary;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -142,6 +149,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddMemoryCache(configuration);
             stopwatch.Stop();
             Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+
+            // EnumMemberSerializer
+            stopwatch.Restart();
+            services.AddEnumMemberSerializer();
+            stopwatch.Stop();
+            Console.WriteLine($"AddEnumMemberSerializer took {stopwatch.ElapsedMilliseconds} ms");
 
             // Problem Details
             stopwatch.Restart();
@@ -443,6 +456,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Track
             services.AddScoped<ITrack, TrackBLL>();
+
+            // Playlist
+            services.AddScoped<IFavoritesPlaylist, FavoritesPlaylistBLL>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
@@ -696,13 +712,29 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddAutoMapper(Assembly.Load("BusinessLogicLayer.Mapper"));
 
             // Có thể cấu hình thêm như sau
-            //services.AddAutoMapper(Assembly.Load(typeof(BusinessLogicLayer.Mapper.AssemblyName).Assembly.FullName));
-            //services.AddAutoMapper(Assembly.Load(typeof(BusinessLogicLayer.Mapper.{anyClassInProject}).Assembly.FullName));
+            //services.AddAutoMapper(Assembly.Load(typeof(BusinessLogicLayer.Mapper.AssemblyName).Assembly.DisplayName));
+            //services.AddAutoMapper(Assembly.Load(typeof(BusinessLogicLayer.Mapper.{anyClassInProject}).Assembly.DisplayName));
 
             // Load Assembly ở vị trí hiện tại
             //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             // Dùng Explicitly nếu dùng assembly chưa được
+        }
+
+        public static void AddEnumMemberSerializer(this IServiceCollection services)
+        {
+            // User
+            BsonSerializer.RegisterSerializer(typeof(UserProduct), new EnumMemberSerializer<UserProduct>());
+            BsonSerializer.RegisterSerializer(typeof(UserRole), new EnumMemberSerializer<UserRole>());
+            BsonSerializer.RegisterSerializer(typeof(UserStatus), new EnumMemberSerializer<UserStatus>());
+
+            // Track
+            BsonSerializer.RegisterSerializer(typeof(PlaylistName), new EnumMemberSerializer<PlaylistName>());
+
+            // Cloudinary
+            BsonSerializer.RegisterSerializer(typeof(AudioTagChild), new EnumMemberSerializer<AudioTagChild>());
+            BsonSerializer.RegisterSerializer(typeof(AudioTagParent), new EnumMemberSerializer<AudioTagParent>());
+            BsonSerializer.RegisterSerializer(typeof(ImageTag), new EnumMemberSerializer<ImageTag>());
         }
     }
 }

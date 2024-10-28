@@ -21,4 +21,8 @@
     <ProjectReference Include="..\BusinessLogicLayer.Setting\SetupLayer.Setting.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\Playlists\Weekly\" />
+  </ItemGroup>
+
 </Project>

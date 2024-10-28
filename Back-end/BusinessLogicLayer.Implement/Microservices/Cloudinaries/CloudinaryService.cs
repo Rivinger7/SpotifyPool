@@ -9,6 +9,7 @@ using DataAccessLayer.Repository.Entities;
 using MongoDB.Driver;
 using System.Text.RegularExpressions;
 using System.Web;
+using SetupLayer.Enum.Microservices.Cloudinary;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
@@ -19,7 +20,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-        public ImageUploadResult UploadImage(IFormFile imageFile, string tags = "AvatarUserProfile", string folder = "Image")
+        public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image")
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string userID = _httpContextAccessor.HttpContext.Session.GetString("UserID");
@@ -52,14 +53,10 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 throw new BadRequestCustomException("Unsupported file type");
             }
 
-            tags = tags switch
-            {
-                "AvatarUserProfile" => "/User's_Profiles",
-                _ => "/Test",
-            };
+            string currentFolder = $"{rootFolder}/{imageTag}";
 
             // Hashing Metadata
-            string hashedData = DataEncryptionExtensions.Encrypt($"image_{tags}_{userID}");
+            string hashedData = DataEncryptionExtensions.Encrypt($"image_{imageTag}_{userID}");
 
             // Nếu người dùng đang ở khác muối giờ thì cách này hiệu quả hơn
             // Không nhất thiết phải là UTC+7 vì còn tùy thuộc theo hệ thống trên máy của người dùng
@@ -69,13 +66,13 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             using Stream? stream = imageFile.OpenReadStream();
             ImageUploadParams uploadParams = new()
             {
-                AssetFolder = folder + tags, // Dùng assetFolder sẽ không yêu cầu publicPrefixID
+                AssetFolder = currentFolder, // Dùng assetFolder sẽ không yêu cầu publicPrefixID
                 File = new(imageFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
                 PublicId = $"{Uri.EscapeDataString(hashedData)}",
                 DisplayName = imageFile.FileName,
                 UniqueFilename = false, // Đã custom nên không cần Unique từ Server nữa
-                Tags = tags,
+                Tags = imageTag.ToString(),
                 Format = "webp",
                 Overwrite = true
             };
@@ -92,7 +89,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             return uploadResult;
         }
 
-        public VideoUploadResult UploadTrack(IFormFile trackFile)
+        public VideoUploadResult UploadTrack(IFormFile trackFile, AudioTagParent audioTagParent, AudioTagChild audioTagChild, string rootFolder = "Audio")
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string userID = _httpContextAccessor.HttpContext.Session.GetString("UserID");
@@ -120,7 +117,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             // Kiểm tra bằng content-type
             string fileType = trackFile.ContentType.Split('/').First();
-            switch(fileType)
+            switch (fileType)
             {
                 case "audio": break;
                 case "video": break;
@@ -128,17 +125,19 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             }
 
             // Hashing Metadata
-            string hashedData = DataEncryptionExtensions.Encrypt($"track_{userID}");
+            string hashedData = DataEncryptionExtensions.Encrypt($"track_{audioTagChild}_{userID}");
 
             // Nếu người dùng đang ở khác muối giờ thì cách này hiệu quả hơn
             // Không nhất thiết phải là UTC+7 vì còn tùy thuộc theo hệ thống trên máy của người dùng
             //string timestamp = DateTime.UtcNow.Ticks.ToString();
             // Không cần timestamp để giữ tính nhất quán nếu có update
 
+            string currentFolder = $"{rootFolder}/{audioTagParent}/{audioTagChild}";
+
             using Stream? stream = trackFile.OpenReadStream();
             VideoUploadParams uploadParams = new()
             {
-                AssetFolder = "Audio/Test", // Dùng assetFolder sẽ không yêu cầu publicPrefixID
+                AssetFolder = currentFolder, // Dùng assetFolder sẽ không yêu cầu publicPrefixID
                 File = new(trackFile.FileName, stream), // new FileDescription()
                 //UseFilename = true,
                 PublicId = $"{Uri.EscapeDataString(hashedData)}",
@@ -150,7 +149,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             VideoUploadResult? uploadResult = _cloudinary.Upload(uploadParams);
 
-            if((int)uploadResult.StatusCode != StatusCodes.Status200OK)
+            if ((int)uploadResult.StatusCode != StatusCodes.Status200OK)
             {
                 throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Status);
             }

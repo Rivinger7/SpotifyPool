@@ -1,8 +1,5 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
-using DataAccessLayer.Repository.Entities;
-using MongoDB.Bson;
-using Utility.Coding;
 
 namespace Business_Logic_Layer.Services_Interface.Users
 {
@@ -15,7 +12,6 @@ namespace Business_Logic_Layer.Services_Interface.Users
 
         Task EditProfileAsync(EditProfileRequestModel requestModel);
 
-		Task<IEnumerable<UserResponseModel>> TestPaging(int index, int page);
-
-	}
+		Task<IEnumerable<UserResponseModel>> TestPaging(int offset, int limit);
+    }
 }

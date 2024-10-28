@@ -14,4 +14,8 @@
     <ProjectReference Include="..\BusinessLogicLayer.Mapper\BusinessLogicLayer.Mapper.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services Interface\Playlists\Weekly\" />
+  </ItemGroup>
+
 </Project>

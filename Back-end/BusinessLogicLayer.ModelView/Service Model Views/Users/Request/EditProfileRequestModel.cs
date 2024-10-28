@@ -4,7 +4,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request
 {
 	public class EditProfileRequestModel
 	{
-		[Display(Name = "FullName")]
+		[Display(Name = "DisplayName")]
 		[StringLength(30, ErrorMessage = "Tên hiển thị không được vượt quá 30 ký tự")]
 		[MinLength(3, ErrorMessage = "Tên hiển thị phải có ít nhất 3 ký tự")]
 		[RegularExpression("^[a-zA-Z]*$", ErrorMessage = "Tên hiển thị chỉ được chứa các ký tự chữ cái và số, và phải bắt đầu bằng chữ cái.")]

@@ -13,13 +13,14 @@
     <Folder Include="Service Model Views\Genres\Request\" />
     <Folder Include="Service Model Views\JWTs\Response\" />
     <Folder Include="Service Model Views\Markets\Request\" />
+    <Folder Include="Service Model Views\Playlists\Request\" />
     <Folder Include="Service Model Views\Reset Password\Response\" />
     <Folder Include="Service Model Views\Tracks\Request\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="13.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 

@@ -10,7 +10,7 @@
     <PackageReference Include="AspNetCore.Identity.MongoDbCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
-    <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>

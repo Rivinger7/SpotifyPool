@@ -4,6 +4,8 @@ using System.Drawing;
 using Microsoft.AspNetCore.Http;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
+using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace Utility.Coding
 {
@@ -154,6 +156,30 @@ namespace Utility.Coding
             //chuyển mảng byte sang int và chia lấy dư cho 1000000 để lấy đúng 6 chữ số sau dấu phẩy
             int otpCode = BitConverter.ToInt32(otpBytes, 0) % 1000000;
             return Math.Abs(otpCode).ToString("D6"); // chuyển thành chuỗi 6 chữ số
+        }
+
+        // Phương thức này lấy giá trị của EnumMemberAttribute từ một giá trị enum
+        // Trả về string
+        public static string GetEnumMemberValue<T>(T enumValue) where T : Enum
+        {
+            // Lấy thông tin trường (field) của giá trị enum
+            FieldInfo? field = enumValue.GetType().GetField(enumValue.ToString());
+
+            // Kiểm tra nếu trường không null
+            if (field != null)
+            {
+                // Lấy thuộc tính EnumMemberAttribute từ trường
+                EnumMemberAttribute? attribute = Attribute.GetCustomAttribute(field, typeof(EnumMemberAttribute)) as EnumMemberAttribute;
+
+                // Nếu thuộc tính không null, trả về giá trị của thuộc tính
+                if (attribute != null)
+                {
+                    return attribute.Value ?? enumValue.ToString();
+                }
+            }
+
+            // Nếu không tìm thấy thuộc tính, trả về giá trị enum dưới dạng chuỗi
+            return enumValue.ToString();
         }
     }
 }

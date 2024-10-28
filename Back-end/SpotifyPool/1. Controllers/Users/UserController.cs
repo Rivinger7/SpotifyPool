@@ -43,11 +43,17 @@ namespace SpotifyPool._1._Controllers.Users
 			return Ok("Update profile successfully!");
 		}
 
+        /// <summary>
+        /// Phân trang cho Users
+        /// </summary>
+        /// <param name="offset">Trang thứ n</param>
+        /// <param name="limit">Số lượng phần tử</param>
+        /// <returns></returns>
         [HttpGet("get-user-paging")]
-		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int pageIndex, [FromQuery] int pageSize)
+		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset, [FromQuery] int limit)
 		{
-			var users = await _userBLL.TestPaging(pageIndex, pageSize);
+			var users = await _userBLL.TestPaging(offset, limit);
 			return Ok(users);
 		}
-	}
+    }
 }

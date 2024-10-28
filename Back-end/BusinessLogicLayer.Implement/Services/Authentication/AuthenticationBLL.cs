@@ -347,7 +347,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             switch (retrieveUser.Status)
             {
                 case UserStatus.Inactive:
-                    _httpContextAccessor.HttpContext.Session.SetString("UserName", retrieveUser.UserName);
+                    _httpContextAccessor.HttpContext.Session.SetString("UserNameTemp", retrieveUser.UserName);
                     throw new UnAuthorizedCustomException("Not active");
                 case UserStatus.Banned: throw new UnAuthorizedCustomException("Banned");
             }
@@ -376,7 +376,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 RefreshToken = refreshToken
             };
 
-            _httpContextAccessor.HttpContext.Session.SetString("UserName", retrieveUser.UserName);
             _httpContextAccessor.HttpContext.Session.SetString("UserID", retrieveUser.Id);
 
             return authenticationModel;
@@ -384,7 +383,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
         public async Task ReActiveAccountByToken()
         {
-            string username = _httpContextAccessor.HttpContext.Session.GetString("UserName");
+            string username = _httpContextAccessor.HttpContext.Session.GetString("UserNameTemp");
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("No username found in session. Please log in again.");
 
             string email = retrieveUser.Email;

@@ -1,20 +1,23 @@
 ﻿using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.Playlists.Favorites;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SetupLayer.Enum.Microservices.Cloudinary;
 
 namespace SpotifyPool.Controllers.Media
 {
     [Route("api/media")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class MediaController(CloudinaryService cloudinaryService, ISpotify spotifyService, ITrack trackService) : ControllerBase
+    public class MediaController(CloudinaryService cloudinaryService, ISpotify spotifyService, ITrack trackService, IFavoritesPlaylist favoritesPlaylistService) : ControllerBase
     {
         private readonly CloudinaryService cloudinaryService = cloudinaryService;
         private readonly ISpotify _spotifyService = spotifyService;
         private readonly ITrack _trackService = trackService;
+        private readonly IFavoritesPlaylist _favoritesPlaylistService = favoritesPlaylistService;
 
         /// <summary>
         /// FOR BACK-END
@@ -41,12 +44,13 @@ namespace SpotifyPool.Controllers.Media
         /// FOR BACK-END
         /// </summary>
         /// <param name="imageFile"></param>
+        /// <param name="imageTag"></param>
         /// <returns></returns>
         [AllowAnonymous]
         [HttpPost("upload-image")]
-        public IActionResult UploadImage(IFormFile imageFile)
+        public IActionResult UploadImage(IFormFile imageFile, ImageTag imageTag)
         {
-            var uploadResult = cloudinaryService.UploadImage(imageFile);
+            var uploadResult = cloudinaryService.UploadImage(imageFile, imageTag);
             return Ok(new { message = "Upload ImageResponseModel Successfully", uploadResult });
         }
 
@@ -54,11 +58,13 @@ namespace SpotifyPool.Controllers.Media
         /// FOR BACK-END
         /// </summary>
         /// <param name="trackFile"></param>
+        /// <param name="audioTagParent"></param>
+        /// <param name="audioTagChild"></param>
         /// <returns></returns>
         [HttpPost("upload-track")]
-        public IActionResult UploadTrack(IFormFile trackFile)
+        public IActionResult UploadTrack(IFormFile trackFile, AudioTagParent audioTagParent, AudioTagChild audioTagChild)
         {
-            var uploadResult = cloudinaryService.UploadTrack(trackFile);
+            var uploadResult = cloudinaryService.UploadTrack(trackFile, audioTagParent, audioTagChild);
             return Ok(new { message = "Upload Video Successfully", uploadResult });
         }
 
@@ -132,6 +138,13 @@ namespace SpotifyPool.Controllers.Media
         {
             var result = await _trackService.SearchTracksAsync(searchTerm);
             return Ok(result);
+        }
+
+        [AllowAnonymous, HttpPost("add-to-favorite-list")]
+        public async Task<IActionResult> AddToFavoriteListAsync(string trackID)
+        {
+            await _favoritesPlaylistService.AddToPlaylistAsync(trackID);
+            return Ok(new {Message = "Add to Favorite Song Successfully"});
         }
 
         /// <summary>

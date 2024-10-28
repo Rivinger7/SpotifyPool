@@ -21,11 +21,10 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         /// <param name="collection">Collection có kiểu IMongoCollection</param>
         /// <param name="filter">Điều kiện cho danh sách lấy ra</param>
         /// <param name="sort">Cách sắp xếp tự định nghĩa</param>
-        /// <param name="pageIndex">Chỉ mục (index) của trang hiện tại cần phân trang</param>
-        /// <param name="pageSize">Số lượng elements muốn có trong 1 trang</param>
+        /// <param name="offset">Chỉ mục (index) của trang hiện tại cần phân trang</param>
+        /// <param name="limit">Số lượng elements muốn có trong 1 trang</param>
         /// <returns></returns>
-        Task<IEnumerable<TDocument>> Paging<TDocument>(IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, SortDefinition<TDocument>? sort, int pageIndex, int pageSize);
-
+        Task<IEnumerable<TDocument>> Paging(int offset, int limit, FilterDefinition<TDocument>? filter = null, SortDefinition<TDocument>? sort = null);
 
 		Task<IEnumerable<TResult>> GetAllDocumentsWithLookupAsync<TForeignDocument, TResult>(
             Expression<Func<TDocument, IEnumerable<object>>> localField,

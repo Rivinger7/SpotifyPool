@@ -14,23 +14,15 @@ namespace DataAccessLayer.Repository.Entities
         public string Password { get; set; } = null!;
         public string Email { get; set; } = null!;
 
-        [BsonRepresentation(BsonType.String)]
         public UserRole Role {  get; set; }
-
-        [BsonRepresentation(BsonType.String)]
         public UserProduct Product { get; set; }
         public string CountryId { get; set; } = null!;
-
         public string? PhoneNumber { get; set; }
-        public string? FullName { get; set; }
         public required string DisplayName { get; set; }
         public int Followers { get; set; }
         public List<Image> Images { get; set; } = [];
-        
         public DateOnly? Birthdate { get; set; }
         public string? Gender { get; set; }
-
-        [BsonRepresentation(BsonType.String)]
         public UserStatus Status { get; set; }
         public string? TokenEmailConfirm { get; set; }
         public bool? IsLinkedWithGoogle { get; set; } = null;
