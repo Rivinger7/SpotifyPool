@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using CloudinaryDotNet.Actions;
 using Utility.Coding;
+using SetupLayer.Enum.Services.User;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
@@ -169,16 +170,26 @@ namespace BusinessLogicLayer.Implement.Services.Users
 		}
 
         //test method
-        public async Task<BasePaginatedList<BsonDocument>> Test(int index, int page)
+        public async Task<IReadOnlyCollection<UserResponseModel>> TestPaging(int index, int page)
 		{
-            IMongoCollection<User> collection = _unitOfWork.GetCollection<User>();
 
-            ProjectionDefinition<User> user = Builders<User>.Projection
-                .Exclude(u => u.Id)
-                .Include(u => u.FullName);
+			IMongoCollection<User> collection = _unitOfWork.GetCollection<User>();
 
-            return await _unitOfWork.GetRepository<User>().Paging(collection, user, index, page);
+            FilterDefinition<User> filter = Builders<User>.Filter.Eq(u => u.Status, UserStatus.Active);
 
+			////BONUS thêm cách dùng điều kiện
+			//FilterDefinitionBuilder<User> builder = Builders<User>.Filter;
+
+			//FilterDefinition<User> filter = builder.Empty;
+
+			//builder.Or(builder.Eq(user => user.FullName, "DuyHoang"), builder.Eq(user => user.UserName, "phuchoa"));
+
+
+			            ////*** nếu muốn có sort thì thêm SortDefinition, như lày
+			            // SortDefinition<User> sort = Builders<User>.Sort.Descending(user => user.FullName);
+
+			var result = await _unitOfWork.GetRepository<User>().Paging(collection, filter, null, index, page);
+            return _mapper.Map<IReadOnlyCollection<UserResponseModel>>(result);
 		}
 	}
 }

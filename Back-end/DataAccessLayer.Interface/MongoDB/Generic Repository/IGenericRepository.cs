@@ -14,7 +14,17 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         Task UpdateAsync(string id, TDocument entity);
         Task DeleteAsync(string id);
 
-        Task<BasePaginatedList<BsonDocument>> Paging(IMongoCollection<TDocument> collection, ProjectionDefinition<TDocument> projection, int currentPageIndex, int itemsPerPage);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TDocument"></typeparam>
+        /// <param name="collection">Collection có kiểu IMongoCollection</param>
+        /// <param name="filter">Điều kiện cho danh sách lấy ra</param>
+        /// <param name="sort">Cách sắp xếp tự định nghĩa</param>
+        /// <param name="pageIndex">Chỉ mục (index) của trang hiện tại cần phân trang</param>
+        /// <param name="pageSize">Số lượng elements muốn có trong 1 trang</param>
+        /// <returns></returns>
+        Task<IReadOnlyCollection<TDocument>> Paging<TDocument>(IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, SortDefinition<TDocument>? sort, int pageIndex, int pageSize);
 
 
 		Task<IEnumerable<TResult>> GetAllDocumentsWithLookupAsync<TForeignDocument, TResult>(

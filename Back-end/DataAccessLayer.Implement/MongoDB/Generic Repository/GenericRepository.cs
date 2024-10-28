@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using Utility.Coding;
 
 namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
@@ -63,37 +64,50 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             await Collection.DeleteOneAsync(Builders<TDocument>.Filter.Eq("_id", id));
         }
 
-  //      public BasePaginatedList<TDocument> Paging (IQueryable<TDocument> query, int currentPageIndex, int itemsPerPage) //IMongoCollection<TDocument> collection, ProjectionDefinition<TDocument> projection
-		//{
-		//	//var result =  await collection.Find(Builders<TDocument>.Filter.Empty)
-  // //                                       .Project(projection)
-  // //                                       .Skip((currentPageIndex - 1) * itemsPerPage)
-  // //                                       .Limit(itemsPerPage)
-  // //                                       .ToListAsync();
 
-  //          var result = query.Skip((currentPageIndex - 1) * itemsPerPage)
-		//							.Take(itemsPerPage)
-		//							.ToList();
-		//	int count = result.Count;
+        public async Task<IReadOnlyCollection<TDocument>> Paging<TDocument>(IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, SortDefinition<TDocument>? sort, int pageIndex, int pageSize)
+        {
+            if (sort is null)
+            {
+                sort = Builders<TDocument>.Sort.Ascending("_id");
+			}
 
-		//	return new BasePaginatedList<TDocument>(result, count, currentPageIndex, itemsPerPage);
+            // 
+            var countFacet = AggregateFacet.Create("count",
+                PipelineDefinition<TDocument, AggregateCountResult>.Create(new[]
+                {
+                        PipelineStageDefinitionBuilder.Count<TDocument>()
 
-		//}
-        //
+                }
+             ));
 
-        //ĐAG LÀM DỞ *****************
-        public async Task<BasePaginatedList<BsonDocument>> Paging (IMongoCollection<TDocument> collection, ProjectionDefinition<TDocument> projection, int currentPageIndex, int itemsPerPage) //
-		{
-            var result = await collection.Find(Builders<TDocument>.Filter.Empty)
-                                          .Project(projection)
-                                          .Skip((currentPageIndex - 1) * itemsPerPage)
-                                          .Limit(itemsPerPage)
-                                          .ToListAsync();
+			var dataFacet = AggregateFacet.Create("data",
+				PipelineDefinition<TDocument, TDocument>.Create(new[]
+				{       
+                        PipelineStageDefinitionBuilder.Sort<TDocument>(sort),
+						PipelineStageDefinitionBuilder.Skip<TDocument>((page - 1) * pageSize),
+						PipelineStageDefinitionBuilder.Limit<TDocument>(pageSize)
+						
 
-			int count = result.Count;
+				}
+			 ));
 
-			return new BasePaginatedList<BsonDocument>(result, count, currentPageIndex, itemsPerPage);
+            var aggregation = await collection.Aggregate()
+				.Match(filter)
+				.Facet(countFacet, dataFacet).ToListAsync();
 
+            //************ NẾU MUỐN LẤY SỐ LƯỢNG TRANG TẤT CẢ 
+            //var count = aggregation.First()
+            //                       .Facets.First(x => x.Name == "count")
+            //                       .Output<AggregateCountResult>().FirstOrDefault()?.Count;
+
+            //var totalPages = (int)Math.Ceiling((double)count! / pageSize);
+
+			var data = aggregation.First()
+								  .Facets.First(x => x.Name == "data")
+								  .Output<TDocument>().ToList();
+
+			return data;
 		}
     }
 }

@@ -36,7 +36,7 @@ namespace SpotifyPool._1._Controllers.Users
             return Ok(user);
         }
 
-        [HttpPost("edit-profile")]
+        [HttpPut("edit-profile")]
         public async Task<IActionResult> EditProfileAsync([FromForm] EditProfileRequestModel request)
 		{
 			await _userBLL.EditProfileAsync(request);
@@ -44,9 +44,9 @@ namespace SpotifyPool._1._Controllers.Users
 		}
 
         [HttpGet("get-user-paging")]
-		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int index, [FromQuery] int page)
+		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int pageIndex, [FromQuery] int pageSize)
 		{
-			var users = await _userBLL.Test(index, page);
+			var users = await _userBLL.TestPaging(index, pageSize);
 			return Ok(users);
 		}
 	}

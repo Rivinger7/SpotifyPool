@@ -1,4 +1,7 @@
-﻿namespace BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response
+﻿using AutoMapper;
+using DataAccessLayer.Repository.Entities;
+
+namespace BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response
 {
     public class UserResponseModel
     {
@@ -10,5 +13,5 @@
         public string? Image { get; set; }
         public bool? IsLinkedWithGoogle { get; set; }
         public string? Status { get; set; }
-    }
+	}
 }

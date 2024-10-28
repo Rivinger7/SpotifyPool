@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="13.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\BusinessLogicLayer.ModelView\BusinessLogicLayer.ModelView.csproj" />
     <ProjectReference Include="..\DataAccessLayer.Implement\DataAccessLayer.Implement.csproj" />
   </ItemGroup>

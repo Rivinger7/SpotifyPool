@@ -15,7 +15,7 @@ namespace Business_Logic_Layer.Services_Interface.Users
 
         Task EditProfileAsync(EditProfileRequestModel requestModel);
 
-        Task<BasePaginatedList<BsonDocument>> Test(int index, int page);
+		Task<IReadOnlyCollection<UserResponseModel>> TestPaging(int index, int page);
 
 	}
 }
