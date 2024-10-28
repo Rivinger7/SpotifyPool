@@ -170,7 +170,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
 		}
 
         //test method
-        public async Task<IReadOnlyCollection<UserResponseModel>> TestPaging(int index, int page)
+        public async Task<IEnumerable<UserResponseModel>> TestPaging(int index, int page)
 		{
 
 			IMongoCollection<User> collection = _unitOfWork.GetCollection<User>();

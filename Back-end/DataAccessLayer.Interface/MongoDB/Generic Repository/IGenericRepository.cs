@@ -24,7 +24,7 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         /// <param name="pageIndex">Chỉ mục (index) của trang hiện tại cần phân trang</param>
         /// <param name="pageSize">Số lượng elements muốn có trong 1 trang</param>
         /// <returns></returns>
-        Task<IReadOnlyCollection<TDocument>> Paging<TDocument>(IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, SortDefinition<TDocument>? sort, int pageIndex, int pageSize);
+        Task<IEnumerable<TDocument>> Paging<TDocument>(IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, SortDefinition<TDocument>? sort, int pageIndex, int pageSize);
 
 
 		Task<IEnumerable<TResult>> GetAllDocumentsWithLookupAsync<TForeignDocument, TResult>(

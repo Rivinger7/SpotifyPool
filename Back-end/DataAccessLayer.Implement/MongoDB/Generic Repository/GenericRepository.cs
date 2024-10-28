@@ -65,34 +65,38 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
         }
 
 
-        public async Task<IReadOnlyCollection<TDocument>> Paging<TDocument>(IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, SortDefinition<TDocument>? sort, int pageIndex, int pageSize)
+        public async Task<IEnumerable<TDocument>> Paging<TDocument>(IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, SortDefinition<TDocument>? sort, int pageIndex, int pageSize)
         {
             if (sort is null)
             {
                 sort = Builders<TDocument>.Sort.Ascending("_id");
 			}
 
-            // 
-            var countFacet = AggregateFacet.Create("count",
-                PipelineDefinition<TDocument, AggregateCountResult>.Create(new[]
+			// NOTE: aggregate facet là 1 phần trong aggreagate dùng để thu thập dữ liệu tổng hợp từ 1 tập dữ liệu. Trong facet có thể có nhiều pipeline
+
+			// tạo một facet "count" để đếm số lượng dữ liệu
+			AggregateFacet<TDocument, AggregateCountResult> countFacet = AggregateFacet.Create("count",
+                PipelineDefinition<TDocument, AggregateCountResult>.Create(new[]    // build 1 pipeline để đếm số lượng dữ liệu
                 {
-                        PipelineStageDefinitionBuilder.Count<TDocument>()
+                        PipelineStageDefinitionBuilder.Count<TDocument>() 
 
                 }
              ));
 
-			var dataFacet = AggregateFacet.Create("data",
-				PipelineDefinition<TDocument, TDocument>.Create(new[]
+			// tạo một facet "data" để lấy dữ liệu + phân trang
+			AggregateFacet<TDocument, TDocument> dataFacet = AggregateFacet.Create("data",
+				PipelineDefinition<TDocument, TDocument>.Create(new[]  // build 1 pipeline để sắp xếp, bỏ qua (skip) và giới hạn (limit) số lượng dữ liệu trả về. thứ trả về là 1 TDocument
 				{       
                         PipelineStageDefinitionBuilder.Sort<TDocument>(sort),
-						PipelineStageDefinitionBuilder.Skip<TDocument>((page - 1) * pageSize),
+						PipelineStageDefinitionBuilder.Skip<TDocument>((pageIndex - 1) * pageSize),
 						PipelineStageDefinitionBuilder.Limit<TDocument>(pageSize)
 						
 
 				}
 			 ));
 
-            var aggregation = await collection.Aggregate()
+			//chơi aggregate, kết hợp các facet trên cùng với filter cho ra kết quả
+			List<AggregateFacetResults> aggregation = await collection.Aggregate()
 				.Match(filter)
 				.Facet(countFacet, dataFacet).ToListAsync();
 
@@ -103,9 +107,11 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
             //var totalPages = (int)Math.Ceiling((double)count! / pageSize);
 
-			var data = aggregation.First()
+
+            // trường hợp nếu lấy trong aggregate có count
+			IEnumerable<TDocument> data = aggregation.First()
 								  .Facets.First(x => x.Name == "data")
-								  .Output<TDocument>().ToList();
+								  .Output<TDocument>();
 
 			return data;
 		}
