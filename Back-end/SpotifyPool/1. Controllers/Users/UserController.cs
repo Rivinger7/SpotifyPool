@@ -46,7 +46,7 @@ namespace SpotifyPool._1._Controllers.Users
         [HttpGet("get-user-paging")]
 		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int pageIndex, [FromQuery] int pageSize)
 		{
-			var users = await _userBLL.TestPaging(index, pageSize);
+			var users = await _userBLL.TestPaging(pageIndex, pageSize);
 			return Ok(users);
 		}
 	}
