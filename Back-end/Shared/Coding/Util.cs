@@ -181,5 +181,17 @@ namespace Utility.Coding
             // Nếu không tìm thấy thuộc tính, trả về giá trị enum dưới dạng chuỗi
             return enumValue.ToString();
         }
+
+        public static (int height, int width) GetImageDimensions(Stream? stream)
+        {
+            // Load the image from the stream
+            using var image = Image.FromStream(stream);
+
+            // Retrieve width and height
+            int height = image.Height;
+            int width = image.Width;
+            
+            return (height, width);
+        }
     }
 }

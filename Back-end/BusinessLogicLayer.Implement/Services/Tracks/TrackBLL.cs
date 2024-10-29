@@ -36,10 +36,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 ).As<ASTrack>();
 
             // Pipeline to list  
-            IEnumerable<ASTrack> artistTracks = await trackPipelines.ToListAsync();
+            IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
 
             // Map the aggregate result to TrackResponseModel  
-            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(artistTracks);
+            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
 
             return responseModel;
         }

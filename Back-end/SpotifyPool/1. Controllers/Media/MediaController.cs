@@ -140,11 +140,39 @@ namespace SpotifyPool.Controllers.Media
             return Ok(result);
         }
 
+        /// <summary>
+        /// Thêm bài hát vào danh sách yêu thích
+        /// </summary>
+        /// <param name="trackID"></param>
+        /// <returns></returns>
         [AllowAnonymous, HttpPost("add-to-favorite-list")]
-        public async Task<IActionResult> AddToFavoriteListAsync(string trackID)
+        public async Task<IActionResult> AddToFavoriteListAsync([FromBody] string trackID)
         {
             await _favoritesPlaylistService.AddToPlaylistAsync(trackID);
             return Ok(new {Message = "Add to Favorite Song Successfully"});
+        }
+
+        /// <summary>
+        /// Danh sách các bài hát yêu thích
+        /// </summary>
+        /// <returns></returns>
+        [AllowAnonymous, HttpGet("playlist/favorite-songs")]
+        public async Task<IActionResult> GetFavoriteSongs()
+        {
+            var result = await _favoritesPlaylistService.GetPlaylistAsync();
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Xóa bài hát ra khỏi danh sách yêu thích
+        /// </summary>
+        /// <param name="trackID"></param>
+        /// <returns></returns>
+        [AllowAnonymous, HttpDelete("playlist/favorite-songs/{trackID}")]
+        public async Task<IActionResult> RemoveTrackFromFavoriteSongs(string trackID)
+        {
+            await _favoritesPlaylistService.RemoveFromPlaylistAsync(trackID);
+            return Ok(new { Message = "Remove Favorite Song Successfully" });
         }
 
         /// <summary>

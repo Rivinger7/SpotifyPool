@@ -20,7 +20,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-        public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image")
+        public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image", int? height = null, int? width = null)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string userID = _httpContextAccessor.HttpContext.Session.GetString("UserID");
@@ -63,7 +63,16 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             //string timestamp = DateTime.UtcNow.Ticks.ToString();
             // Không cần timestamp để giữ tính nhất quán nếu có update
 
+            // Open Read Stream
             using Stream? stream = imageFile.OpenReadStream();
+
+            // Nếu không đặt giá trị height và width thì sẽ lấy mặc định
+            if(height is null || width is null)
+            {
+                (height, width) = Util.GetImageDimensions(stream);
+            }
+
+            // Khởi tạo các thông số cần thiết cho Image
             ImageUploadParams uploadParams = new()
             {
                 AssetFolder = currentFolder, // Dùng assetFolder sẽ không yêu cầu publicPrefixID
@@ -74,9 +83,11 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 UniqueFilename = false, // Đã custom nên không cần Unique từ Server nữa
                 Tags = imageTag.ToString(),
                 Format = "webp",
-                Overwrite = true
+                Overwrite = true,
+                Transformation = new Transformation().Width(width).Height(height).Crop("fill"),
             };
 
+            // Kết quả Response
             ImageUploadResult? uploadResult = _cloudinary.Upload(uploadParams);
 
             if ((int)uploadResult.StatusCode != StatusCodes.Status200OK)
