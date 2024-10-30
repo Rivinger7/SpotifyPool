@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Microservices.Cloudinary;
+using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool.Controllers.Media
 {
@@ -132,7 +133,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="searchTerm"></param>
         /// <returns></returns>
-        [Authorize(Roles = "Customer")]
+        [Authorize(Roles = nameof(UserRole.Customer))]
         [HttpGet("tracks/search")]
         public async Task<IActionResult> SearchTracksAsync([FromQuery] string searchTerm)
         {

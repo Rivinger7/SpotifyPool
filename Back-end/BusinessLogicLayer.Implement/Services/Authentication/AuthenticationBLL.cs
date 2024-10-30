@@ -20,19 +20,16 @@ using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(ILogger<AuthenticationBLL> logger, IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation) : IAuthenticationBLL
+    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation) : IAuthenticationBLL
     {
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
         private readonly IEmailSenderCustom _emailSender = emailSender;
-        private readonly IConfiguration _configuration = configuration;
-        private readonly ILogger<AuthenticationBLL> _logger = logger;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IGeolocation _geolocation = geolocation;
 
@@ -159,6 +156,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             }
 
             await UpdateAccountConfirmationStatus(retrieveUser);
+
+            // Xóa session khi người dùng resend email confirm
+            // Session này phục vụ cho hàm ReActiveAccountByToken khi chưa active account
+            _httpContextAccessor.HttpContext.Session.Remove("UserNameTemp");
 
             return;
         }

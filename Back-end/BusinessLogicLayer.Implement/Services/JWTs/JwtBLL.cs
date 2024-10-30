@@ -5,6 +5,7 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
+using SetupLayer.Enum.Services.User;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -206,7 +207,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
                 Subject = new ClaimsIdentity(
                 [
                     new Claim("Email", email),
-                    new Claim(ClaimTypes.Role, "Customer"),
+                    new Claim(ClaimTypes.Role, UserRole.Customer.ToString()),
                     new Claim("EncrpytedToken", encrpytedToken)
                 ]),
                 Expires = DateTime.UtcNow.AddHours(24),

@@ -173,7 +173,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             {
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.IdleTimeout = TimeSpan.FromDays(7);
+                //options.IdleTimeout = TimeSpan.FromMinutes(30);
             });
             stopwatch.Stop();
             Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
@@ -565,17 +566,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-            }).AddCookie("Cookies").AddGoogle(options =>
-            {
-                options.ClientId = Environment.GetEnvironmentVariable("Authentication_Google_ClientId") ?? throw new DataNotFoundCustomException("Client ID property is not set in environment or not found");
-                options.ClientSecret = Environment.GetEnvironmentVariable("Authentication_Google_ClientSecret") ?? throw new DataNotFoundCustomException("Client Secret property is not set in environment or not found");
-                options.CallbackPath = "/api/authentication/signin-google"; // Đường dẫn Google sẽ chuyển hướng sau khi xác thực
-
-                options.Scope.Add("profile");
-                options.Scope.Add("email");
-                options.Scope.Add("openid");
-
-                options.ClaimActions.MapJsonKey("urn:google:picture", "picture", "url");
             }).AddJwtBearer(opt =>
             {
                 opt.TokenValidationParameters = new TokenValidationParameters
@@ -594,6 +584,25 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     // Đặt RoleClaimType
                     RoleClaimType = ClaimTypes.Role
                 };
+
+                // Remove "Bearer " prefix
+                // Chỉ remove Bearer prefix khi đang trong môi trường phát triển hoặc debug
+                //opt.Events = new JwtBearerEvents
+                //{
+                //    OnMessageReceived = context =>
+                //    {
+                //        // Check if the token is present without "Bearer" prefix
+                //        if (context.Request.Headers.ContainsKey("Authorization"))
+                //        {
+                //            var token = context.Request.Headers.Authorization.ToString();
+                //            if (!token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                //            {
+                //                context.Token = token; // Set token without "Bearer" prefix
+                //            }
+                //        }
+                //        return Task.CompletedTask;
+                //    }
+                //};
             });
         }
 
