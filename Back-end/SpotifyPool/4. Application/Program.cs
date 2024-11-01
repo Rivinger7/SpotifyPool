@@ -5,7 +5,6 @@ using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
 using Utility.Coding;
 using Microsoft.AspNetCore.HttpOverrides;
-using System.Net;
 
 // Stopwatch Start
 var stopwatch = new Stopwatch();
@@ -19,8 +18,24 @@ EnvironmentVariableLoader.LoadEnvironmentVariable();
 //builder.WebHost.UseUrls("https://localhost:7018");
 
 // Cấu hình cổng lắng nghe từ môi trường, thay vì hard-code
-var port = Environment.GetEnvironmentVariable("PORT") ?? "7018";
-builder.WebHost.UseUrls($"https://localhost:{port}");
+//var port = Environment.GetEnvironmentVariable("PORT") ?? "7018";
+//var port = Environment.GetEnvironmentVariable("PORT") ?? "51482";
+//builder.WebHost.UseUrls($"https://localhost:{port}");
+
+// Lấy cổng từ biến môi trường hoặc để trống để chọn ngẫu nhiên
+var port = Environment.GetEnvironmentVariable("PORT");
+var protocol = builder.Environment.IsDevelopment() ? "http" : "https";
+
+// Nếu không có biến môi trường PORT, để trống UseUrls để ứng dụng tự chọn cổng ngẫu nhiên
+//if (string.IsNullOrEmpty(port))
+//{
+//    builder.WebHost.UseUrls($"{protocol}://localhost"); // Không chỉ định cổng
+//}
+//else
+//{
+//    builder.WebHost.UseUrls($"{protocol}://localhost:{port}"); // Sử dụng cổng từ biến môi trường
+//}
+
 
 // Real-time IP Address
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

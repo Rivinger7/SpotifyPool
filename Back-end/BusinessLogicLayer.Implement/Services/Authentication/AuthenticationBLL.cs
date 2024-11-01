@@ -134,7 +134,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             JwtSecurityToken decodedToken = _jwtBLL.DecodeToken(token);
 
             Claim? emailClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "Email");
-            //var roleClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Role);
             Claim? encryptedTokenClaim = decodedToken.Claims.FirstOrDefault(claim => claim.Type == "EncrpytedToken");
 
             if (emailClaim == null || encryptedTokenClaim == null)
@@ -143,11 +142,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             }
 
             string email = emailClaim.Value;
-            //var role = roleClaim.Value;
             string encryptedToken = encryptedTokenClaim.Value;
-
-            // _logger.LogInformation("TokenEmailConfirm decoded successfully");
-            // _logger.LogInformation($"Email: {email} || Role: , || EncryptedToken: {encryptedToken}");
 
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("Not found any user");
             if (retrieveUser.TokenEmailConfirm != encryptedToken)

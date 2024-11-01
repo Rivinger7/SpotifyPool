@@ -5,13 +5,23 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>e3fbd921-41f2-46cd-bddd-763a1286c7cd</UserSecretsId>
+		<!-- <RuntimeIdentifier>linux-x64</RuntimeIdentifier> -->
 	</PropertyGroup>
 
+	<!-- Custom PropertyGroup -->
 	<PropertyGroup>
+		<!-- Load From Another Assembly -->
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<DocumentationFile>bin\Debug\net8.0\SpotifyPool.xml</DocumentationFile>
+		
 		<!-- Suppress the warning CS1591 (XML Comment) -->
 		<NoWarn>$(NoWarn);1591</NoWarn>
+		
+		<!-- Docker Windows OS -->
+		<!-- <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS> -->
+		
+		<!-- Docker Linux OS -->
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -19,6 +29,7 @@
 		<PackageReference Include="dotenv.net" Version="3.2.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
 	</ItemGroup>
 
@@ -30,10 +41,13 @@
 	  <None Update="4. Application\.env">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
+	  <None Update="Dockerfile">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="wwwroot\html.html" />
+	  <Folder Include="wwwroot\" />
 	</ItemGroup>
 
 </Project>
