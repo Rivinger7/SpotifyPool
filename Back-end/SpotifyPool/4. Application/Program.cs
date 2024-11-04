@@ -19,7 +19,6 @@ EnvironmentVariableLoader.LoadEnvironmentVariable();
 
 // Cấu hình cổng lắng nghe từ môi trường, thay vì hard-code
 //var port = Environment.GetEnvironmentVariable("PORT") ?? "7018";
-//var port = Environment.GetEnvironmentVariable("PORT") ?? "51482";
 //builder.WebHost.UseUrls($"https://localhost:{port}");
 
 // Lấy cổng từ biến môi trường hoặc để trống để chọn ngẫu nhiên

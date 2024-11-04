@@ -55,11 +55,5 @@ namespace SpotifyPool._1._Controllers.Users
 			var users = await _userBLL.TestPaging(offset, limit);
 			return Ok(users);
 		}
-
-        [HttpGet("what-this")]
-        public async Task<IActionResult> Whatthis()
-        {
-            return Ok();
-        }
     }
 }

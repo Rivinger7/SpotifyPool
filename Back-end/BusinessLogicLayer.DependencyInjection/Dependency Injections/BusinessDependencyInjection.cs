@@ -50,6 +50,7 @@ using SetupLayer.Enum.EnumMemberSerializer;
 using SetupLayer.Enum.Services.Playlist;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
+using BusinessLogicLayer.Implement.Services.Tests;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -447,6 +448,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
         public static void AddServices(this IServiceCollection services, IConfiguration configuration)
         {
+            // Test
+            services.AddScoped<TestBLL>();
+
             // Register BLL services
 
             // Authentication

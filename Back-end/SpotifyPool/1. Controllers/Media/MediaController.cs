@@ -180,6 +180,7 @@ namespace SpotifyPool.Controllers.Media
         /// FOR BACK-END
         /// </summary>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpGet("spotify/authorize")]
         public IActionResult Authorize()
         {
@@ -193,6 +194,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpGet("callback")]
         public async Task<IActionResult> Callback([FromQuery] string code)
         {
@@ -219,6 +221,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="accessToken"></param>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpGet("spotify/top-tracks")]
         public async Task<IActionResult> GetTopTracks([FromQuery] string accessToken)
         {
@@ -240,6 +243,7 @@ namespace SpotifyPool.Controllers.Media
         /// <param name="limit"></param>
         /// <param name="offset"></param>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpGet("spotify/fetch/saved-tracks")]
         public async Task<IActionResult> GetUserSaveTracks([FromQuery] string accessToken, [FromQuery] int limit, [FromQuery] int offset)
         {
@@ -250,6 +254,19 @@ namespace SpotifyPool.Controllers.Media
 
             await _spotifyService.FetchUserSaveTracksAsync(accessToken, limit, offset);
             return Ok(new {message = "Fetched Data Successfully"});
+        }
+
+        [AllowAnonymous]
+        [HttpGet("spotify/fetch/playlist/{playlistID}/tracks")]
+        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, [FromQuery] int limit, [FromQuery] int offset, string playlistID)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest("Access token is required.");
+            }
+
+            await _spotifyService.FetchPlaylistItemsAsync(accessToken, playlistID, limit, offset);
+            return Ok(new { message = "Fetched Data Successfully" });
         }
 
         /// <summary>

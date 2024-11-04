@@ -11,7 +11,10 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
         public int? Popularity { get; set; }
         public string? PreviewURL { get; set; }
         public int? Duration { get; set; }
-        public string? ReleaseDate { get; set; }
+        public string? UploadDate { get; set; }
+        public string? UploadBy { get; set; }
+        public bool? IsExplicit { get; set; }
+        public bool? IsPlayable { get; set; }
         public List<ImageResponseModel> Images { get; set; } = [];
         public List<ArtistDetails> Artists { get; set; } = [];
         public List<AvailableMarkets> AvailableMarkets { get; set; } = [];
@@ -48,6 +51,12 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
 
         [JsonProperty("release_date")]
         public string? ReleaseDate { get; set; }
+
+        [JsonProperty("explicit")]
+        public bool IsExplicit { get; set; }
+
+        [JsonProperty("is_playable")]
+        public bool IsPlayable { get; set; }
 
         [JsonProperty("album")]
         public required AlbumDetails AlbumDetails { get; set; }

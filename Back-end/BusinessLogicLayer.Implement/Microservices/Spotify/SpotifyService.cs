@@ -3,17 +3,14 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Genres.Response;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Markets.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
-using DataAccessLayer.Repository.Aggregate_Storage;
-using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using DataAccessLayer.Repository.Entities;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using System.Text.Json;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Microservices.Spotify
 {
@@ -89,16 +86,29 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             return responseBody;
         }
 
-        public async Task FetchUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0)
+        public async Task FetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", int limit = 2, int offset = 0)
         {
             // URI của Spotify
-            string uri = $"https://api.spotify.com/v1/me/tracks?limit={limit}&offset={offset}";
+            string uri = $"https://api.spotify.com/v1/playlists/{playlistId}/tracks?limit={limit}&offset={offset}";
 
             // Gọi API trả về Response
             string responseBody = await GetResponseAsync(uri, accessToken);
 
             // Deserialize Object theo Type là Response/Request Model
             SpotifyTrack spotifyTracks = JsonConvert.DeserializeObject<SpotifyTrack>(responseBody) ?? throw new DataNotFoundCustomException("Not found any tracks");
+
+            // Thu thập TrackId từ Spotify response
+            IEnumerable<string?> trackIds = spotifyTracks.Items
+                .Where(item => item.TrackDetails?.TrackId is not null)
+                .Select(item => item.TrackDetails.TrackId)
+                .Distinct()
+                .ToList();
+
+            // Truy vấn cơ sở dữ liệu về các track hiện có bằng các SpotifyId cụ thể này
+            IEnumerable<string?> existingTrackIds = await _unitOfWork.GetCollection<Track>()
+                .Find(Builders<Track>.Filter.In(t => t.SpotifyId, trackIds))
+                .Project(t => t.SpotifyId)
+                .ToListAsync();
 
             // Khởi tạo danh sách
             List<string> artistIds = [];
@@ -107,6 +117,22 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             // Truy cập các thuộc tính của Response
             foreach (Item item in spotifyTracks.Items)
             {
+                // Kiểm tra spotifyid có trùng spotifyid trong database không
+                // Cách này chưa tối ưu vì cần phải fetch từ database ra hết các SpotifyId
+                //IAsyncCursor<Track> existingTrack = await _unitOfWork.GetCollection<Track>().FindAsync(t => t.SpotifyId == (item.TrackDetails != null ? item.TrackDetails.TrackId : null));
+                //if (existingTrack.Any())
+                //{
+                //    continue; // Nếu trùng thì không cần fetch
+                //}
+
+                // Kiểm tra spotifyid có trùng spotifyid trong database không
+                // Cách này đã tối ưu hơn vì chỉ cần fetch ra các SpotifyId cần thiết từ list trên
+                string trackId = item.TrackDetails?.TrackId;
+                if (trackId == null || existingTrackIds.Contains(trackId))
+                {
+                    continue; // Skip if the track ID already exists or is null
+                }
+
                 // Fetch sang Model
                 var trackModel = new SpotifyTrackResponseModel
                 {
@@ -115,16 +141,13 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                     Duration = item.TrackDetails?.Duration,
                     Popularity = item.TrackDetails?.Popularity,
                     PreviewURL = item.TrackDetails?.PreviewUrl,
-                    ReleaseDate = item.TrackDetails?.ReleaseDate,
+                    UploadDate = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
+                    UploadBy = "Admin",
+                    IsExplicit = item.TrackDetails?.IsExplicit,
+                    IsPlayable = item.TrackDetails?.IsPlayable,
                     Images = item.TrackDetails.AlbumDetails.Images,
                     Artists = item.TrackDetails.Artists
                 };
-
-                // Chuyển đổi từng phần tử của AvailableMarkets từ chuỗi thành đối tượng AvailableMarkets
-                foreach (string market in item.TrackDetails?.AvailableMarkets)
-                {
-                    trackModel.AvailableMarkets.Add(new AvailableMarkets { Id = market });
-                }
 
                 // Sử dụng AutoMapper để ánh xạ từ SpotifyTrackResponseModel sang Track
                 Track trackEntity = _mapper.Map<Track>(trackModel);
@@ -139,6 +162,119 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
                 // Lấy ra ID của các nghệ sĩ
                 artistIds.AddRange(item.TrackDetails.Artists.Select(a => a.Id));
+            }
+
+            // Nếu đã fetch hết tất cả các track từ Spotify API thì kết thúc luôn
+            if (tracks.Count == 0)
+            {
+                return;
+            }
+
+            // Lưu danh sách các Track Entity vào Database
+            await _unitOfWork.GetCollection<Track>().InsertManyAsync(tracks);
+
+            // Lọc các artistIds để giữ lại các ID duy nhất
+            List<string> distinctArtistIds = artistIds.Distinct().ToList();
+
+            // Kiểm tra danh sách có rỗng không
+            if (distinctArtistIds.Count != 0)
+            {
+                // Dùng danh sách Id của các nghệ sĩ để gọi API Spotify để lấy thông tin chi tiết về các nghệ sĩ
+                // Đồng thời lưu vào Database
+                await FetchArtistsByUserSaveTracksAsync(distinctArtistIds, accessToken);
+            }
+
+            return;
+        }
+
+        public async Task FetchUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0)
+        {
+            // URI của Spotify
+            string uri = $"https://api.spotify.com/v1/me/tracks?limit={limit}&offset={offset}";
+
+            // Gọi API trả về Response
+            string responseBody = await GetResponseAsync(uri, accessToken);
+
+            // Deserialize Object theo Type là Response/Request Model
+            SpotifyTrack spotifyTracks = JsonConvert.DeserializeObject<SpotifyTrack>(responseBody) ?? throw new DataNotFoundCustomException("Not found any tracks");
+
+            // Thu thập TrackId từ Spotify response
+            IEnumerable<string?> trackIds = spotifyTracks.Items
+                .Where(item => item.TrackDetails?.TrackId is not null)
+                .Select(item => item.TrackDetails.TrackId)
+                .Distinct()
+                .ToList();
+
+            // Truy vấn cơ sở dữ liệu về các track hiện có bằng các SpotifyId cụ thể này
+            IEnumerable<string?> existingTrackIds = await _unitOfWork.GetCollection<Track>()
+                .Find(Builders<Track>.Filter.In(t => t.SpotifyId, trackIds))
+                .Project(t => t.SpotifyId)
+                .ToListAsync();
+
+            // Khởi tạo danh sách
+            List<string> artistIds = [];
+            List<Track> tracks = [];
+
+            // Truy cập các thuộc tính của Response
+            foreach (Item item in spotifyTracks.Items)
+            {
+                // Kiểm tra spotifyid có trùng spotifyid trong database không
+                // Cách này chưa tối ưu vì cần phải fetch từ database ra hết các SpotifyId
+                //IAsyncCursor<Track> existingTrack = await _unitOfWork.GetCollection<Track>().FindAsync(t => t.SpotifyId == (item.TrackDetails != null ? item.TrackDetails.TrackId : null));
+                //if (existingTrack.Any())
+                //{
+                //    continue; // Nếu trùng thì không cần fetch
+                //}
+
+                // Kiểm tra spotifyid có trùng spotifyid trong database không
+                // Cách này đã tối ưu hơn vì chỉ cần fetch ra các SpotifyId cần thiết từ list trên
+                string trackId = item.TrackDetails?.TrackId;
+                if (trackId == null || existingTrackIds.Contains(trackId))
+                {
+                    continue; // Skip if the track ID already exists or is null
+                }
+
+                // Fetch sang Model
+                var trackModel = new SpotifyTrackResponseModel
+                {
+                    TrackId = item.TrackDetails?.TrackId,
+                    Name = item.TrackDetails?.Name,
+                    Duration = item.TrackDetails?.Duration,
+                    Popularity = item.TrackDetails?.Popularity,
+                    PreviewURL = item.TrackDetails?.PreviewUrl,
+                    UploadDate = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
+                    UploadBy = "Admin",
+                    IsExplicit = item.TrackDetails?.IsExplicit,
+                    IsPlayable = item.TrackDetails?.IsPlayable,
+                    Images = item.TrackDetails.AlbumDetails.Images,
+                    Artists = item.TrackDetails.Artists
+                };
+
+                // Chuyển đổi từng phần tử của AvailableMarkets từ chuỗi thành đối tượng AvailableMarkets
+                //foreach (string market in item.TrackDetails?.AvailableMarkets)
+                //{
+                //    trackModel.AvailableMarkets.Add(new AvailableMarkets { Id = market });
+                //}
+
+                // Sử dụng AutoMapper để ánh xạ từ SpotifyTrackResponseModel sang Track
+                Track trackEntity = _mapper.Map<Track>(trackModel);
+
+                // Do Images là thuộc tính Array of String
+                // Nên sẽ có tới 2 Images Object ở 2 assembly khác nhau
+                // Do đó sẽ cần phải map thêm 1 lần nữa với thuộc tính Images
+                trackEntity.Images = _mapper.Map<List<Image>>(trackModel.Images); // Có thể thay thế cách này bằng cách map trực tiếp trong Assembly chứa Mapping Class
+
+                // Thêm Track Entity vào danh sách đã khởi tạo
+                tracks.Add(trackEntity);
+
+                // Lấy ra ID của các nghệ sĩ
+                artistIds.AddRange(item.TrackDetails.Artists.Select(a => a.Id));
+            }
+
+            // Nếu đã fetch hết tất cả các track từ Spotify API thì kết thúc luôn
+            if (tracks.Count == 0)
+            {
+                return;
             }
 
             // Lưu danh sách các Track Entity vào Database
@@ -164,6 +300,10 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             // Nối các phần tử trong list bằng ký tự ',' theo định dạng request URI của Spotify
             string ids = string.Join(",", artistIds);
 
+            Console.WriteLine("===================");
+            Console.WriteLine($"{ids}");
+            Console.WriteLine("===================");
+
             // URI Several Artists của Spotify
             string uri = $"https://api.spotify.com/v1/artists?ids={ids}";
 
@@ -184,6 +324,13 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 // Type của artistDetails là ModelView.Service_Model_Views.Artists.Response
                 foreach (var artistDetails in spotifyArtistsResponse.Artists)
                 {
+                    // Kiểm tra spotifyid có trùng spotifyid trong database không
+                    IAsyncCursor<Artist> existingArtist = await _unitOfWork.GetCollection<Artist>().FindAsync(a => a.SpotifyId == artistDetails.Id);
+                    if (existingArtist.Any())
+                    {
+                        continue; // Nếu trùng thì không cần fetch
+                    }
+
                     // Fetch sang Model
                     SpotifyArtistResponseModel artistResponseModel = new()
                     {
