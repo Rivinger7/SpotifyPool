@@ -88,6 +88,9 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
         public async Task FetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", int limit = 2, int offset = 0)
         {
+            //// Double the limit to fetch more data
+            //limit *= 2; 
+
             // URI của Spotify
             string uri = $"https://api.spotify.com/v1/playlists/{playlistId}/tracks?limit={limit}&offset={offset}";
 
@@ -133,8 +136,13 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                     continue; // Skip if the track ID already exists or is null
                 }
 
+                // Hàm fetch Audio Features của Track
+                string audioFeaturesID = await FetchAudioFeaturesAsync(accessToken, item.TrackDetails?.TrackId);
+                // Giả sử audioFeatures là một object chứa thông tin về Audio Features của Track
+                // Thêm audioFeatures vào SpotifyTrackResponseModel
+
                 // Fetch sang Model
-                var trackModel = new SpotifyTrackResponseModel
+                SpotifyTrackResponseModel trackModel = new()
                 {
                     TrackId = item.TrackDetails?.TrackId,
                     Name = item.TrackDetails?.Name,
@@ -146,7 +154,8 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                     IsExplicit = item.TrackDetails?.IsExplicit,
                     IsPlayable = item.TrackDetails?.IsPlayable,
                     Images = item.TrackDetails.AlbumDetails.Images,
-                    Artists = item.TrackDetails.Artists
+                    Artists = item.TrackDetails.Artists,
+                    AudioFeaturesId = audioFeaturesID
                 };
 
                 // Sử dụng AutoMapper để ánh xạ từ SpotifyTrackResponseModel sang Track
@@ -177,14 +186,59 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             List<string> distinctArtistIds = artistIds.Distinct().ToList();
 
             // Kiểm tra danh sách có rỗng không
-            if (distinctArtistIds.Count != 0)
+            //if (distinctArtistIds.Count != 0)
+            //{
+            //    // Dùng danh sách Id của các nghệ sĩ để gọi API Spotify để lấy thông tin chi tiết về các nghệ sĩ
+            //    // Đồng thời lưu vào Database
+            //    await FetchArtistsByUserSaveTracksAsync(distinctArtistIds, accessToken);
+            //}
+
+            if (distinctArtistIds.Count > 0)
             {
-                // Dùng danh sách Id của các nghệ sĩ để gọi API Spotify để lấy thông tin chi tiết về các nghệ sĩ
-                // Đồng thời lưu vào Database
-                await FetchArtistsByUserSaveTracksAsync(distinctArtistIds, accessToken);
+                foreach (List<string> artistBatch in Batch(distinctArtistIds, 50))
+                {
+                    await FetchArtistsByUserSaveTracksAsync(artistBatch, accessToken);
+                }
+            }
+
+            // Check if there's more data to fetch
+            if (spotifyTracks.Items.Count == limit)
+            {
+                // Recursive call with updated offset
+                await FetchPlaylistItemsAsync(accessToken, playlistId, limit, offset + limit);
             }
 
             return;
+        }
+
+        // Helper method for batching artists' IDs
+        private static IEnumerable<List<T>> Batch<T>(List<T> source, int batchSize)
+        {
+            for (int i = 0; i < source.Count; i += batchSize)
+            {
+                yield return source.GetRange(i, Math.Min(batchSize, source.Count - i));
+            }
+        }
+
+        public async Task<string> FetchAudioFeaturesAsync(string accessToken, string? trackId)
+        {
+            // URI của Spotify
+            string uri = $"https://api.spotify.com/v1/audio-features/{trackId}";
+
+            // Gọi API trả về Response
+            string responseBody = await GetResponseAsync(uri, accessToken);
+
+            // Deserialize Object theo Type là Response/Request Model
+            SpotifyAudioFeaturesResponseModel audioFeaturesResponseModel = JsonConvert.DeserializeObject<SpotifyAudioFeaturesResponseModel>(responseBody) ?? throw new DataNotFoundCustomException("Not found any audio features");
+
+            // Truy cập thuộc tính của Response
+            AudioFeatures audioFeatures = _mapper.Map<AudioFeatures>(audioFeaturesResponseModel);
+
+            // Lưu danh sách các Audio Feature Entity vào Database
+            await _unitOfWork.GetCollection<AudioFeatures>().InsertOneAsync(audioFeatures);
+
+            // Trả về Id của Audio Feature Entity
+            return audioFeatures.Id;
         }
 
         public async Task FetchUserSaveTracksAsync(string accessToken, int limit = 2, int offset = 0)
@@ -300,9 +354,9 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             // Nối các phần tử trong list bằng ký tự ',' theo định dạng request URI của Spotify
             string ids = string.Join(",", artistIds);
 
-            Console.WriteLine("===================");
-            Console.WriteLine($"{ids}");
-            Console.WriteLine("===================");
+            //Console.WriteLine("===================");
+            //Console.WriteLine($"{ids}");
+            //Console.WriteLine("===================");
 
             // URI Several Artists của Spotify
             string uri = $"https://api.spotify.com/v1/artists?ids={ids}";

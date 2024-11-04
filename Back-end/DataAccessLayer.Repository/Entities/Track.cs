@@ -31,5 +31,7 @@ namespace DataAccessLayer.Repository.Entities
         public long PlayCount { get; set; } // Fake counting
         public long DownloadCount { get; set; }
         public long FavoriteCount { get; set; }
+
+        public required string AudioFeaturesId { get; set; }
     }
 }

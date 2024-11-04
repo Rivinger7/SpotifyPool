@@ -15,6 +15,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
         public string? UploadBy { get; set; }
         public bool? IsExplicit { get; set; }
         public bool? IsPlayable { get; set; }
+        public string? AudioFeaturesId { get; set; }
         public List<ImageResponseModel> Images { get; set; } = [];
         public List<ArtistDetails> Artists { get; set; } = [];
         public List<AvailableMarkets> AvailableMarkets { get; set; } = [];
