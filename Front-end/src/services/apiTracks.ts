@@ -7,7 +7,7 @@ export const trackApi = apiSlice.injectEndpoints({
 				url: "/media/tracks",
 				method: "GET",
 			}),
-			transformResponse: (response) => response.data,
+			transformResponse: (response) => response,
 			providesTags: ["Media"],
 		}),
 		getTopTracks: build.query({
@@ -15,7 +15,7 @@ export const trackApi = apiSlice.injectEndpoints({
 				url: "/media/spotify/top-tracks",
 				method: "GET",
 			}),
-			transformResponse: (response) => response.data,
+			transformResponse: (response) => response,
 			providesTags: ["Media"],
 		}),
 		uploadImage: build.mutation({

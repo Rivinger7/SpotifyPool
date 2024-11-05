@@ -1,7 +1,7 @@
+import toast from "react-hot-toast"
+import { Radio } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEmailConfirmMutation } from "@/services/apiAuth"
-import { Radio } from "lucide-react"
-import toast from "react-hot-toast"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 const ConfirmEmail = () => {
@@ -55,7 +55,7 @@ const ConfirmEmail = () => {
 
 export default ConfirmEmail
 
-// TODO: MAY BE USED FOR LATER
+// NOTE: MAY BE USED FOR LATER
 // <div
 // 	style={{
 // 		width: "100%",

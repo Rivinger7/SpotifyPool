@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom"
-import LoginForm from "./Form/LoginForm"
 import { useEffect } from "react"
-import { useSelector } from "react-redux"
 import { RootState } from "@/store/store"
+import { useSelector } from "react-redux"
+import { useNavigate } from "react-router-dom"
+import SignupForm from "@/features/Auth/SignupForm"
 
-const LoginSceen = () => {
+const SignupScreen = () => {
 	const navigate = useNavigate()
 	const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated)
 
@@ -14,7 +14,7 @@ const LoginSceen = () => {
 		}
 	}, [navigate, isAuthenticated])
 
-	return <LoginForm />
+	return <SignupForm />
 }
 
-export default LoginSceen
+export default SignupScreen

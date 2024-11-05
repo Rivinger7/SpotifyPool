@@ -1,4 +1,4 @@
-export default function SearchBoxComponent() {
+const SearchItem = () => {
 	return (
 		<div className="h-56 p-3">
 			<a href="#" className="relative">
@@ -12,5 +12,7 @@ export default function SearchBoxComponent() {
 				</div>
 			</a>
 		</div>
-	);
+	)
 }
+
+export default SearchItem

@@ -1,4 +1,4 @@
-import Search from './Search'
+import Search from "@/features/Search/Search"
 
 const SearchScreen = () => {
 	return <Search />

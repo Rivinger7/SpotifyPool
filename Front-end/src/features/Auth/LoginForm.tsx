@@ -1,8 +1,3 @@
-import { Helmet } from "react-helmet-async"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
 import {
 	Form,
 	FormControl,
@@ -11,15 +6,20 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Link } from "react-router-dom"
-import { Switch } from "@/components/ui/switch"
-import { useNavigate } from "react-router-dom"
-// import GoogleIcon from "@/assets/icons/GoogleIcon"
 
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+
+import { z } from "zod"
 import toast from "react-hot-toast"
+import { Link } from "react-router-dom"
 import { useDispatch } from "react-redux"
+import { useForm } from "react-hook-form"
+import { Helmet } from "react-helmet-async"
+import { useNavigate } from "react-router-dom"
 import { login } from "@/store/slice/authSlice"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useLoginByGoogleMutation, useLoginMutation } from "@/services/apiAuth"
 
 import { GoogleLogin } from "@react-oauth/google"
@@ -32,7 +32,7 @@ const formSchema = z.object({
 	remember: z.boolean(),
 })
 
-export default function LoginForm() {
+const LoginForm = () => {
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
 
@@ -65,9 +65,6 @@ export default function LoginForm() {
 			.catch((error) => {
 				console.error(error)
 			})
-		// console.log({
-		// 	userData: { username: values.username, password: values.password, remem: values.remember },
-		// })
 	}
 
 	return (
@@ -163,11 +160,6 @@ export default function LoginForm() {
 						// className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-3 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
 						// type="submit"
 					>
-						{/* LOGIN GOOGLE USING CUSTOM URL */}
-						{/* <a href={import.meta.env.VITE_API_ENDPOINT + "/api/authentication/login-by-google"}>
-							<GoogleIcon />
-							Sign up with Google
-						</a> */}
 						<GoogleLogin
 							shape="pill"
 							size="large"
@@ -203,3 +195,5 @@ export default function LoginForm() {
 		</div>
 	)
 }
+
+export default LoginForm
