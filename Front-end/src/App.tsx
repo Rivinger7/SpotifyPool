@@ -1,13 +1,13 @@
 import { HelmetProvider } from "react-helmet-async"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 
+import AppLayout from "./pages/AppLayout"
+import LoginSceen from "./pages/LoginScreen"
+import SignupScreen from "./pages/SignupScreen"
+import SearchScreen from "./pages/SearchScreen"
 import HomeScreen from "./pages/Home/HomeScreen"
-import LoginSceen from "./pages/Login/LoginScreen"
-import AppLayout from "./pages/AppLayout/AppLayout"
-import SignupScreen from "./pages/Signup/SignupScreen"
-import SearchScreen from "./pages/Search/SearchScreen"
 import ProfileScreen from "./pages/Profile/ProfileScreen"
-import ConfirmEmail from "./pages/ConfirmEmail/ConfirmEmail"
+import ConfirmEmailScreen from "./pages/ConfirmEmailScreen"
 
 const router = createBrowserRouter([
 	{
@@ -37,7 +37,7 @@ const router = createBrowserRouter([
 	},
 	{
 		path: "/spotifypool/confirm-email",
-		element: <ConfirmEmail />,
+		element: <ConfirmEmailScreen />,
 	},
 ])
 

@@ -1,8 +1,3 @@
-import { Helmet } from "react-helmet-async"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
 import {
 	Form,
 	FormControl,
@@ -11,12 +6,19 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Link, useNavigate } from "react-router-dom"
+
 import GoogleIcon from "@/assets/icons/GoogleIcon"
-// import { useDispatch } from "react-redux"
-import { useRegisterMutation } from "@/services/apiAuth"
+
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+
+import { z } from "zod"
 import toast from "react-hot-toast"
+import { useForm } from "react-hook-form"
+import { Helmet } from "react-helmet-async"
+import { Link, useNavigate } from "react-router-dom"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useRegisterMutation } from "@/services/apiAuth"
 
 const formSchema = z.object({
 	email: z.string().email({
@@ -41,7 +43,6 @@ const formSchema = z.object({
 
 const SignupForm = () => {
 	const navigate = useNavigate()
-	// const dispatch = useDispatch()
 
 	const [registerMutation] = useRegisterMutation()
 

@@ -1,10 +1,10 @@
-import AreaHeader from "@/pages/Home/AreaHeader";
-import BoxComponent from "@/pages/Home/BoxComponent";
-import { Helmet } from "react-helmet-async";
+import AreaHeader from "@/pages/Home/AreaHeader"
+import BoxComponent from "@/pages/Home/BoxComponent"
+import { Helmet } from "react-helmet-async"
 
 function Home() {
 	return (
-		<>
+		<div className="h-[1000px]">
 			<Helmet>
 				<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Green.png" />
 			</Helmet>
@@ -28,8 +28,8 @@ function Home() {
 					</section>
 				</div>
 			</div>
-		</>
-	);
+		</div>
+	)
 }
 
-export default Home;
+export default Home
