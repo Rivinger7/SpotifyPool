@@ -8,7 +8,7 @@ const MainContent = ({ children }: MainContentProps) => {
 	return (
 		<div
 			className={
-				"relative rounded-lg flex gap-2 my-2 h-[calc(100vh_-_72px_-_92px)] overflow-y-auto"
+				"relative rounded-lg flex gap-2 my-2 h-[calc(100vh_-_72px_-_76px)] overflow-y-auto"
 			}
 		>
 			{children}

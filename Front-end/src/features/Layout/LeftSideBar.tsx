@@ -2,7 +2,6 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 
 import { Globe, Music4, Plus, SquareLibrary } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -18,7 +17,7 @@ const LeftSideBar = () => {
 	}
 
 	return (
-		<div className="w-[420px]">
+		<div className="w-[420px] shrink-0">
 			{/* ==== NAVBAR ==== */}
 			<nav className={"flex flex-col gap-2 h-full"}>
 				<div
@@ -30,21 +29,16 @@ const LeftSideBar = () => {
 							<header className={"p-2 pl-4 pr-4"}>
 								<div className={"flex justify-between"}>
 									<div className={"flex items-center"}>
-										<TooltipProvider delayDuration={0}>
-											<Tooltip>
-												<TooltipTrigger
-													className={
-														"flex items-center p-1 pl-2 pr-2 gap-3 h-10 font-bold text-[#b3b3b3] hover:text-white transition-all"
-													}
-												>
-													<SquareLibrary className="size-6" />
-													<span>Your Library</span>
-												</TooltipTrigger>
-												<TooltipContent>
-													<p>Collapse your library</p>
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
+										<CustomTooltip label="Collapse your library" side="bottom">
+											<div
+												className={
+													"flex items-center p-1 pl-2 pr-2 gap-3 h-10 font-bold text-[#b3b3b3] hover:text-white transition-all cursor-pointer"
+												}
+											>
+												<SquareLibrary className="size-6" />
+												<span>Your Library</span>
+											</div>
+										</CustomTooltip>
 									</div>
 									<span className={"block relative"}>
 										<DropdownMenu>

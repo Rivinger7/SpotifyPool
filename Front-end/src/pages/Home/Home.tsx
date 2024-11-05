@@ -1,10 +1,13 @@
 import AreaHeader from "@/pages/Home/AreaHeader"
 import BoxComponent from "@/pages/Home/BoxComponent"
+import { useGetTracksQuery } from "@/services/apiTracks"
 import { Helmet } from "react-helmet-async"
 
 function Home() {
+	const { data: tracksData = [] as any[], isLoading } = useGetTracksQuery({})
+
 	return (
-		<div className="h-[1000px]">
+		<div>
 			<Helmet>
 				<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Green.png" />
 			</Helmet>
@@ -16,12 +19,9 @@ function Home() {
 							<section className="relative flex flex-col flex-1 max-w-full min-w-full">
 								<AreaHeader>Popular artists</AreaHeader>
 								<div className="grid area-body">
-									<BoxComponent isAvatar={true} />
-									<BoxComponent isAvatar={true} />
-									<BoxComponent isAvatar={true} />
-									<BoxComponent isAvatar={true} />
-									<BoxComponent isAvatar={true} />
-									<BoxComponent isAvatar={true} />
+									{tracksData?.map((track) => (
+										<BoxComponent key={track.id} track={track} />
+									))}
 								</div>
 							</section>
 						</div>

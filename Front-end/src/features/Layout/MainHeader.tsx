@@ -29,7 +29,6 @@ const MainHeader = () => {
 
 	const handleLogout = () => {
 		dispatch(logout())
-		window.location.reload()
 		toast.success("Logout successful")
 	}
 
