@@ -19,8 +19,6 @@ namespace DataAccessLayer.Repository.Entities
         public required string PreviewURL { get; set; }
         public required int Duration { get; set; }
         public List<Image> Images { get; set; } = [];
-        public List<string> AlbumIds { get; set; } = [];
-        public List<string> MarketsIds { get; set; } = [];
 
         public required bool IsExplicit { get; set; } // Spotify API
         public required bool IsPlayable { get; set; } // Spotify API

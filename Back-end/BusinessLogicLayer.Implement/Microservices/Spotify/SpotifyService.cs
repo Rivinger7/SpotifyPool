@@ -88,11 +88,19 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
 
         public async Task FetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", int limit = 2, int offset = 0)
         {
-            //// Double the limit to fetch more data
-            //limit *= 2; 
+            // Kiểm tra limit có nhỏ hơn hoặc bằng 0 không
+            // Nếu nhỏ hơn hoặc bằng 0 thì không cần fetch
+            // Vì Spotify API sẽ trả về lỗi 400 (Bad Request) với message LÀ Invalid Limit
+            if (limit <= 0)
+            {
+                return;
+            }
+
+            // Giới hạn số lượng tracks mỗi lần fetch
+            int LIMIT_SIZE_MAX = 100;
 
             // URI của Spotify
-            string uri = $"https://api.spotify.com/v1/playlists/{playlistId}/tracks?limit={limit}&offset={offset}";
+            string uri = $"https://api.spotify.com/v1/playlists/{playlistId}/tracks?limit={Math.Min(limit, LIMIT_SIZE_MAX)}&offset={offset}";
 
             // Gọi API trả về Response
             string responseBody = await GetResponseAsync(uri, accessToken);
@@ -100,6 +108,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             // Deserialize Object theo Type là Response/Request Model
             SpotifyTrack spotifyTracks = JsonConvert.DeserializeObject<SpotifyTrack>(responseBody) ?? throw new DataNotFoundCustomException("Not found any tracks");
 
+            #region Kiểm tra spotifyid có trùng spotifyid trong database không
             // Thu thập TrackId từ Spotify response
             IEnumerable<string?> trackIds = spotifyTracks.Items
                 .Where(item => item.TrackDetails?.TrackId is not null)
@@ -112,6 +121,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 .Find(Builders<Track>.Filter.In(t => t.SpotifyId, trackIds))
                 .Project(t => t.SpotifyId)
                 .ToListAsync();
+            #endregion
 
             // Khởi tạo danh sách
             List<string> artistIds = [];
@@ -120,29 +130,18 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             // Truy cập các thuộc tính của Response
             foreach (Item item in spotifyTracks.Items)
             {
-                // Kiểm tra spotifyid có trùng spotifyid trong database không
-                // Cách này chưa tối ưu vì cần phải fetch từ database ra hết các SpotifyId
-                //IAsyncCursor<Track> existingTrack = await _unitOfWork.GetCollection<Track>().FindAsync(t => t.SpotifyId == (item.TrackDetails != null ? item.TrackDetails.TrackId : null));
-                //if (existingTrack.Any())
-                //{
-                //    continue; // Nếu trùng thì không cần fetch
-                //}
-
-                // Kiểm tra spotifyid có trùng spotifyid trong database không
                 // Cách này đã tối ưu hơn vì chỉ cần fetch ra các SpotifyId cần thiết từ list trên
                 string trackId = item.TrackDetails?.TrackId;
                 if (trackId == null || existingTrackIds.Contains(trackId))
                 {
-                    continue; // Skip if the track ID already exists or is null
+                    continue; // Nếu trùng thì không cần fetch
                 }
 
                 // Hàm fetch Audio Features của Track
                 string audioFeaturesID = await FetchAudioFeaturesAsync(accessToken, item.TrackDetails?.TrackId);
-                // Giả sử audioFeatures là một object chứa thông tin về Audio Features của Track
-                // Thêm audioFeatures vào SpotifyTrackResponseModel
 
-                // Fetch sang Model
-                SpotifyTrackResponseModel trackModel = new()
+               // Fetch sang Model
+               SpotifyTrackResponseModel trackModel = new()
                 {
                     TrackId = item.TrackDetails?.TrackId,
                     Name = item.TrackDetails?.Name,
@@ -158,7 +157,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                     AudioFeaturesId = audioFeaturesID
                 };
 
-                // Sử dụng AutoMapper để ánh xạ từ SpotifyTrackResponseModel sang Track
+                // Ánh xạ từ SpotifyTrackResponseModel sang Track
                 Track trackEntity = _mapper.Map<Track>(trackModel);
 
                 // Do Images là thuộc tính Array of String
@@ -173,26 +172,18 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 artistIds.AddRange(item.TrackDetails.Artists.Select(a => a.Id));
             }
 
-            // Nếu đã fetch hết tất cả các track từ Spotify API thì kết thúc luôn
-            if (tracks.Count == 0)
+            // Kiểm tra xem danh sách tracks có rỗng không
+            if (tracks.Count > 0)
             {
-                return;
+                // Lưu danh sách các Track Entity vào Database
+                await _unitOfWork.GetCollection<Track>().InsertManyAsync(tracks);
             }
-
-            // Lưu danh sách các Track Entity vào Database
-            await _unitOfWork.GetCollection<Track>().InsertManyAsync(tracks);
-
+           
             // Lọc các artistIds để giữ lại các ID duy nhất
             List<string> distinctArtistIds = artistIds.Distinct().ToList();
 
             // Kiểm tra danh sách có rỗng không
-            //if (distinctArtistIds.Count != 0)
-            //{
-            //    // Dùng danh sách Id của các nghệ sĩ để gọi API Spotify để lấy thông tin chi tiết về các nghệ sĩ
-            //    // Đồng thời lưu vào Database
-            //    await FetchArtistsByUserSaveTracksAsync(distinctArtistIds, accessToken);
-            //}
-
+            // Áp dụng thuật toán giống với đệ quy để giới hạn số lượng nghệ sĩ mỗi lần fetch
             if (distinctArtistIds.Count > 0)
             {
                 foreach (List<string> artistBatch in Batch(distinctArtistIds, 50))
@@ -201,12 +192,11 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 }
             }
 
-            // Check if there's more data to fetch
-            if (spotifyTracks.Items.Count == limit)
-            {
-                // Recursive call with updated offset
-                await FetchPlaylistItemsAsync(accessToken, playlistId, limit, offset + limit);
-            }
+            // Giới hạn limit là 100 tracks mỗi lần fetch
+            // Dùng đệ quy để giới hạn limit lại nếu limit vượt quá 100
+            // Spotify API sẽ trả về lỗi 400 (Bad Request) với message là Invalid Limit
+            // Gọi đệ quy với limit và offset được cập nhật 
+            await FetchPlaylistItemsAsync(accessToken, playlistId, (limit - LIMIT_SIZE_MAX), (offset + LIMIT_SIZE_MAX));
 
             return;
         }

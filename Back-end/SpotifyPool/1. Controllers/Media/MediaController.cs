@@ -256,16 +256,23 @@ namespace SpotifyPool.Controllers.Media
             return Ok(new {message = "Fetched Data Successfully"});
         }
 
+        /// <summary>
+        /// Fetch playlist items from Spotify API
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <param name="limit"></param>
+        /// <param name="playlistID"></param>
+        /// <returns></returns>
         [AllowAnonymous]
         [HttpGet("spotify/fetch/playlist/{playlistID}/tracks")]
-        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, [FromQuery] int limit, [FromQuery] int offset, string playlistID)
+        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, [FromQuery] int limit, string playlistID)
         {
             if (string.IsNullOrEmpty(accessToken))
             {
                 return BadRequest("Access token is required.");
             }
 
-            await _spotifyService.FetchPlaylistItemsAsync(accessToken, playlistID, limit, offset);
+            await _spotifyService.FetchPlaylistItemsAsync(accessToken, playlistID, limit);
             return Ok(new { message = "Fetched Data Successfully" });
         }
 
