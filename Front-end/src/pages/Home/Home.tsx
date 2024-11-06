@@ -3,8 +3,28 @@ import BoxComponent from "@/pages/Home/BoxComponent"
 import { useGetTracksQuery } from "@/services/apiTracks"
 import { Helmet } from "react-helmet-async"
 
+interface Image {
+	url: string
+	height: number
+	width: number
+}
+interface Artist {
+	name: string
+	followers: number
+	genreIds: string[]
+	images: Image[]
+}
+interface Track {
+	name: string
+	description: string | null
+	previewURL: string
+	duration: number
+	images: Image[]
+	artists: Artist[]
+}
+
 function Home() {
-	const { data: tracksData = [] as any[], isLoading } = useGetTracksQuery({})
+	const { data: tracksData = [] } = useGetTracksQuery({}) as { data: Track[] }
 
 	return (
 		<div>
@@ -20,7 +40,7 @@ function Home() {
 								<AreaHeader>Popular artists</AreaHeader>
 								<div className="grid area-body">
 									{tracksData?.map((track) => (
-										<BoxComponent key={track.id} track={track} />
+										<BoxComponent key={track.name} track={track} />
 									))}
 								</div>
 							</section>

@@ -1,6 +1,7 @@
 ﻿using Business_Logic_Layer.Services_Interface.Users;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 using Microsoft.AspNetCore.Mvc;
+using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Users
 {
@@ -18,7 +19,7 @@ namespace SpotifyPool._1._Controllers.Users
         /// <param name="email"></param>
         /// <returns></returns>
         [HttpGet]
-        public async Task<IActionResult> GetAllUsersAsync([FromQuery] string? fullname, [FromQuery] string? gender, [FromQuery] string? email)
+        public async Task<IActionResult> GetAllUsersAsync([FromQuery] string? fullname, [FromQuery] UserGender gender, [FromQuery] string? email)
         {
             var users = await _userBLL.GetAllUsersAsync(fullname, gender, email);
             return Ok(users);

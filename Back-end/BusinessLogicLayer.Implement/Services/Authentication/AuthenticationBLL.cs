@@ -70,11 +70,13 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Password = passwordHash,
                 Email = email,
                 PhoneNumber = registerModel.PhoneNumber,
+                Gender = UserGender.NotSpecified,
                 Role = UserRole.Customer,
                 Product = UserProduct.Free,
                 IsLinkedWithGoogle = false,
                 CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                 Status = UserStatus.Inactive,
+                CreatedTime = Util.GetUtcPlus7Time(),
                 TokenEmailConfirm = encryptedToken,
                 Images =
                 [
@@ -183,7 +185,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Lấy token từ FE
             // Xác thực token của Google và lấy thông tin người dùng
             GoogleJsonWebSignature.Payload payload = await VerifyGoogleToken(googleToken) ?? throw new UnauthorizedAccessException("Invalid Google token.");
-
+            
             string? givenName = payload.GivenName; // Given Name can be null
             string? surName = payload.FamilyName; // Sur Name can be null
             string? fullName = Util.ValidateAndCombineName(givenName, surName);
@@ -198,10 +200,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync();
 
             // Lấy thông tin ảnh từ URL
-            // var = System.Drawing.Image
-            var imageInfo = await Util.GetImageInfoFromUrl(avatar) ?? throw new InternalServerErrorCustomException("Unable to retrieve image information from the provided URL.");
-            int? imageHeight = imageInfo.Height;
-            int? imageWidth = imageInfo.Width;
+            (int imageHeight, int imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
 
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
@@ -213,13 +212,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 {
                     DisplayName = fullName ?? "Ẩn Danh",
                     Email = email,
+                    Gender = UserGender.NotSpecified,
                     Images =
                     [
                         new()
                         {
                             URL = avatar,
-                            Height = imageHeight ?? 96,
-                            Width = imageWidth ?? 96,
+                            Height = imageHeight,
+                            Width = imageWidth,
                         },
                     ],
                     Role = UserRole.Customer,
@@ -371,6 +371,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 AccessToken = accessToken,
                 RefreshToken = refreshToken
             };
+
+            // Update LastLoginTime
+            // Chỗ này chưa cần phải kiểm tra Update Result
+            // Nếu chỗ này throw exception thì người dùng sẽ không login được
+            UpdateDefinition<User> lastLoginTimeUpdate = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
+            await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, lastLoginTimeUpdate);
 
             _httpContextAccessor.HttpContext.Session.SetString("UserID", retrieveUser.Id);
 

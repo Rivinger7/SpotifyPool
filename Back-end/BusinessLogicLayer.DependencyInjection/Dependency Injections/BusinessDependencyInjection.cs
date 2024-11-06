@@ -740,6 +740,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(UserProduct), new EnumMemberSerializer<UserProduct>());
             BsonSerializer.RegisterSerializer(typeof(UserRole), new EnumMemberSerializer<UserRole>());
             BsonSerializer.RegisterSerializer(typeof(UserStatus), new EnumMemberSerializer<UserStatus>());
+            BsonSerializer.RegisterSerializer(typeof(UserGender), new EnumMemberSerializer<UserGender>());
 
             // Track
             BsonSerializer.RegisterSerializer(typeof(PlaylistName), new EnumMemberSerializer<PlaylistName>());

@@ -13,6 +13,7 @@ using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using CloudinaryDotNet.Actions;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
@@ -24,7 +25,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
-        public async Task<IEnumerable<UserResponseModel>> GetAllUsersAsync(string? displayName, string? gender, string? email, bool isCache = false)
+        public async Task<IEnumerable<UserResponseModel>> GetAllUsersAsync(string? displayName, UserGender? gender, string? email, bool isCache = false)
         {
             // Khởi tạo bộ lọc (trống ban đầu)
             var filterBuilder = Builders<User>.Filter;
@@ -42,7 +43,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             }
 
             // Kiểm tra và thêm điều kiện lọc cho gender nếu không null hoặc rỗng
-            if (!string.IsNullOrEmpty(gender))
+            if (!string.IsNullOrEmpty(gender.ToString()))
             {
                 filter &= filterBuilder.Eq(u => u.Gender, gender);
                 cacheKey += $"_gender_{gender}";
@@ -66,7 +67,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     UserId = users.Id.ToString(),
                     Role = users.Role.ToString(),
                     DisplayName = users.DisplayName,
-                    Gender = users.Gender,
+                    Gender = users.Gender.ToString(),
                     Birthdate = users.Birthdate,
                     //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
@@ -82,7 +83,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     UserId = users.Id.ToString(),
                     Role = users.Role.ToString(),
                     DisplayName = users.DisplayName,
-                    Gender = users.Gender,
+                    Gender = users.Gender.ToString(),
                     Birthdate = users.Birthdate,
                     //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
@@ -108,7 +109,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     UserId = user.Id.ToString(),
                     Role = user.Role.ToString(),
                     DisplayName = user.DisplayName,
-                    Gender = user.Gender,
+                    Gender = user.Gender.ToString(),
                     Birthdate = user.Birthdate,
                     //ImageResponseModel = user.Images,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
@@ -122,7 +123,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                     UserId = user.Id.ToString(),
                     Role = user.Role.ToString(),
                     DisplayName = user.DisplayName,
-                    Gender = user.Gender,
+                    Gender = user.Gender.ToString(),
                     Birthdate = user.Birthdate,
                     //ImageResponseModel = user.ImageResponseModel,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
@@ -151,7 +152,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             requestModel.DisplayName ??= user.DisplayName;
             requestModel.PhoneNumber ??= user.PhoneNumber;
             requestModel.Birthdate ??= user.Birthdate;
-            requestModel.Gender ??= user.Gender;
+            requestModel.Gender ??= user.Gender.ToString();
 
             //map từ model qua user
             _mapper.Map<EditProfileRequestModel, User>(requestModel, user);
@@ -168,7 +169,8 @@ namespace BusinessLogicLayer.Implement.Services.Users
             updateDefinition.Set(user => user.DisplayName, requestModel.DisplayName)
                     .Set(user => user.PhoneNumber, requestModel.PhoneNumber)
                     .Set(user => user.Birthdate, requestModel.Birthdate)
-                    .Set(user => user.Gender, requestModel.Gender);
+                    .Set(user => user.Gender, Enum.Parse<UserGender>(requestModel.Gender))
+                    .Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time());
             UpdateResult updateResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == user.Id, updateDefinition);
         }
 

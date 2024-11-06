@@ -14,6 +14,8 @@ namespace BusinessLogicLayer.Implement.Services.Tests
             string addedAtString = DateTime.UtcNow.AddHours(7).ToString();
             string addedAtString2 = DateTime.UtcNow.AddHours(7).ToString("yyyy-MM-dd HH:mm:ss");
             DateTime addedAtTime = DateTime.UtcNow.AddHours(7);
+            DateTimeOffset dateTimeOffset = DateTimeOffset.UtcNow;
+            DateTimeOffset addedAtOffset = DateTimeOffset.UtcNow.AddHours(7);
 
             string dateOnly = "2024-10-07";
             
@@ -23,7 +25,9 @@ namespace BusinessLogicLayer.Implement.Services.Tests
                 DateTimeValue = addedAtTime,
                 DateOnly = DateTime.Parse(dateOnly).Date.ToUniversalTime(),
                 DateTimeString = addedAtString,
-                DateTimeString2 = addedAtString2
+                DateTimeString2 = addedAtString2,
+                DateTimeOffset = dateTimeOffset,
+                DateTimeOffsetAddHours = addedAtOffset,
             };
 
             await _unitOfWork.GetCollection<Test>().InsertOneAsync(test);

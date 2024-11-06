@@ -56,7 +56,9 @@ function ProfileModal({ children }: ProfileModalProps) {
 	})
 
 	// 2. Define a submit handler.
-	function onSubmit(values: z.infer<typeof formSchema>) {
+	// NOTE: The type of `values` is inferred from the schema.
+	// values: z.infer<typeof formSchema>
+	function onSubmit() {
 		const formData = new FormData()
 
 		// Check if the image file exists

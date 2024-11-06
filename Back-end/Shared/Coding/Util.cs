@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Reflection;
 using System.Runtime.Serialization;
+using SkiaSharp;
 
 namespace Utility.Coding
 {
@@ -114,7 +115,8 @@ namespace Utility.Coding
 
         public static string? GetTitleCustomException(string? title, string baseTitle) => string.IsNullOrEmpty(title) ? baseTitle : title;
 
-        public static async Task<Image> GetImageInfoFromUrl(string url)
+        [Obsolete("Không nên dùng hàm này khi deploy")]
+        public static async Task<Image> GetImageInfoFromUrlSystemDrawing(string url)
         {
             using HttpClient client = new();
 
@@ -131,6 +133,25 @@ namespace Utility.Coding
             // Sử dụng System.Drawing.Image
             var image = Image.FromStream(ms); 
             return image;
+        }
+
+        public static async Task<(int height, int width)> GetImageInfoFromUrlSkiaSharp(string url)
+        {
+            using HttpClient client = new();
+
+            // Tải dữ liệu ảnh từ URL
+            var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            // Đọc nội dung dưới dạng byte
+            var imageData = await response.Content.ReadAsByteArrayAsync();
+
+            // Sử dụng SkiaSharp
+            using SKBitmap bitmap = SKBitmap.Decode(imageData);
+
+            // Return the dimensions
+            return (bitmap.Height, bitmap.Width);
+
         }
 
         public static string EscapeSpecialCharacters(string input)
