@@ -86,8 +86,13 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             return responseBody;
         }
 
-        public async Task FetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", int limit = 2, int offset = 0)
+        public async Task FetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", int? limit = null, int offset = 0)
         {
+            // Gọi hàm GetTotalTracksInPlaylist để lấy số lượng tracks(items) trong playlist
+            // Nếu limit không được cung cấp thì sẽ lấy tất cả tracks trong playlist
+            // Bằng cách này sẽ tránh được việc gọi đệ quy với limit = value not null
+            limit ??= await GetTotalTracksInPlaylist(accessToken, playlistId);
+
             // Kiểm tra limit có nhỏ hơn hoặc bằng 0 không
             // Nếu nhỏ hơn hoặc bằng 0 thì không cần fetch
             // Vì Spotify API sẽ trả về lỗi 400 (Bad Request) với message LÀ Invalid Limit
@@ -100,7 +105,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             int LIMIT_SIZE_MAX = 100;
 
             // URI của Spotify
-            string uri = $"https://api.spotify.com/v1/playlists/{playlistId}/tracks?limit={Math.Min(limit, LIMIT_SIZE_MAX)}&offset={offset}";
+            string uri = $"https://api.spotify.com/v1/playlists/{playlistId}/tracks?limit={Math.Min(limit.Value, LIMIT_SIZE_MAX)}&offset={offset}";
 
             // Gọi API trả về Response
             string responseBody = await GetResponseAsync(uri, accessToken);
@@ -199,6 +204,25 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             await FetchPlaylistItemsAsync(accessToken, playlistId, (limit - LIMIT_SIZE_MAX), (offset + LIMIT_SIZE_MAX));
 
             return;
+        }
+
+        // Helper method for getting total tracks in a playlist
+        private static async Task<int> GetTotalTracksInPlaylist(string accessToken, string playlistId)
+        {
+            string TRACKS_TOTAL = "tracks.total";
+
+            // URI của Spotify
+            string uri = $"https://api.spotify.com/v1/playlists/{playlistId}?fields={TRACKS_TOTAL}";
+
+            // Gọi API trả về Response
+            string responseBody = await GetResponseAsync(uri, accessToken);
+
+            // Parse chuỗi Response sang JSON
+            JsonDocument responseJson = JsonDocument.Parse(responseBody);
+            int totalTracks = responseJson.RootElement.GetProperty("tracks").GetProperty("total").GetInt32();
+
+            // Trả về số lượng tracks trong playlist
+            return totalTracks;
         }
 
         // Helper method for batching artists' IDs

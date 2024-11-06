@@ -21,7 +21,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request
 		[RegularExpression(@"^\d{9,11}$", ErrorMessage = "Số điện thoại phải có độ dài từ 9 đến 11 ký tự và chỉ chứa các chữ số.")]
 		public string? PhoneNumber { get; set; }
 		public string? Gender { get; set; }
-		public DateOnly? Birthdate { get; set; }
+		public string? Birthdate { get; set; }
 		public IFormFile? Image { get; set; }
 	}
 }

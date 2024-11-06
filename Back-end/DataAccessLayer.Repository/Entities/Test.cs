@@ -15,6 +15,11 @@ namespace DataAccessLayer.Repository.Entities
         [BsonRepresentation(BsonType.DateTime)]
         public DateTime DateOnly { get; set; }
 
+        [BsonRepresentation(BsonType.DateTime)]
+        public DateTimeOffset DateTimeOffsetAddHours { get; set; }
+        [BsonRepresentation(BsonType.DateTime)]
+        public DateTimeOffset DateTimeOffset { get; set; }
+
         [BsonRepresentation(BsonType.String)]
         public string DateTimeString { get; set; }
 

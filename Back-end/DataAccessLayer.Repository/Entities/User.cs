@@ -21,12 +21,16 @@ namespace DataAccessLayer.Repository.Entities
         public required string DisplayName { get; set; }
         public int Followers { get; set; }
         public List<Image> Images { get; set; } = [];
-        public DateOnly? Birthdate { get; set; }
-        public string? Gender { get; set; }
+        public string? Birthdate { get; set; }
+        public UserGender Gender { get; set; }
         public UserStatus Status { get; set; }
         public string? TokenEmailConfirm { get; set; }
         public bool? IsLinkedWithGoogle { get; set; } = null;
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
+
+        public DateTime CreatedTime { get; set; }
+        public DateTime? LastLoginTime { get; set; }
+        public DateTime? LastUpdatedTime { get; set; }
     }
 }

@@ -265,14 +265,14 @@ namespace SpotifyPool.Controllers.Media
         /// <returns></returns>
         [AllowAnonymous]
         [HttpGet("spotify/fetch/playlist/{playlistID}/tracks")]
-        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, [FromQuery] int limit, string playlistID)
+        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, string playlistID)
         {
             if (string.IsNullOrEmpty(accessToken))
             {
                 return BadRequest("Access token is required.");
             }
 
-            await _spotifyService.FetchPlaylistItemsAsync(accessToken, playlistID, limit);
+            await _spotifyService.FetchPlaylistItemsAsync(accessToken, playlistID);
             return Ok(new { message = "Fetched Data Successfully" });
         }
 

@@ -9,9 +9,13 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response
         public string? Role { get; set; }
         public string? DisplayName { get; set; }
         public string? Gender { get; set; }
-        public DateOnly? Birthdate { get; set; }
+        public string? Birthdate { get; set; }
         public string? Image { get; set; }
         public bool? IsLinkedWithGoogle { get; set; }
         public string? Status { get; set; }
-	}
+
+        public DateTime CreatedTime { get; set; }
+        public DateTime? LastLoginTime { get; set; }
+        public DateTime? LastUpdatedTime { get; set; }
+    }
 }
