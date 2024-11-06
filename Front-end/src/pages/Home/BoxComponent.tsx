@@ -1,9 +1,18 @@
 import { Play } from "lucide-react"
 import { Link } from "react-router-dom"
 
+interface ArtistProps {
+	name: string
+}
+interface TrackProps {
+	images: { url: string }[]
+	name: string
+	artists: ArtistProps[]
+}
+
 interface BoxComponentProps {
 	isAvatar?: boolean
-	track?: any
+	track: TrackProps
 }
 
 const BoxComponent = ({ isAvatar, track }: BoxComponentProps) => {
@@ -35,7 +44,7 @@ const BoxComponent = ({ isAvatar, track }: BoxComponentProps) => {
 							? track.artists.length > 3
 								? `With ${track.artists
 										.slice(0, 3)
-										.map((artist, index) => artist.name)
+										.map((artist) => artist.name)
 										.join(", ")} and more`
 								: `With ${track.artists
 										.slice(0, -1)
