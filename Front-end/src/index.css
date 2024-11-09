@@ -82,7 +82,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
 	background-color: #606060;
-	border-radius: 8px;
+	/* border-radius: 8px; */
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -98,6 +98,7 @@ body,
 #root {
 	height: 100%;
 	width: 100%;
+	overflow: auto;
 }
 
 /* ==== COMMON ==== */
@@ -112,57 +113,6 @@ body,
 	grid-template-rows: repeat(1, minmax(0, 1fr));
 	grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
 }
-
-/* ==== CONTAINER ==== */
-/* .grid-templates-container {
-	display: grid;
-	gap: 8px;
-	grid-template-areas:
-		"left-sidebar main-content"
-		"now-playing-bar now-playing-bar";
-	grid-template-columns: auto 1fr;
-	grid-template-rows: 1fr auto;
-	height: 100%;
-	min-height: 100%;
-	width: 100%;
-	position: relative;
-}
-
-.left-sidebar {
-	grid-area: left-sidebar;
-	min-height: 0;
-	width: 420px;
-	display: flex;
-	flex-direction: column;
-	position: relative;
-}
-
-.main-content-container {
-	grid-area: main-content;
-	display: flex;
-	flex-direction: column;
-	position: relative;
-}
-
-.now-playing-bar-container {
-	grid-area: now-playing-bar;
-	display: flex;
-	flex-direction: column;
-	position: relative;
-	width: 100%;
-}
-
-.library-body-btn button:hover span,
-.now-playing-bar-style button:hover span,
-.auth-btn .signin:hover span {
-	transform: scale(1.04);
-	background: #f0f0f0;
-}
-
-.left-sidebar-language button:hover {
-	transform: scale(1.04);
-	border: 1px solid #fff;
-} */
 
 /* ==== FOOTER ==== */
 .now-playing-bar-style {
@@ -179,25 +129,27 @@ body,
 	padding: 10px 24px 10px 16px;
 }
 
-/* ==== MAIN CONTENT -- HOME ==== */
-/* .main-content-header-style {
-	-webkit-transition: background-color 0.25s, opacity 0.4s ease-out;
-	transition: background-color 0.25s, opacity 0.4s ease-out;
-} */
-
-/* .main-content {
-	overflow: hidden;
-	overflow-y: auto;
-	height: calc(100vh - 148px);
-} */
-
-.box-btn:hover span {
-	transform: scale(1.04);
-	background: #3be477;
-}
-
 /* ==== SEARCH ==== */
 .search-container {
 	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 	grid-auto-rows: min-content;
+}
+
+/* ==== GOOGLE LOGIN BUTTON ==== */
+/* .S9gUrf-YoZ4jf {
+	width: 100% !important;
+}
+
+.S9gUrf-YoZ4jf iframe {
+	width: 100% !important;
+	margin: 0 auto !important;
+}
+
+.S9gUrf-YoZ4jf iframe .haAclf {
+	padding: 0 !important;
+	width: 100% !important;
+} */
+
+.slider-root span[data-orientation="horizontal"]:first-child.h-2 {
+	height: 4px;
 }
