@@ -14,6 +14,9 @@ namespace BusinessLogicLayer.Mapper
             CreateMap<User, UserResponseModel>()
                 // Chuyển đổi ObjectId sang string
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id.ToString()))
+                .ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime.ToString("yyyy/MM/dd HH:mm:ss")))
+                .ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.HasValue ? src.LastLoginTime.Value.ToString("yyyy/MM/dd HH:mm:ss") : null))
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime.HasValue ? src.LastUpdatedTime.Value.ToString("yyyy/MM/dd HH:mm:ss") : null))
                 .ReverseMap();
         }
     }

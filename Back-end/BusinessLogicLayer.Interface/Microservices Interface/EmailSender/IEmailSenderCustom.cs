@@ -1,11 +1,15 @@
-﻿using DataAccessLayer.Repository.Entities;
+﻿using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
+using DataAccessLayer.Repository.Entities;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Interface.Microservices_Interface.EmailSender
 {
     public interface IEmailSenderCustom
     {
-        Task SendEmailConfirmationAsync(User user, string subject, string message);
-        Task SendEmailForgotPasswordAsync(User user, Message message); //(User user, string subject, string message);
+        public EmailSenderRequestModel EmailSenderRequestModel { get; set; }
+        public string TemplateBody { get; set; }
+
+        Task SendEmailAsync(EmailSenderRequestModel emailSenderRequestModel);
     }
 }

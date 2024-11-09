@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Restrictions.Response;
 using Newtonsoft.Json;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
@@ -14,7 +15,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
         public string? UploadDate { get; set; }
         public string? UploadBy { get; set; }
         public bool? IsExplicit { get; set; }
-        public bool? IsPlayable { get; set; }
+        public RestrictionsResponseModel? Restrictions { get; set; }
         public string? AudioFeaturesId { get; set; }
         public List<ImageResponseModel> Images { get; set; } = [];
         public List<ArtistDetails> Artists { get; set; } = [];
@@ -55,9 +56,6 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
 
         [JsonProperty("explicit")]
         public bool IsExplicit { get; set; }
-
-        [JsonProperty("is_playable")]
-        public bool IsPlayable { get; set; }
 
         [JsonProperty("album")]
         public required AlbumDetails AlbumDetails { get; set; }

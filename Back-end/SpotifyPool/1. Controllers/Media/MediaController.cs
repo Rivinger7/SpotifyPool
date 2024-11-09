@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.User;
+using System.Security.Claims;
 
 namespace SpotifyPool.Controllers.Media
 {
@@ -26,7 +27,7 @@ namespace SpotifyPool.Controllers.Media
         /// <param name="formFile"></param>
         /// <returns></returns>
         #region Cloudinary
-        [HttpPost("test-content-type-file")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpPost("test-content-type-file")]
         public IActionResult GetContentTypeFile(IFormFile formFile)
         {
             if (formFile == null)
@@ -47,8 +48,7 @@ namespace SpotifyPool.Controllers.Media
         /// <param name="imageFile"></param>
         /// <param name="imageTag"></param>
         /// <returns></returns>
-        [AllowAnonymous]
-        [HttpPost("upload-image")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpPost("upload-image")]
         public IActionResult UploadImage(IFormFile imageFile, ImageTag imageTag)
         {
             var uploadResult = cloudinaryService.UploadImage(imageFile, imageTag);
@@ -62,7 +62,7 @@ namespace SpotifyPool.Controllers.Media
         /// <param name="audioTagParent"></param>
         /// <param name="audioTagChild"></param>
         /// <returns></returns>
-        [HttpPost("upload-track")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpPost("upload-track")]
         public IActionResult UploadTrack(IFormFile trackFile, AudioTagParent audioTagParent, AudioTagChild audioTagChild)
         {
             var uploadResult = cloudinaryService.UploadTrack(trackFile, audioTagParent, audioTagChild);
@@ -74,8 +74,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
-        [AllowAnonymous]
-        [HttpGet("get-image/{publicID}")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-image/{publicID}")]
         public IActionResult GetImageResult(string publicID)
         {
             var getResult = cloudinaryService.GetImageResult(publicID);
@@ -87,7 +86,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
-        [HttpGet("get-track/{publicID}")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-track/{publicID}")]
         public IActionResult GetTrackResult(string publicID)
         {
             var getResult = cloudinaryService.GetTrackResult(publicID);
@@ -99,8 +98,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
-        [AllowAnonymous]
-        [HttpDelete("delete-image/{publicID}")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpDelete("delete-image/{publicID}")]
         public IActionResult DeleteImage(string publicID)
         {
             var deleteResult = cloudinaryService.DeleteImage(publicID);
@@ -112,7 +110,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
-        [HttpDelete("delete-track/{publicID}")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpDelete("delete-track/{publicID}")]
         public IActionResult DeleteTrack(string publicID)
         {
             var deleteResult = cloudinaryService.DeleteTrack(publicID);
@@ -121,7 +119,7 @@ namespace SpotifyPool.Controllers.Media
         #endregion
 
         #region Spotify
-        [HttpGet("tracks")]
+        [AllowAnonymous, HttpGet("tracks")]
         public async Task<IActionResult> GetAllTracksAsync()
         {
             var result = await _trackService.GetAllTracksAsync();
@@ -133,8 +131,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="searchTerm"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer))]
-        [HttpGet("tracks/search")]
+        [AllowAnonymous, HttpGet("tracks/search")]
         public async Task<IActionResult> SearchTracksAsync([FromQuery] string searchTerm)
         {
             var result = await _trackService.SearchTracksAsync(searchTerm);
@@ -146,7 +143,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="trackID"></param>
         /// <returns></returns>
-        [AllowAnonymous, HttpPost("add-to-favorite-list")]
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("add-to-favorite-list")]
         public async Task<IActionResult> AddToFavoriteListAsync([FromBody] string trackID)
         {
             await _favoritesPlaylistService.AddToPlaylistAsync(trackID);
@@ -157,7 +154,7 @@ namespace SpotifyPool.Controllers.Media
         /// Danh sách các bài hát yêu thích
         /// </summary>
         /// <returns></returns>
-        [AllowAnonymous, HttpGet("playlist/favorite-songs")]
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("playlist/favorite-songs")]
         public async Task<IActionResult> GetFavoriteSongs()
         {
             var result = await _favoritesPlaylistService.GetPlaylistAsync();
@@ -169,7 +166,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="trackID"></param>
         /// <returns></returns>
-        [AllowAnonymous, HttpDelete("playlist/favorite-songs/{trackID}")]
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpDelete("playlist/favorite-songs/{trackID}")]
         public async Task<IActionResult> RemoveTrackFromFavoriteSongs(string trackID)
         {
             await _favoritesPlaylistService.RemoveFromPlaylistAsync(trackID);
@@ -180,8 +177,7 @@ namespace SpotifyPool.Controllers.Media
         /// FOR BACK-END
         /// </summary>
         /// <returns></returns>
-        [AllowAnonymous]
-        [HttpGet("spotify/authorize")]
+        [AllowAnonymous, HttpGet("spotify/authorize")]
         public IActionResult Authorize()
         {
             var result = _spotifyService.Authorize();
@@ -194,8 +190,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
-        [AllowAnonymous]
-        [HttpGet("callback")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("callback")]
         public async Task<IActionResult> Callback([FromQuery] string code)
         {
             if (string.IsNullOrEmpty(code))
@@ -221,8 +216,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="accessToken"></param>
         /// <returns></returns>
-        [AllowAnonymous]
-        [HttpGet("spotify/top-tracks")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("spotify/top-tracks")]
         public async Task<IActionResult> GetTopTracks([FromQuery] string accessToken)
         {
             if (string.IsNullOrEmpty(accessToken))
@@ -237,42 +231,20 @@ namespace SpotifyPool.Controllers.Media
         }
 
         /// <summary>
-        /// FOR BACK-END
-        /// </summary>
-        /// <param name="accessToken"></param>
-        /// <param name="limit"></param>
-        /// <param name="offset"></param>
-        /// <returns></returns>
-        [AllowAnonymous]
-        [HttpGet("spotify/fetch/saved-tracks")]
-        public async Task<IActionResult> GetUserSaveTracks([FromQuery] string accessToken, [FromQuery] int limit, [FromQuery] int offset)
-        {
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                return BadRequest("Access token is required.");
-            }
-
-            await _spotifyService.FetchUserSaveTracksAsync(accessToken, limit, offset);
-            return Ok(new {message = "Fetched Data Successfully"});
-        }
-
-        /// <summary>
         /// Fetch playlist items from Spotify API
         /// </summary>
         /// <param name="accessToken"></param>
-        /// <param name="limit"></param>
-        /// <param name="playlistID"></param>
+        /// <param name="id"></param>
         /// <returns></returns>
-        [AllowAnonymous]
-        [HttpGet("spotify/fetch/playlist/{playlistID}/tracks")]
-        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, string playlistID)
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("spotify/fetch/playlist/{id}/tracks")]
+        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, string id)
         {
             if (string.IsNullOrEmpty(accessToken))
             {
                 return BadRequest("Access token is required.");
             }
 
-            await _spotifyService.FetchPlaylistItemsAsync(accessToken, playlistID);
+            await _spotifyService.FetchPlaylistItemsAsync(accessToken, id);
             return Ok(new { message = "Fetched Data Successfully" });
         }
 
@@ -281,7 +253,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="accessToken"></param>
         /// <returns></returns>
-        [HttpGet("spotify/genre-seeds")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("spotify/genre-seeds")]
         public async Task<IActionResult> GetAllGenreSeeds([FromQuery] string accessToken)
         {
             if (string.IsNullOrEmpty(accessToken))
@@ -298,7 +270,7 @@ namespace SpotifyPool.Controllers.Media
         /// </summary>
         /// <param name="accessToken"></param>
         /// <returns></returns>
-        [HttpGet("spotify/markets")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("spotify/markets")]
         public async Task<IActionResult> GetAllMarkets([FromQuery] string accessToken)
         {
             if (string.IsNullOrEmpty(accessToken))

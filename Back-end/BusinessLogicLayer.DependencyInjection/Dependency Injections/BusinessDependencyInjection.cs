@@ -51,6 +51,13 @@ using SetupLayer.Enum.Services.Playlist;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using BusinessLogicLayer.Implement.Services.Tests;
+using System;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
+using System.Threading.Channels;
+using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
+using SetupLayer.Enum.Services.Track;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -473,27 +480,41 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
         public static void AddEmailSender(this IServiceCollection services, IConfiguration configuration)
         {
-            var smtpSettings = new SmtpSettings()
+            SmtpSettings smtpSettings = new()
             {
-                Host = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST"),
-                Port = Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT"),
-                Username = Environment.GetEnvironmentVariable("EMAIL_SMTP_USERNAME"),
+                Host = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST")
+                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_HOST property is not set in environment or not found"),
+                Port = Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT")
+                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PORT property is not set in environment or not found"),
+                Username = Environment.GetEnvironmentVariable("EMAIL_SMTP_USERNAME")
+                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_USERNAME property is not set in environment or not found"),
                 Password = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD")
+                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PASSWORD property is not set in environment or not found")
             };
 
-            var emailSenderSetting = new EmailSenderSetting()
+            EmailSenderSetting emailSenderSetting = new()
             {
                 Smtp = smtpSettings,
-                FromAddress = Environment.GetEnvironmentVariable("EMAIL_FROMADDRESS"),
+                FromAddress = Environment.GetEnvironmentVariable("EMAIL_FROMADDRESS")
+                ?? throw new DataNotFoundCustomException("EMAIL_FROMADDRESS property is not set in environment or not found"),
                 FromName = Environment.GetEnvironmentVariable("EMAIL_FROMNAME")
+                ?? throw new DataNotFoundCustomException("EMAIL_FROMNAME property is not set in environment or not found")
             };
 
             // Register the EmailSenderSetting with DI
             services.AddSingleton(emailSenderSetting);
 
             // Register the EmailSender service
-            //services.AddScoped<IEmailSenderCustom, EmailSender>();
             services.AddSingleton<IEmailSenderCustom, EmailSender>();
+
+            // Register the Channel<IEmailSenderCustom> service
+            services.AddSingleton(Channel.CreateUnbounded<IEmailSenderCustom>());
+
+            // Register the Background Email Sender service
+            services.AddSingleton<IBackgroundEmailSender, BackgroundEmailSender>();
+
+            // Register the BackgroundEmailSender as a hosted service
+            services.AddHostedService<BackgroundEmailSender>();
         }
 
         public static void AddJWT(this IServiceCollection services, IConfiguration configuration)
@@ -744,6 +765,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Track
             BsonSerializer.RegisterSerializer(typeof(PlaylistName), new EnumMemberSerializer<PlaylistName>());
+            BsonSerializer.RegisterSerializer(typeof(RestrictionReason), new EnumMemberSerializer<RestrictionReason>());
 
             // Cloudinary
             BsonSerializer.RegisterSerializer(typeof(AudioTagChild), new EnumMemberSerializer<AudioTagChild>());

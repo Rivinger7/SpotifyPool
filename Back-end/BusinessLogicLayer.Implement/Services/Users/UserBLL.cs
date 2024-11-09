@@ -66,12 +66,14 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 {
                     UserId = users.Id.ToString(),
                     Role = users.Role.ToString(),
+                    Email = users.Email,
                     DisplayName = users.DisplayName,
                     Gender = users.Gender.ToString(),
                     Birthdate = users.Birthdate,
                     //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
                     Status = users.Status.ToString(),
+                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd")
                 })
                 .ToListAsync());
             }
@@ -82,12 +84,16 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 {
                     UserId = users.Id.ToString(),
                     Role = users.Role.ToString(),
+                    Email = users.Email,
                     DisplayName = users.DisplayName,
                     Gender = users.Gender.ToString(),
                     Birthdate = users.Birthdate,
                     //ImageResponseModel = users.ImageResponseModel,
                     IsLinkedWithGoogle = users.IsLinkedWithGoogle,
-                    Status = users.Status.ToString()
+                    Status = users.Status.ToString(),
+                    CreatedTime = users.CreatedTime.ToString(),
+                    LastLoginTime = users.LastLoginTime.HasValue ? users.LastLoginTime.Value.ToString() : null,
+                    LastUpdatedTime = users.LastUpdatedTime.HasValue ? users.LastUpdatedTime.Value.ToString() : null,
                 })
                 .ToListAsync();
             }
@@ -108,12 +114,14 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 {
                     UserId = user.Id.ToString(),
                     Role = user.Role.ToString(),
+                    Email = user.Email,
                     DisplayName = user.DisplayName,
                     Gender = user.Gender.ToString(),
                     Birthdate = user.Birthdate,
                     //ImageResponseModel = user.Images,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
                     Status = user.Status.ToString(),
+                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
                 }).FirstOrDefaultAsync());
             }
             else
@@ -122,13 +130,14 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 {
                     UserId = user.Id.ToString(),
                     Role = user.Role.ToString(),
+                    Email = user.Email,
                     DisplayName = user.DisplayName,
                     Gender = user.Gender.ToString(),
                     Birthdate = user.Birthdate,
                     //ImageResponseModel = user.ImageResponseModel,
                     IsLinkedWithGoogle = user.IsLinkedWithGoogle,
-                    Status = user.Status.ToString()
-
+                    Status = user.Status.ToString(),
+                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
                 }).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException($"Not found User with ID {id}");
             }
 

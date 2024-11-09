@@ -3,35 +3,37 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
+using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView;
 using BusinessLogicLayer.ModelView.Microservice_Model_Views.Geolocation.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Utility.Coding;
+using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IEmailSenderCustom emailSender, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation) : IAuthenticationBLL
+    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation, IBackgroundEmailSender backgroundEmailSender) : IAuthenticationBLL
     {
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
-        private readonly IEmailSenderCustom _emailSender = emailSender;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IGeolocation _geolocation = geolocation;
+        private readonly IBackgroundEmailSender _backgroundEmailSender = backgroundEmailSender;
 
         public async Task CreateAccount(RegisterRequestModel registerModel)
         {
@@ -91,8 +93,18 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             await _unitOfWork.GetCollection<User>().InsertOneAsync(newUser);
 
+            // Thêm projection giúp mình lấy thông tin cần thiết từ User
+            UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(newUser);
+
+            // Tạo request model để gửi email
+            EmailSenderRequestModel emailSenderRequestModel = new()
+            {
+                EmailTo = [email],
+                Subject = "Xác nhận Email"
+            };
+
             // Gửi email
-            await _emailSender.SendEmailConfirmationAsync(newUser, "Xác nhận Email", confirmationLink);
+            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailConfirmTemplate(userResponseModel.DisplayName, confirmationLink));
 
             // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
 
@@ -185,7 +197,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Lấy token từ FE
             // Xác thực token của Google và lấy thông tin người dùng
             GoogleJsonWebSignature.Payload payload = await VerifyGoogleToken(googleToken) ?? throw new UnauthorizedAccessException("Invalid Google token.");
-            
+
+            if(!payload.EmailVerified)
+            {
+                throw new UnauthorizedAccessException("Email is not verified. Please verify your email to access our website");
+            }
+
             string? givenName = payload.GivenName; // Given Name can be null
             string? surName = payload.FamilyName; // Sur Name can be null
             string? fullName = Util.ValidateAndCombineName(givenName, surName);
@@ -200,10 +217,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync();
 
             // Lấy thông tin ảnh từ URL
-            (int imageHeight, int imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
+            //(int imageHeight, int imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
 
             // Lấy thông tin IP Address
-            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
+            //GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
+            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromHeaderAsync();
 
             // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
             if (retrieveUser is null)
@@ -218,14 +236,15 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                         new()
                         {
                             URL = avatar,
-                            Height = imageHeight,
-                            Width = imageWidth,
+                            Height = 96,
+                            Width = 96,
                         },
                     ],
                     Role = UserRole.Customer,
                     Product = UserProduct.Free,
                     CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                     Status = UserStatus.Active,
+                    CreatedTime = Util.GetUtcPlus7Time()
                 };
                 await _unitOfWork.GetCollection<User>().InsertOneAsync(retrieveUser);
             }
@@ -267,6 +286,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
             _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out string accessToken, out string refreshToken);
+
+            // Đảm bảo rằng hệ thống đã tạo AccessToken thành công thì mới cập nhật field LastLoginTime
+            UpdateDefinition<User> updateDefinition = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
+            await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, updateDefinition);
 
             // New object ModelView
             AuthenticatedResponseModel authenticationModel = new()
@@ -388,6 +411,8 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string username = _httpContextAccessor.HttpContext.Session.GetString("UserNameTemp");
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.UserName == username).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("No username found in session. Please log in again.");
 
+            UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(retrieveUser);
+
             string email = retrieveUser.Email;
 
             string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
@@ -403,7 +428,13 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 throw new CustomException("Update Fail", StatusCodes.Status500InternalServerError, "Found user but can not update");
             }
 
-            await _emailSender.SendEmailConfirmationAsync(retrieveUser, "Xác nhận Email", confirmationLink);
+            EmailSenderRequestModel emailSenderRequestModel = new()
+            {
+                EmailTo = [email],
+                Subject = "Xác nhận Email"
+            };
+
+            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailConfirmTemplate(retrieveUser.DisplayName, confirmationLink));
 
             return;
         }
@@ -413,9 +444,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == model.Email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
             string otpToEmail = await CreateOTPAsync(retrieveUser.Email);
 
-            Message message = new Message([retrieveUser.Email], "OTP forgot password", $"Your OTP is: {otpToEmail}");
+            EmailSenderRequestModel emailSenderRequestModel = new()
+            {
+                EmailTo = [retrieveUser.Email],
+                Subject = "OTP forgot password"
+            };
 
-            await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
+            // Gửi email
+            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailForgotPasswordTemplate(otpToEmail));
         }
 
 
@@ -441,8 +477,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> updatePassword = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(password));
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Email == email, updatePassword);
 
-            Message message = new Message([email], "Reset Password", $"Your new password is: {password}");
-            await _emailSender.SendEmailForgotPasswordAsync(retrieveUser, message);
+            EmailSenderRequestModel emailSenderRequestModel = new()
+            {
+                EmailTo = [retrieveUser.Email],
+                Subject = "Reset Password"
+            };
+
+            // Gửi email
+            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailForgotPasswordTemplate(password));
 
         }
 
