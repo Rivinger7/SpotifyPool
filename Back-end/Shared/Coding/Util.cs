@@ -135,6 +135,7 @@ namespace Utility.Coding
             return image;
         }
 
+        [Obsolete("Không nên dùng hàm này khi deploy. Đang gặp lỗi khởi tạo")]
         public static async Task<(int height, int width)> GetImageInfoFromUrlSkiaSharp(string url)
         {
             using HttpClient client = new();

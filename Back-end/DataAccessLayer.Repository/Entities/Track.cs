@@ -21,7 +21,7 @@ namespace DataAccessLayer.Repository.Entities
         public List<Image> Images { get; set; } = [];
 
         public required bool IsExplicit { get; set; } // Spotify API
-        public required bool IsPlayable { get; set; } // Spotify API
+        public required Restrictions Restrictions { get; set; }
         public required string UploadDate { get; set; }
         public required string UploadBy { get; set; }
 

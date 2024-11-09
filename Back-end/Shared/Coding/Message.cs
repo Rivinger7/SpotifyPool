@@ -9,6 +9,7 @@ namespace Utility.Coding
         public string Content { get; set; }
         public Message(IEnumerable<string> to, string subject, string content)
         {
+            //To = [.. to.Select(x => new MailboxAddress(null, x))];
             To = new List<MailboxAddress>();
             To.AddRange(to.Select(x => new MailboxAddress(null, x)));
             Subject = subject;

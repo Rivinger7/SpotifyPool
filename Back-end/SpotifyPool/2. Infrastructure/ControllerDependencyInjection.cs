@@ -55,7 +55,9 @@ namespace SpotifyPool.Infrastructure
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowSpecificOrigin",
+
                     builder => builder.WithOrigins("http://localhost:5173") // Or using AllowAnyOrigin() for all
+                                      .WithOrigins("https://spotifypoolmusic.vercel.app")
                                       .AllowAnyHeader()
                                       .AllowAnyMethod());
             });

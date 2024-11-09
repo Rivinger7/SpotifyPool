@@ -12,7 +12,6 @@ namespace BusinessLogicLayer.Mapper.Mappers.Tracks
             CreateMap<SpotifyTrackResponseModel, Track>()
             .ForMember(dest => dest.SpotifyId, opt => opt.MapFrom(src => src.TrackId))
             .ForMember(dest => dest.ArtistIds, opt => opt.MapFrom(src => src.Artists.Select(a => a.Id).ToList()))
-            //.ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.Images))
             .ForMember(dest => dest.Images, opt => opt.Ignore());
             //.ForMember(dest => dest.MarketsIds, opt => opt.MapFrom(src => src.AvailableMarkets.Select(m => m.Id).ToList()));
         }

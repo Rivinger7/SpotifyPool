@@ -22,8 +22,8 @@ EnvironmentVariableLoader.LoadEnvironmentVariable();
 //builder.WebHost.UseUrls($"https://localhost:{port}");
 
 // Lấy cổng từ biến môi trường hoặc để trống để chọn ngẫu nhiên
-var port = Environment.GetEnvironmentVariable("PORT");
-var protocol = builder.Environment.IsDevelopment() ? "http" : "https";
+//var port = Environment.GetEnvironmentVariable("PORT");
+//var protocol = builder.Environment.IsDevelopment() ? "http" : "https";
 
 // Nếu không có biến môi trường PORT, để trống UseUrls để ứng dụng tự chọn cổng ngẫu nhiên
 //if (string.IsNullOrEmpty(port))
@@ -40,8 +40,13 @@ var protocol = builder.Environment.IsDevelopment() ? "http" : "https";
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    //options.KnownProxies.Add(IPAddress.Parse("::ffff:127.0.0.1")); // Thay địa chỉ này bằng địa chỉ proxy nếu cần
+
+    // Uncomment and set your trusted proxies if your app is behind a proxy
+    // options.KnownProxies.Add(IPAddress.Parse("::ffff:127.0.0.1"));
+    // Or use KnownNetworks for trusted network ranges if you use multiple proxies
+    // options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("192.168.1.0"), 24));
 });
+
 
 // Config appsettings by env
 builder.Configuration
@@ -82,6 +87,9 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseForwardedHeaders();
+
+// Đăng ký middleware lấy địa chỉ IP
+//app.UseMiddleware<IpAddressMiddleware>();
 
 app.UseHttpsRedirection();
 
