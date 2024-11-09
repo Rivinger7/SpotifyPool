@@ -7,18 +7,23 @@ import {
 	FormMessage,
 } from "@/components/ui/form"
 
-import GoogleIcon from "@/assets/icons/GoogleIcon"
+// import GoogleIcon from "@/assets/icons/GoogleIcon"
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import CustomTooltip from "@/components/CustomTooltip"
 
 import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+
 import toast from "react-hot-toast"
+import { useDispatch } from "react-redux"
 import { useForm } from "react-hook-form"
 import { Helmet } from "react-helmet-async"
+import { login } from "@/store/slice/authSlice"
+import { GoogleLogin } from "@react-oauth/google"
 import { Link, useNavigate } from "react-router-dom"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useRegisterMutation } from "@/services/apiAuth"
+import { useLoginByGoogleMutation, useRegisterMutation } from "@/services/apiAuth"
 
 const formSchema = z.object({
 	email: z.string().email({
@@ -43,8 +48,10 @@ const formSchema = z.object({
 
 const SignupForm = () => {
 	const navigate = useNavigate()
+	const dispatch = useDispatch()
 
 	const [registerMutation] = useRegisterMutation()
+	const [loginByGoogleMutation] = useLoginByGoogleMutation()
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -70,18 +77,28 @@ const SignupForm = () => {
 	}
 
 	return (
-		<div className="flex items-center justify-center w-2/3 lg:w-2/5 min-h-full py-10 m-0 mx-auto">
+		<div className="flex items-center justify-center w-2/3 lg:w-2/5 min-h-full py-10 m-0 mx-auto overflow-auto">
 			<div>
 				<Helmet>
 					<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Black.png" />
 					<title>Sign up - Spotify</title>
 				</Helmet>
+
 				<header className="flex flex-col items-center justify-center mb-8">
-					<img src="/Spotify_Icon_RGB_White.png" alt="spotify logo black" className="w-10 h-10" />
+					<CustomTooltip label="Back to home" side="top">
+						<Link to={"/"}>
+							<img
+								src="/Spotify_Icon_RGB_White.png"
+								alt="spotify logo black"
+								className="w-10 h-10"
+							/>
+						</Link>
+					</CustomTooltip>
 					<h1 className="text-5xl leading-[62px]  text-center font-bold text-white">
 						Sign up to start listening
 					</h1>
 				</header>
+
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 						{/* EMAIL */}
@@ -208,20 +225,48 @@ const SignupForm = () => {
 						</Button>
 					</form>
 				</Form>
+
 				<div className="flex justify-center items-center mt-8 relative before:absolute before:left-0 before:right-0 before:block before:top-1/2 before:h-[1px] before:content-[''] before:w-full before:border-[1px] before:border-solid before:border-[#727272]">
 					<span className="relative bg-[#121212] pl-3 pr-3 text-sm leading-5 text-[rgb(107 114 128 / 1)]">
 						or
 					</span>
 				</div>
-				<Button
+
+				{/* <Button
 					className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-8 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
 					type="submit"
 				>
 					<GoogleIcon />
 					Sign up with Google
-				</Button>
-				<div className="h-[1px] bg-[#292929] w-full mt-8 mb-8"></div>
-				<div className="text-center w-full text-[#a7a7a7]">
+				</Button> */}
+
+				<div
+					className="mt-8"
+					// className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-3 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
+					// type="submit"
+				>
+					<GoogleLogin
+						shape="pill"
+						size="large"
+						onSuccess={(credentialResponse) => {
+							loginByGoogleMutation({ googleToken: credentialResponse.credential })
+								.unwrap()
+								.then((data) => {
+									dispatch(login({ userToken: data.token, isGoogle: true }))
+									navigate("/")
+									toast.success("Login successful")
+								})
+								.catch((error) => {
+									console.error(error)
+								})
+						}}
+						onError={() => {
+							console.log("Login Failed")
+						}}
+					/>
+				</div>
+
+				<div className="text-center mt-4 w-full text-[#a7a7a7]">
 					Already have an account?{" "}
 					<Link
 						to={"/login"}

@@ -17,14 +17,17 @@ const LeftSideBar = () => {
 	}
 
 	return (
-		<div className="w-[420px] shrink-0">
+		<div className="w-[420px] shrink-0 max-h-full">
 			{/* ==== NAVBAR ==== */}
 			<nav className={"flex flex-col gap-2 h-full"}>
 				<div
-					className={"flex flex-col w-full flex-1 relative bg-[var(--background-base)] rounded-lg"}
+					className={
+						"flex flex-col w-full h-full flex-1 relative bg-[var(--background-base)] rounded-lg"
+					}
 				>
 					{/* ==== YOUR LIBRARY ====  */}
-					<div className={"left-sidebar-library flex flex-col flex-1 w-full"}>
+					<div className={"left-sidebar-library flex flex-col flex-1 w-full overflow-x-hidden"}>
+						{/*  ==== LIBRARY HEADER ==== */}
 						<div className="library-header">
 							<header className={"p-2 pl-4 pr-4"}>
 								<div className={"flex justify-between"}>
@@ -70,12 +73,11 @@ const LeftSideBar = () => {
 									</span>
 								</div>
 							</header>
-							<div className={"flex items-center gap-2 m-2 ml-4 mr-4"}></div>
 						</div>
 
 						{/*  ==== LIBRARY BODY ==== */}
-						<div className="h-full library-body">
-							<div className="flex flex-col h-full min-h-full gap-2 p-2 pt-0 library-body-container">
+						<div className="h-full overflow-y-auto">
+							<div className="flex flex-col max-h-full overflow-y-auto gap-2 p-2 pt-0 library-body-container">
 								{/* CREATE PLAYLIST */}
 								<section className="flex flex-col bg-[#1f1f1f] justify-center gap-5 rounded-lg m-2 ml-0 mr-0 p-4 pl-5 pr-5">
 									<div className="flex flex-col gap-2">
@@ -110,12 +112,13 @@ const LeftSideBar = () => {
 					</div>
 
 					{/* ==== SIDEBAR FOOTER ==== */}
-					<div className={"left-sidebar-footer"}>
+					<div className="overflow-hidden">
 						<div className="left-sidebar-legal-links text-[#b3b3b3] text-[11px] m-8 ml-0 mr-0 p-6 pt-0 pb-0">
 							<div className="flex flex-wrap linklists-container">
 								<div className="group">
 									<Link
 										to={"https://www.spotify.com/vn-vi/legal/end-user-agreement/"}
+										target="_blank"
 										className="mr-4 leading-7"
 									>
 										<span className="group-hover:text-white">Legal</span>
@@ -124,6 +127,7 @@ const LeftSideBar = () => {
 								<div className="group">
 									<Link
 										to={"https://www.spotify.com/vn-vi/safetyandprivacy"}
+										target="_blank"
 										className="mr-4 leading-7"
 									>
 										<span className="group-hover:text-white">Safety & Privacy Center</span>
@@ -132,6 +136,7 @@ const LeftSideBar = () => {
 								<div className="group">
 									<Link
 										to={"https://www.spotify.com/vn-vi/legal/privacy-policy/"}
+										target="_blank"
 										className="mr-4 leading-7"
 									>
 										<span className="group-hover:text-white">Privacy Policy</span>
@@ -140,6 +145,7 @@ const LeftSideBar = () => {
 								<div className="group">
 									<Link
 										to={"https://www.spotify.com/vn-vi/legal/cookies-policy/"}
+										target="_blank"
 										className="mr-4 leading-7"
 									>
 										<span className="group-hover:text-white">Cookies</span>
@@ -148,6 +154,7 @@ const LeftSideBar = () => {
 								<div className="group">
 									<Link
 										to={"https://www.spotify.com/vn-vi/legal/privacy-policy/#s3"}
+										target="_blank"
 										className="mr-4 leading-7"
 									>
 										<span className="group-hover:text-white">About Ads</span>
@@ -156,6 +163,7 @@ const LeftSideBar = () => {
 								<div className="group">
 									<Link
 										to={"https://www.spotify.com/vn-vi/accessibility"}
+										target="_blank"
 										className="mr-4 leading-7"
 									>
 										<span className="group-hover:text-white">Accessibility</span>

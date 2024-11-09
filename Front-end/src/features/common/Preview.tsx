@@ -1,8 +1,8 @@
 const Preview = () => {
 	return (
-		<div className={"now-playing-bar-container"}>
-			<footer>
-				<div className="now-playing-bar-style">
+		<div className={"now-playing-bar-container h-[68px]"}>
+			<footer className="h-full">
+				<div className="now-playing-bar-style h-full">
 					<div>
 						<p className="text-[14px] font-bold">Preview of Spotify</p>
 						<p className="font-medium">

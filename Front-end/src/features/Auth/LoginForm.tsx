@@ -23,6 +23,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useLoginByGoogleMutation, useLoginMutation } from "@/services/apiAuth"
 
 import { GoogleLogin } from "@react-oauth/google"
+import CustomTooltip from "@/components/CustomTooltip"
+import { useEffect, useState } from "react"
 
 const formSchema = z.object({
 	username: z.string(),
@@ -35,6 +37,30 @@ const formSchema = z.object({
 const LoginForm = () => {
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
+
+	// Inside component:
+	const [buttonWidth, setButtonWidth] = useState(200)
+
+	useEffect(() => {
+		const handleResize = () => {
+			if (window.innerWidth >= 768) {
+				setButtonWidth(400)
+			} else if (window.innerWidth >= 640) {
+				setButtonWidth(360)
+			} else {
+				setButtonWidth(300)
+			}
+		}
+
+		// Initial check
+		handleResize()
+
+		// Add listener
+		window.addEventListener("resize", handleResize)
+
+		// Cleanup
+		return () => window.removeEventListener("resize", handleResize)
+	}, [])
 
 	const [loginMutation] = useLoginMutation()
 	const [loginByGoogleMutation] = useLoginByGoogleMutation()
@@ -69,18 +95,28 @@ const LoginForm = () => {
 
 	return (
 		<div className="min-h-full flex items-center justify-center bg-gradient-to-b from-zinc-700 from-0% to-black to-100%">
-			<div className="flex items-center justify-center w-4/5 md:w-2/3 lg:w-1/2 h-full m-0 mx-auto">
-				<div className="bg-[#121212] py-10 px-14 rounded-md">
+			<div className="flex items-center justify-center w-full sm:w-2/3 lg:w-1/2 h-full m-0 mx-auto">
+				<div className="bg-[#121212] p-8 md:py-10 md:px-14 rounded-md">
 					<Helmet>
 						<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Black.png" />
 						<title>Login - Spotify</title>
 					</Helmet>
+
 					<header className="flex flex-col items-center justify-center mb-3">
-						<img src="/Spotify_Icon_RGB_White.png" alt="spotify logo black" className="w-10 h-10" />
+						<CustomTooltip label="Back to homepage" side="top">
+							<Link to={"/"}>
+								<img
+									src="/Spotify_Icon_RGB_White.png"
+									alt="spotify logo black"
+									className="w-10 h-10"
+								/>
+							</Link>
+						</CustomTooltip>
 						<h1 className="text-2xl md:text-3xl lg:text-5xl leading-[62px] text-center font-bold text-white">
 							Log in to Spotify
 						</h1>
 					</header>
+
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 							<FormField
@@ -132,7 +168,7 @@ const LoginForm = () => {
 													onCheckedChange={(checked) => field.onChange(checked)}
 												/>
 											</FormControl>
-											<FormLabel htmlFor="airplane-mode">Remember me</FormLabel>
+											<FormLabel htmlFor="remember">Remember me</FormLabel>
 										</div>
 									</FormItem>
 								)}
@@ -145,16 +181,19 @@ const LoginForm = () => {
 							</Button>
 						</form>
 					</Form>
+
 					<div className="mt-3 text-center">
 						<Link to={"/"} className="underline hover:text-[#1ed760] transition-all duration-300">
 							Forgot your password?
 						</Link>
 					</div>
+
 					<div className="flex justify-center items-center mt-3 relative before:absolute before:left-0 before:right-0 before:block before:top-1/2 before:h-[1px] before:content-[''] before:w-full before:border-[1px] before:border-solid before:border-[#727272]">
 						<span className="relative bg-[#121212] pl-3 pr-3 text-sm leading-5 text-[rgb(107 114 128 / 1)]">
 							or
 						</span>
 					</div>
+
 					<div
 						className="mt-3"
 						// className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-3 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
@@ -163,6 +202,8 @@ const LoginForm = () => {
 						<GoogleLogin
 							shape="pill"
 							size="large"
+							// ux_mode="redirect"
+							width={buttonWidth}
 							onSuccess={(credentialResponse) => {
 								loginByGoogleMutation({ googleToken: credentialResponse.credential })
 									.unwrap()
