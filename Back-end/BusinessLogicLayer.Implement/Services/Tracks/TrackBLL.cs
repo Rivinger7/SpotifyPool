@@ -24,7 +24,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             IAggregateFluent<ASTrack> trackPipelines = pipeLine.Lookup<Track, Artist, ASTrack>
                 (_unitOfWork.GetCollection<Artist>(), // The foreign collection  
                 track => track.ArtistIds, // The field in Track that are joining on  
-                artist => artist.SpotifyId, // The field in Artist that are matching against  
+                artist => artist.Id, // The field in Artist that are matching against  
                 result => result.Artists) // The field in ASTrack to hold the matched artists  
                 .Project(Builders<ASTrack>.Projection  // Project  
                 .Include(ast => ast.Name) // Get only necessary fields  
@@ -78,7 +78,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             IAggregateFluent<ASTrack> trackPipelines = pipeline.Lookup<Track, Artist, ASTrack> // Stage 1  
                 (_unitOfWork.GetCollection<Artist>(),
                 track => track.ArtistIds,
-                artist => artist.SpotifyId,
+                artist => artist.Id,
                 result => result.Artists)
                 .Match(artistFilter)  // Tìm kiếm theo Artist hoặc TrackName // Stage 2  
                 .Project(projectionDefinition)

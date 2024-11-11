@@ -10,11 +10,9 @@ namespace BusinessLogicLayer.Mapper.Mappers.Tracks
         public TrackMapping()
         {
             CreateMap<Track, TrackResponseModel>()
-                .ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.Images))
                 .ReverseMap();
 
             CreateMap<ASTrack, TrackResponseModel>()
-                .ForMember(dest => dest.Artists, opt => opt.MapFrom(src => src.Artists))
                 .ReverseMap();
         }
     }

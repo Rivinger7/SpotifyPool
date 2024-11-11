@@ -230,14 +230,26 @@ namespace SpotifyPool.Controllers.Media
             return Ok(topTracks); // Return the top tracks as the response
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("spotify/fetch/update/playlist/{id}/tracks")]
+        public async Task<IActionResult> UpdateFetchPlaylistItems([FromQuery] string accessToken, string id)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest("Access token is required.");
+            }
+
+            await _spotifyService.UpdateFetchPlaylistItemsAsync(accessToken, id);
+            return Ok(new { message = "Fetched Data Successfully" });
+        }
+
         /// <summary>
         /// Fetch playlist items from Spotify API
         /// </summary>
         /// <param name="accessToken"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("spotify/fetch/playlist/{id}/tracks")]
-        public async Task<IActionResult> GetPlaylistTracks([FromQuery] string accessToken, string id)
+        [Authorize(Roles = nameof(UserRole.SuperAdmin)), HttpGet("spotify/fetch/playlist/{id}/tracks")]
+        public async Task<IActionResult> FetchPlaylistItems([FromQuery] string accessToken, string id)
         {
             if (string.IsNullOrEmpty(accessToken))
             {

@@ -1,12 +1,13 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Restrictions.Response;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
 {
     public class SpotifyTrackResponseModel
     {
-        public string? TrackId { get; set; }
+        public string? SpotifyTrackId { get; set; }
         public string? Name { get; set; }
         public string? Description { get; set; }
         public int? Popularity { get; set; }
@@ -18,7 +19,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
         public RestrictionsResponseModel? Restrictions { get; set; }
         public string? AudioFeaturesId { get; set; }
         public List<ImageResponseModel> Images { get; set; } = [];
-        public List<ArtistDetails> Artists { get; set; } = [];
+        public List<string> ArtistIds { get; set; } = [];
         public List<AvailableMarkets> AvailableMarkets { get; set; } = [];
     }
 
@@ -37,7 +38,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
     public class TrackDetails
     {
         [JsonProperty("id")]
-        public string? TrackId { get; set; }
+        public required string TrackId { get; set; }
 
         [JsonProperty("name")]
         public string? Name { get; set; }
@@ -79,9 +80,9 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
     public class ArtistDetails
     {
         [JsonProperty("id")]
-        public string? Id { get; set; }
+        public required string Id { get; set; }
         [JsonProperty("name")]
-        public string? Name { get; set; }
+        public required string Name { get; set; }
     }
 
     public class AvailableMarkets

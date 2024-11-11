@@ -14,7 +14,10 @@ namespace DataAccessLayer.Repository.Entities
 
         public required string Name { get; set; }
         public string? Description { get; set; }
+
+        [BsonRepresentation(BsonType.ObjectId)]
         public List<string> ArtistIds { get; set; } = [];
+
         public int? Popularity { get; set; }
         public required string PreviewURL { get; set; }
         public required int Duration { get; set; }
@@ -23,6 +26,8 @@ namespace DataAccessLayer.Repository.Entities
         public required bool IsExplicit { get; set; } // Spotify API
         public required Restrictions Restrictions { get; set; }
         public required string UploadDate { get; set; }
+
+        [BsonRepresentation(BsonType.ObjectId)]
         public required string UploadBy { get; set; }
 
         public long StreamCount { get; set; } // Real counting
@@ -30,6 +35,7 @@ namespace DataAccessLayer.Repository.Entities
         public long DownloadCount { get; set; }
         public long FavoriteCount { get; set; }
 
+        [BsonRepresentation(BsonType.ObjectId)]
         public required string AudioFeaturesId { get; set; }
     }
 }
