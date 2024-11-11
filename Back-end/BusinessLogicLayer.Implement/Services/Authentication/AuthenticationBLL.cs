@@ -220,8 +220,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             //(int imageHeight, int imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
 
             // Lấy thông tin IP Address
-            //GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
-            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromHeaderAsync();
+            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
+
+            // Chỉ khi nào chạy deploy thì mới sử dụng hàm này
+            //GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromHeaderAsync();
 
             // Trường hợp mới đăng nhập google account lần đầu tức là chưa tồn tại tài khoản trong db
             if (retrieveUser is null)
