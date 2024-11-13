@@ -27,7 +27,7 @@ jobs:
       # Step 4: Build and Push Docker Image to ACR
       - name: Build and Push Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_REGISTRY_SERVER_NAMEE }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }} .
+          docker build -t ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }} .
           docker push ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }}
 
       # Step 5: Deploy to Azure Web App
