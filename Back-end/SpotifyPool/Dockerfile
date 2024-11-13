@@ -8,27 +8,35 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copy project files
 COPY ["SpotifyPool/SpotifyPool.csproj", "SpotifyPool/"]
-COPY ["BusinessLogicLayer.DependencyInjection/BusinessLogicLayer.DependencyInjection.csproj", "BusinessLogicLayer.DependencyInjection/"]
-COPY ["BusinessLogicLayer.Implement/BusinessLogicLayer.Implement.csproj", "BusinessLogicLayer.Implement/"]
-COPY ["BusinessLogicLayer.Enum/SetupLayer.Enum.csproj", "BusinessLogicLayer.Enum/"]
-COPY ["BusinessLogicLayer.Interface/BusinessLogicLayer.Interface.csproj", "BusinessLogicLayer.Interface/"]
-COPY ["BusinessLogicLayer.Mapper/BusinessLogicLayer.Mapper.csproj", "BusinessLogicLayer.Mapper/"]
-COPY ["BusinessLogicLayer.ModelView/BusinessLogicLayer.ModelView.csproj", "BusinessLogicLayer.ModelView/"]
-COPY ["DataAccessLayer.Repository/DataAccessLayer.Repository.csproj", "DataAccessLayer.Repository/"]
-COPY ["BusinessLogicLayer.Setting/SetupLayer.Setting.csproj", "BusinessLogicLayer.Setting/"]
-COPY ["Shared/Utility.csproj", "Shared/"]
-COPY ["DataAccessLayer.Implement/DataAccessLayer.Implement.csproj", "DataAccessLayer.Implement/"]
-COPY ["DataAccessLayer.Interface/DataAccessLayer.Interface.csproj", "DataAccessLayer.Interface/"]
-RUN dotnet restore "./SpotifyPool/SpotifyPool.csproj"
+COPY ["BusinessLogicLayer.DependencyInjection/BusinessLogicLayer.DependencyInjection.csproj", "./BusinessLogicLayer.DependencyInjection/"]
+COPY ["BusinessLogicLayer.Implement/BusinessLogicLayer.Implement.csproj", "./BusinessLogicLayer.Implement/"]
+COPY ["BusinessLogicLayer.Enum/SetupLayer.Enum.csproj", "./BusinessLogicLayer.Enum/"]
+COPY ["BusinessLogicLayer.Interface/BusinessLogicLayer.Interface.csproj", "./BusinessLogicLayer.Interface/"]
+COPY ["BusinessLogicLayer.Mapper/BusinessLogicLayer.Mapper.csproj", "./BusinessLogicLayer.Mapper/"]
+COPY ["BusinessLogicLayer.ModelView/BusinessLogicLayer.ModelView.csproj", "./BusinessLogicLayer.ModelView/"]
+COPY ["DataAccessLayer.Repository/DataAccessLayer.Repository.csproj", "./DataAccessLayer.Repository/"]
+COPY ["BusinessLogicLayer.Setting/SetupLayer.Setting.csproj", "./BusinessLogicLayer.Setting/"]
+COPY ["Shared/Utility.csproj", "./Shared/"]
+COPY ["DataAccessLayer.Implement/DataAccessLayer.Implement.csproj", "./DataAccessLayer.Implement/"]
+COPY ["DataAccessLayer.Interface/DataAccessLayer.Interface.csproj", "./DataAccessLayer.Interface/"]
+
+# Restore dependencies
+RUN dotnet restore "SpotifyPool/SpotifyPool.csproj"
+
+# Copy all source files
 COPY . .
+
+# Build the application
 WORKDIR "/src/SpotifyPool"
-RUN dotnet build "./SpotifyPool.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "SpotifyPool.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Publish phase
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./SpotifyPool.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "SpotifyPool.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Final phase to run the application
 FROM base AS final
