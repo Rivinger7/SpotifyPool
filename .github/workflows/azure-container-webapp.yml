@@ -1,0 +1,41 @@
+name: Deploy to Azure Web App using ACR
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout source code
+      - uses: actions/checkout@v4
+
+      # Step 2: Log in to Azure
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Step 3: Log in to Azure Container Registry
+      - name: Login to ACR
+        run: |
+          az acr login --name ${{ secrets.REGISTRY_NAME }}
+
+      # Step 4: Build and Push Docker Image to ACR
+      - name: Build and Push Docker image
+        run: |
+          docker build -t ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:${{ github.sha }} .
+          docker push ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:${{ github.sha }}
+
+      # Step 5: Deploy to Azure Web App
+      - name: Deploy to Azure Web App
+        run: |
+          az webapp config container set --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+          --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --docker-custom-image-name ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:${{ github.sha }} \
+          --docker-registry-server-url https://${{ secrets.REGISTRY_NAME }}.azurecr.io \
+          --docker-registry-server-user ${{ secrets.DOCKER_REGISTRY_SERVER_USERNAME }} \
+          --docker-registry-server-password ${{ secrets.DOCKER_REGISTRY_SERVER_PASSWORD }}
