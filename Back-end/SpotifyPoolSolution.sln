@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccessLayer.Implement",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogicLayer.Interface", "BusinessLogicLayer.Interface\BusinessLogicLayer.Interface.csproj", "{E9C35C23-1F7D-4D72-ADC4-B458533497B8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utility", "Shared\Utility.csproj", "{3949C987-D42F-4F3E-AE87-0A60DAAD3EA8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Commons", "Commons\Utility.csproj", "{3949C987-D42F-4F3E-AE87-0A60DAAD3EA8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1. API", "1. API", "{6CE2D6A2-4AFE-4C7B-B279-B6F3E458C63B}"
 EndProject
@@ -27,9 +27,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4. COMMONS", "4. COMMONS", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccessLayer.Interface", "DataAccessLayer.Interface\DataAccessLayer.Interface.csproj", "{7DD1B3D1-593C-44A8-A0D2-647BC1EADC0D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SetupLayer.Enum", "BusinessLogicLayer.Enum\SetupLayer.Enum.csproj", "{D4CE4D6B-7478-4940-833E-D063D1E65A1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SetupLayer.Enum", "SetupLayer.Enum\SetupLayer.Enum.csproj", "{D4CE4D6B-7478-4940-833E-D063D1E65A1D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SetupLayer.Setting", "BusinessLogicLayer.Setting\SetupLayer.Setting.csproj", "{BF6432D0-13D0-4B35-B81B-4066B8D03F93}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SetupLayer.Setting", "SetupLayer.Setting\SetupLayer.Setting.csproj", "{BF6432D0-13D0-4B35-B81B-4066B8D03F93}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogicLayer.DependencyInjection", "BusinessLogicLayer.DependencyInjection\BusinessLogicLayer.DependencyInjection.csproj", "{4D8E3B3D-4FF6-4522-B36C-55F09FBBC6C0}"
 EndProject

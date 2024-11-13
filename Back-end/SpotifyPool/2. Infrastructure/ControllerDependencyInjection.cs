@@ -56,10 +56,11 @@ namespace SpotifyPool.Infrastructure
             {
                 options.AddPolicy("AllowSpecificOrigin",
 
-                    builder => builder.WithOrigins("http://localhost:5173") // Or using AllowAnyOrigin() for all
-                                      .WithOrigins("https://spotifypoolmusic.vercel.app")
-                                      .AllowAnyHeader()
-                                      .AllowAnyMethod());
+                    builder => builder
+                        .WithOrigins("http://localhost:5173") // Or using AllowAnyOrigin() for all
+                        .WithOrigins("https://spotifypoolmusic.vercel.app")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod());
             });
         }
     }

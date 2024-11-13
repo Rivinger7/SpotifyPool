@@ -14,6 +14,7 @@ namespace DataAccessLayer.Repository.Entities
 
         public required string Name { get; set; }
         public string? Description { get; set; }
+        public string? Lyrics { get; set; }
 
         [BsonRepresentation(BsonType.ObjectId)]
         public List<string> ArtistIds { get; set; } = [];

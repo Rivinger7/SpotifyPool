@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using System.Reflection;
 using System.Runtime.Serialization;
 
-namespace SetupLayer.Enum.EnumMemberSerializer
+namespace SetupLayer.Enum.EnumMember
 {
     public class EnumMemberSerializer<T> : SerializerBase<T> where T : struct, System.Enum
     {

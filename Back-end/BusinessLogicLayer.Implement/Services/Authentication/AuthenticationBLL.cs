@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
