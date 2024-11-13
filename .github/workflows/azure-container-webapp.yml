@@ -40,7 +40,7 @@ jobs:
           FULL_IMAGE_NAME: ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}
         run: |
           docker build -f ./Back-end/SpotifyPool/Dockerfile -t ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }} .
-          docker push ${{ secrets.REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }}
 
       # Step 5: Deploy to Azure Web App
       - name: Deploy to Azure Web App
