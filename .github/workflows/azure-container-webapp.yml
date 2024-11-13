@@ -1,0 +1,53 @@
+name: Deploy to Azure Web App using ACR
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout source code
+      - uses: actions/checkout@v4
+
+      # Step 2: Log in to Azure
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Step 3: Log in to Azure Container Registry
+      - name: Login to ACR
+        run: |
+          az acr login --name ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}
+
+      # Debug - Kiểm tra cấu trúc thư mục
+      - name: List root directory
+        run: ls -la
+
+      - name: List files in Back-end
+        run: ls -la ./Back-end
+
+      - name: List files in Back-end/SpotifyPool
+        run: ls -la ./Back-end/SpotifyPool
+        
+      # Step 4: Build and Push Docker Image to ACR
+      - name: Build and Push Docker image
+        env:
+          FULL_IMAGE_NAME: ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}
+        run: |
+          docker build -f ./Back-end/SpotifyPool/Dockerfile -t ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }} .
+          docker push ${{ secrets.REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+
+      # Step 5: Deploy to Azure Web App
+      - name: Deploy to Azure Web App
+        run: |
+          az webapp config container set --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+          --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --docker-custom-image-name ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }} \
+          --docker-registry-server-url https://${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io \
+          --docker-registry-server-user ${{ secrets.DOCKER_REGISTRY_SERVER_USERNAME }} \
+          --docker-registry-server-password ${{ secrets.DOCKER_REGISTRY_SERVER_PASSWORD }}
