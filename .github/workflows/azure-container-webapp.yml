@@ -24,12 +24,22 @@ jobs:
         run: |
           az acr login --name ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}
 
+      # Debug - Kiểm tra cấu trúc thư mục
+      - name: List root directory
+        run: ls -la
+
+      - name: List files in Back-end
+        run: ls -la ./Back-end
+
+      - name: List files in Back-end/SpotifyPool
+        run: ls -la ./Back-end/SpotifyPool
+        
       # Step 4: Build and Push Docker Image to ACR
       - name: Build and Push Docker image
         env:
           FULL_IMAGE_NAME: ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}
         run: |
-          docker build -f ./SpotifyPool/Dockerfile -t ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }} .
+          docker build -f ./Back-end/SpotifyPool/Dockerfile -t ${{ secrets.DOCKER_REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }} .
           docker push ${{ secrets.REGISTRY_SERVER_NAME }}.azurecr.io/${{ secrets.DOCKER_IMAGE_NAME }}:${{ github.sha }}
 
       # Step 5: Deploy to Azure Web App
