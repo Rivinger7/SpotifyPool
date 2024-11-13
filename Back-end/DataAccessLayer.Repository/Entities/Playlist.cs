@@ -13,8 +13,13 @@ namespace DataAccessLayer.Repository.Entities
         public string? Description { get; set; }
         public List<Image> Images { get; set; } = [];
         public PlaylistName Name { get; set; }
+
+        [BsonRepresentation(BsonType.ObjectId)]
         public required string UserID { get; set; }
+
+        [BsonRepresentation(BsonType.ObjectId)]
         public List<string> TrackIds { get; set; } = [];
+
         public DateTime CreatedTime { get; set; }
     }
 }

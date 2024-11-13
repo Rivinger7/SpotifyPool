@@ -7,7 +7,7 @@ using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Users
 {
-    [Route("api/users")]
+    [Route("api/v1/users")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class UserController(IUserBLL userBLL) : ControllerBase

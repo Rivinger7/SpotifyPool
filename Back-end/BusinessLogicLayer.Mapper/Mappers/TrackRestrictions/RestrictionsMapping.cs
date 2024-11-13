@@ -9,8 +9,6 @@ namespace BusinessLogicLayer.Mapper.Mappers.TrackRestrictions
         public RestrictionsMapping()
         {
             CreateMap<RestrictionsResponseModel, Restrictions>()
-            //.ForMember(dest => dest.IsPlayable, opt => opt.MapFrom(src => src.IsPlayable))
-            //.ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason.ToString()));
             .ReverseMap();
         }
     }

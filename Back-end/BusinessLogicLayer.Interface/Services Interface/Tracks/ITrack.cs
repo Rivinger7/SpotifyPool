@@ -6,5 +6,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Tracks
     {
         Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync();
         Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm);
+        Task<TrackResponseModel> GetTrackAsync(string id);
     }
 }

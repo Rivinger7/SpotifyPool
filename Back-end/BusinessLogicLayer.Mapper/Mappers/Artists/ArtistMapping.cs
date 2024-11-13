@@ -9,7 +9,6 @@ namespace BusinessLogicLayer.Mapper.Mappers.Artists
         public ArtistMapping()
         {
             CreateMap<Artist, ArtistResponseModel>()
-            .ForMember(dest => dest.Images, opt => opt.MapFrom(src => src.Images))
             .ReverseMap();
         }
     }

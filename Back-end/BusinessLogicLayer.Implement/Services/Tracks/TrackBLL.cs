@@ -17,6 +17,16 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
         {
+            // Projection
+            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
+                .Include(track => track.Name)
+                .Include(track => track.Description)
+                .Include(track => track.PreviewURL)
+                .Include(track => track.Duration)
+                .Include(track => track.Images)
+                .Include(track => track.Artists);
+
             // Empty Pipeline  
             IAggregateFluent<Track> pipeLine = _unitOfWork.GetCollection<Track>().Aggregate();
 
@@ -24,22 +34,50 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             IAggregateFluent<ASTrack> trackPipelines = pipeLine.Lookup<Track, Artist, ASTrack>
                 (_unitOfWork.GetCollection<Artist>(), // The foreign collection  
                 track => track.ArtistIds, // The field in Track that are joining on  
-                artist => artist.SpotifyId, // The field in Artist that are matching against  
+                artist => artist.Id, // The field in Artist that are matching against  
                 result => result.Artists) // The field in ASTrack to hold the matched artists  
-                .Project(Builders<ASTrack>.Projection  // Project  
-                .Include(ast => ast.Name) // Get only necessary fields  
-                .Include(ast => ast.Description)
-                .Include(ast => ast.PreviewURL)
-                .Include(ast => ast.Duration)
-                .Include(ast => ast.Images)
-                .Include(ast => ast.Artists)
-                ).As<ASTrack>();
+                .Project(projectionDefinition)
+                .As<ASTrack>();
 
             // Pipeline to list  
             IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
 
             // Map the aggregate result to TrackResponseModel  
             IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
+
+            return responseModel;
+        }
+
+        public async Task<TrackResponseModel> GetTrackAsync(string id)
+        {
+            // Projection
+            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
+                .Include(track => track.Name)
+                .Include(track => track.Description)
+                .Include(track => track.PreviewURL)
+                .Include(track => track.Duration)
+                .Include(track => track.Images)
+                .Include(track => track.Artists);
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lookup
+            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent.Lookup<Track, Artist, ASTrack>
+                (_unitOfWork.GetCollection<Artist>(), // The foreign collection
+                track => track.ArtistIds, // The field in Track that are joining on
+                artist => artist.Id, // The field in Artist that are matching against
+                result => result.Artists) // The field in ASTrack to hold the matched artists
+                .Match(track => track.Id == id) // Match the track by id
+                .Project(projectionDefinition)
+                .As<ASTrack>();
+
+            // Pipeline to list
+            ASTrack track = await trackPipelines.FirstOrDefaultAsync();
+
+            // Map the aggregate result to TrackResponseModel
+            TrackResponseModel responseModel = _mapper.Map<TrackResponseModel>(track);
 
             return responseModel;
         }
@@ -60,6 +98,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             // Chỉ lấy những field cần thiết  
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
                 .Include(track => track.Name)
                 .Include(track => track.Description)
                 .Include(track => track.PreviewURL)
@@ -78,7 +117,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             IAggregateFluent<ASTrack> trackPipelines = pipeline.Lookup<Track, Artist, ASTrack> // Stage 1  
                 (_unitOfWork.GetCollection<Artist>(),
                 track => track.ArtistIds,
-                artist => artist.SpotifyId,
+                artist => artist.Id,
                 result => result.Artists)
                 .Match(artistFilter)  // Tìm kiếm theo Artist hoặc TrackName // Stage 2  
                 .Project(projectionDefinition)

@@ -19,5 +19,19 @@ namespace SpotifyPool._1._Controllers.Tests
             (string addedAtString, DateTime addedAtTime) = await testBLL.AddDayOnly();
             return Ok(new { addedAtString, addedAtTime });
         }
+
+        [AllowAnonymous, HttpGet("Testing-Lyrics")]
+        public async Task<IActionResult> TestingLyrics(string trackName, string artistName)
+        {
+            string? lyrics = await testBLL.GetLyricsAsync(trackName, artistName);
+            return Ok(lyrics);
+        }
+
+        [AllowAnonymous, HttpGet("Testing-Set-Lyrics")]
+        public async Task<IActionResult> TestingSetLyrics()
+        {
+            await testBLL.SetLyricsToDatabase();
+            return Ok();
+        }
     }
 }

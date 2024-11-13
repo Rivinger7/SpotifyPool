@@ -12,8 +12,6 @@ using BusinessLogicLayer.Implement.Services.JWTs;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -46,18 +44,19 @@ using System.Security.Claims;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Favorites;
 using BusinessLogicLayer.Implement.Services.Playlists.Favorites;
 using MongoDB.Bson.Serialization;
-using SetupLayer.Enum.EnumMemberSerializer;
 using SetupLayer.Enum.Services.Playlist;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using BusinessLogicLayer.Implement.Services.Tests;
-using System;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
 using System.Threading.Channels;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
 using SetupLayer.Enum.Services.Track;
+using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
+using BusinessLogicLayer.Implement.Microservices.Genius;
+using SetupLayer.Setting.Microservices.Genius;
+using SetupLayer.Setting.Microservices.Spotify;
+using SetupLayer.Enum.EnumMember;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -151,6 +150,11 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddGeolocation(configuration);
             stopwatch.Stop();
             Console.WriteLine($"AddGeolocation took {stopwatch.ElapsedMilliseconds} ms");
+
+            // Genius
+            stopwatch.Restart();
+            services.AddGenius();
+            stopwatch.Stop();
 
             // Caching (In-memory cache)
             stopwatch.Restart();
@@ -440,13 +444,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             });
         }
 
-        public static void AddSpotify(this IServiceCollection services, IConfiguration configuration)
-        {
-            // ...
-
-            services.AddScoped<ISpotify, SpotifyService>();
-        }
-
         public static void AddMemoryCache(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddMemoryCache();
@@ -529,6 +526,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
 
+                // Schema Filter
+                c.SchemaFilter<EnumSchemaFilter>();
+
                 // Path to XML documentation file for the controller project
                 var controllerXmlFile = Path.Combine(AppContext.BaseDirectory, "SpotifyPool.xml");
                 if (File.Exists(controllerXmlFile))
@@ -581,16 +581,13 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Config the Google Identity
             services.AddAuthentication(options =>
             {
-                //options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                //options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-                //options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-
-                //options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                //options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                //options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            }).AddGoogle(googleOptions =>
+            {
+                googleOptions.ClientId = Environment.GetEnvironmentVariable("Authentication_Google_ClientId") ?? throw new DataNotFoundCustomException("Google's ClientId property is not set in environment or not found");
+                googleOptions.ClientSecret = Environment.GetEnvironmentVariable("Authentication_Google_ClientSecret") ?? throw new DataNotFoundCustomException("Google's Client Secret property is not set in environment or not found");
+
             }).AddJwtBearer(opt =>
             {
                 opt.TokenValidationParameters = new TokenValidationParameters
@@ -704,12 +701,52 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
         }
 
+        public static void AddSpotify(this IServiceCollection services, IConfiguration configuration)
+        {
+            string clientId = Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_ID") ?? throw new DataNotFoundCustomException("Spotify Client ID property is not set in environment or not found");
+            string clientSecret = Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_SECRET") ?? throw new DataNotFoundCustomException("Spotify Client Secret property is not set in environment or not found");
+            string redirectUri = Environment.GetEnvironmentVariable("SPOTIFY_REDIRECT_URI") ?? throw new DataNotFoundCustomException("Spotify Redirect URI property is not set in environment or not found");
+
+            // Initialize SpotifySettings properties
+            SpotifySettings spotifySettings = new()
+            {
+                ClientId = clientId,
+                ClientSecret = clientSecret,
+                RedirectUri = redirectUri
+            };
+
+            // Register the SpotifySettings with DI
+            services.AddSingleton(spotifySettings);
+
+            services.AddScoped<ISpotify, SpotifyService>();
+        }
+
+        public static void AddGenius(this IServiceCollection services)
+        {
+            string clientId = Environment.GetEnvironmentVariable("GENIUS_CLIENT_ID") ?? throw new DataNotFoundCustomException("Genius Client ID property is not set in environment or not found");
+            string clientSecret = Environment.GetEnvironmentVariable("GENIUS_CLIENT_SECRET") ?? throw new DataNotFoundCustomException("Genius Client Secret property is not set in environment or not found");
+            string redicrectUri = Environment.GetEnvironmentVariable("GENIUS_REDIRECT_URI") ?? throw new DataNotFoundCustomException("Genius Redirect URI property is not set in environment or not found");
+            string state = Environment.GetEnvironmentVariable("GENIUS_STATE") ?? throw new DataNotFoundCustomException("Genius State property is not set in environment or not found");
+
+            // Initialize GeniusSettings properties
+            GeniusSettings geniusSettings = new()
+            {
+                ClientId = clientId,
+                ClientSecret = clientSecret,
+                RedirectUri = redicrectUri,
+                State = state
+            };
+
+            // Register the GeniusSettings with DI
+            services.AddSingleton(geniusSettings);
+
+            // Register the Genius service
+            services.AddScoped<IGenius, GeniusService>();
+        }
+
         // Config the database
         public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
         {
-            //services.Configure<MongoDBSetting>(configuration.GetSection("MongoDBSettings"));
-            //services.AddSingleton<SpotifyPoolDBContext>();
-
             // Load MongoDB settings from environment variables
             var connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
             var databaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME");

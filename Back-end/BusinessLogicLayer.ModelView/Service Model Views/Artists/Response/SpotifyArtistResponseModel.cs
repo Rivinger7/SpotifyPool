@@ -5,6 +5,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response
 {
     public class SpotifyArtistResponseModel
     {
+        public string Id { get; set; } = null!;
         public string SpotifyId { get; set; } = null!;
         public string Name { get; set; } = null!;
         public int Followers { get; set; }

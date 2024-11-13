@@ -104,6 +104,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Favorites
 
             // Chỉ lấy những thông tin cần thiết từ ASTrack : Track
             ProjectionDefinition<ASTrack> astrackProjection = Builders<ASTrack>.Projection  // Project  
+                .Include(ast => ast.Id)
                 .Include(ast => ast.Name)
                 .Include(ast => ast.Description)
                 .Include(ast => ast.PreviewURL)

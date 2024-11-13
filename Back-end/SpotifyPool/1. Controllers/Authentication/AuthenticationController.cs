@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace SpotifyPool.Controllers.Authentication
 {
-    [Route("api/authentication")]
+    [Route("api/v1/authentication")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class AuthenticationController(IAuthenticationBLL authenticationBLL) : ControllerBase
