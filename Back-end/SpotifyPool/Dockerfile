@@ -18,8 +18,8 @@ COPY ["BusinessLogicLayer.Interface/BusinessLogicLayer.Interface.csproj", "Busin
 COPY ["BusinessLogicLayer.Mapper/BusinessLogicLayer.Mapper.csproj", "BusinessLogicLayer.Mapper/"]
 COPY ["BusinessLogicLayer.ModelView/BusinessLogicLayer.ModelView.csproj", "BusinessLogicLayer.ModelView/"]
 COPY ["DataAccessLayer.Repository/DataAccessLayer.Repository.csproj", "DataAccessLayer.Repository/"]
-COPY ["DataAccessLayer.Interface/DataAccessLayer.Interface.csproj", "DataAccessLayer.Interface/"]
 COPY ["DataAccessLayer.Implement/DataAccessLayer.Implement.csproj", "DataAccessLayer.Implement/"]
+COPY ["DataAccessLayer.Interface/DataAccessLayer.Interface.csproj", "DataAccessLayer.Interface/"]
 COPY ["BusinessLogicLayer.Setting/SetupLayer.Setting.csproj", "BusinessLogicLayer.Setting/"]
 COPY ["Shared/Utility.csproj", "Shared/"]
 
