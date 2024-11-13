@@ -9,7 +9,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Copy các file .csproj từ đúng thư mục thực tế
+# Copy files from context to container
 COPY ["Back-end/SpotifyPool/SpotifyPool.csproj", "SpotifyPool/"]
 COPY ["Back-end/BusinessLogicLayer.DependencyInjection/BusinessLogicLayer.DependencyInjection.csproj", "BusinessLogicLayer.DependencyInjection/"]
 COPY ["Back-end/BusinessLogicLayer.Implement/BusinessLogicLayer.Implement.csproj", "BusinessLogicLayer.Implement/"]
@@ -26,7 +26,7 @@ COPY ["Back-end/DataAccessLayer.Interface/DataAccessLayer.Interface.csproj", "Da
 # Restore dependencies
 RUN dotnet restore "SpotifyPool/SpotifyPool.csproj"
 
-# Copy toàn bộ source code từ context
+# Copy source code
 COPY Back-end/ .
 
 # Build the application
