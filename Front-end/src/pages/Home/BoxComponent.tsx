@@ -7,6 +7,7 @@ interface ArtistProps {
 interface TrackProps {
 	images: { url: string }[]
 	name: string
+	previewURL: string
 	artists: ArtistProps[]
 }
 
@@ -50,7 +51,7 @@ const BoxComponent = ({ isAvatar, track }: BoxComponentProps) => {
 										.slice(0, -1)
 										.map((artist) => artist.name)
 										.join(", ")} and ${track.artists[track.artists.length - 1].name}`
-							: track.artists[0].name}
+							: track.artists?.[0]?.name}
 					</div>
 				</div>
 			</div>

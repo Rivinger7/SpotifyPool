@@ -4,15 +4,7 @@ export const trackApi = apiSlice.injectEndpoints({
 	endpoints: (build) => ({
 		getTracks: build.query({
 			query: () => ({
-				url: "/media/tracks",
-				method: "GET",
-			}),
-			transformResponse: (response) => response,
-			providesTags: ["Media"],
-		}),
-		getTopTracks: build.query({
-			query: () => ({
-				url: "/media/spotify/top-tracks",
+				url: "/tracks/tracks",
 				method: "GET",
 			}),
 			transformResponse: (response) => response,
