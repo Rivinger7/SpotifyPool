@@ -2,27 +2,40 @@
 using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 
 namespace DataAccessLayer.Implement.MongoDB.UOW
 {
-    public class UnitOfWork(SpotifyPoolDBContext dbContext) : IUnitOfWork
+    public class UnitOfWork(SpotifyPoolDBContext dbContext, IServiceProvider serviceProvider) : IUnitOfWork
     {
         private readonly IMongoDatabase _database = dbContext.GetDatabase();
         private readonly Dictionary<Type, object> _repositories = [];
+        private readonly IServiceProvider _serviceProvider = serviceProvider;
         private bool disposedValue;
         public IGenericRepository<TDocument> GetRepository<TDocument>() where TDocument : class
         {
-            if (_repositories.ContainsKey(typeof(TDocument)))
+            #region Dùng DI container để lấy repository
+            if (!_repositories.ContainsKey(typeof(TDocument)))
             {
-                return (IGenericRepository<TDocument>)_repositories[typeof(TDocument)];
+                // Lấy repository từ DI container
+                var repository = _serviceProvider.GetRequiredService<IGenericRepository<TDocument>>();
+                _repositories[typeof(TDocument)] = repository;
             }
 
-            GenericRepository<TDocument> repository = new(_database);
-            _repositories.Add(typeof(TDocument), repository);
-            return repository;
+            return (IGenericRepository<TDocument>)_repositories[typeof(TDocument)];
+            #endregion
 
-            //return new GenericRepository<TDocument>(_database);
+            #region Tạo mới instance repository mỗi lần gọi
+            //if (_repositories.ContainsKey(typeof(TDocument)))
+            //{
+            //    return (IGenericRepository<TDocument>)_repositories[typeof(TDocument)];
+            //}
+
+            //GenericRepository<TDocument> repository = new(_database);
+            //_repositories.Add(typeof(TDocument), repository);
+            //return repository;
+            #endregion
         }
 
         public IMongoCollection<TDocument> GetCollection<TDocument>() where TDocument : class

@@ -71,7 +71,7 @@ const SignupForm = () => {
 			toast.success(response.message)
 			navigate("/login")
 		} catch (error) {
-			console.log(error)
+			console.error(error)
 			toast.error("An error occurred while creating your account")
 		}
 	}
@@ -261,7 +261,7 @@ const SignupForm = () => {
 								})
 						}}
 						onError={() => {
-							console.log("Login Failed")
+							console.error("Login Failed")
 						}}
 					/>
 				</div>

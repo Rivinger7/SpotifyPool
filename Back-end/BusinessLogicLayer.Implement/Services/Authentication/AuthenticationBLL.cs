@@ -62,7 +62,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
 
             // User's avatar (Temp)
-            string avatarURL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1729184101/Image/User%27s%20Profiles/RaQXMK0XJlX0bZbUyHcSfA%253D%253D_638647809024468188.webp";
+            string avatarURL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730097883/60d5dc467b950c5ccc8ced95_spotify-for-artists_on4me9.jpg";
 
             User newUser = new()
             {

@@ -5,10 +5,7 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using Utility.Coding;
 using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using DataAccessLayer.Interface.MongoDB.UOW;
-using DataAccessLayer.Repository.Entities;
 using MongoDB.Driver;
-using System.Text.RegularExpressions;
-using System.Web;
 using SetupLayer.Enum.Microservices.Cloudinary;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries

@@ -28,7 +28,7 @@ namespace SpotifyPool._1._Controllers.Track
         /// Lấy tất cả các tracks
         /// </summary>
         /// <returns></returns>
-        [AllowAnonymous, HttpGet("tracks")]
+        [AllowAnonymous, HttpGet()]
         public async Task<IActionResult> GetAllTracksAsync()
         {
             var result = await _trackService.GetAllTracksAsync();
@@ -40,7 +40,7 @@ namespace SpotifyPool._1._Controllers.Track
         /// </summary>
         /// <param name="searchTerm"></param>
         /// <returns></returns>
-        [AllowAnonymous, HttpGet("tracks/search")]
+        [AllowAnonymous, HttpGet("search")]
         public async Task<IActionResult> SearchTracksAsync([FromQuery] string searchTerm)
         {
             var result = await _trackService.SearchTracksAsync(searchTerm);

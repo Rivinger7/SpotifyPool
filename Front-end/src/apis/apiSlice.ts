@@ -14,7 +14,7 @@ interface RootState {
 }
 
 const baseQuery = fetchBaseQuery({
-	baseUrl: import.meta.env.VITE_API_ENDPOINT + "/api",
+	baseUrl: import.meta.env.VITE_API_ENDPOINT + "/api/v1",
 	prepareHeaders: (headers, { getState }) => {
 		headers.set("content-type", "application/json")
 		if (!headers.has("Authorization")) {

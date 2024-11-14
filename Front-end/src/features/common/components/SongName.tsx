@@ -1,9 +1,43 @@
-import CustomTooltip from "@/components/CustomTooltip"
-import { Button } from "@/components/ui/button"
-import { ChevronUp, CirclePlus } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useSelector } from "react-redux"
+import { RootState } from "@/store/store"
+import styled from "styled-components"
+
+import { ChevronUp, CirclePlus } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import CustomTooltip from "@/components/CustomTooltip"
+
+// Create styled component for the scrolling container
+const ScrollContainer = styled.div`
+	width: 200px; // Adjust width as needed
+	overflow: hidden;
+	white-space: nowrap;
+	position: relative;
+`
+
+const ScrollingText = styled.div`
+	display: inline-block;
+	animation: scrollText 20s linear infinite;
+	padding-left: 100%;
+
+	&:hover {
+		animation-play-state: paused;
+	}
+
+	@keyframes scrollText {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-100%);
+		}
+	}
+`
 
 const SongName = () => {
+	const { currentSong } = useSelector((state: RootState) => state.play)
+
 	return (
 		<div className="ps-2 min-w-[180px] w-[30%]">
 			<div className="flex items-center justify-start relative">
@@ -12,8 +46,11 @@ const SongName = () => {
 					<div className="w-full h-full">
 						<img
 							className="rounded-lg w-full h-full object-cover flex shrink-0"
-							src="https://i.scdn.co/image/ab67616d000048513719eed165d16597bd930595"
-							alt="random song on spotify"
+							src={
+								currentSong?.images[2].url ||
+								"https://i.scdn.co/image/ab67616d000048513719eed165d16597bd930595"
+							}
+							alt={currentSong?.name || "Song Name"}
 						/>
 					</div>
 
@@ -34,13 +71,30 @@ const SongName = () => {
 				<div className="mx-2 flex flex-col justify-center">
 					<div className="text-sm font-bold text-white">
 						<Link to={"/"} className="hover:underline hover:text-white">
-							Song Name
+							{currentSong?.name || "Song Name"}
 						</Link>
 					</div>
 					<div className="text-xs text-[#b3b3b3]">
-						<Link to={"/"} className="hover:underline hover:text-white">
-							Artist Name
-						</Link>
+						{Array.isArray(currentSong?.artists) ? (
+							<ScrollContainer>
+								<ScrollingText>
+									{currentSong.artists.map((artist, index) => (
+										<Link
+											key={artist.name || index}
+											to={"/"}
+											className="hover:underline hover:text-white"
+										>
+											<span className="truncate">
+												{artist.name}
+												{index < currentSong.artists.length - 1 && ", "}
+											</span>
+										</Link>
+									))}
+								</ScrollingText>
+							</ScrollContainer>
+						) : (
+							"Artist Name"
+						)}
 					</div>
 				</div>
 

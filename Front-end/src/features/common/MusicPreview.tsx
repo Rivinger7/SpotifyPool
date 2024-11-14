@@ -1,5 +1,4 @@
 import SongName from "./components/SongName"
-import SongOptions from "./components/SongOptions"
 import SongPlay from "./components/SongPlay"
 
 const MusicPreview = () => {
@@ -11,7 +10,7 @@ const MusicPreview = () => {
 
 					<SongPlay />
 
-					<SongOptions />
+					{/* <SongOptions /> */}
 				</div>
 			</footer>
 		</div>

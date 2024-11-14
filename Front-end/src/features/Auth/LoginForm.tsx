@@ -24,7 +24,8 @@ import { useLoginByGoogleMutation, useLoginMutation } from "@/services/apiAuth"
 
 import { GoogleLogin } from "@react-oauth/google"
 import CustomTooltip from "@/components/CustomTooltip"
-import { useEffect, useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
+import { useState } from "react"
 
 const formSchema = z.object({
 	username: z.string(),
@@ -38,29 +39,35 @@ const LoginForm = () => {
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
 
+	const [visible, setVisible] = useState(false)
+
+	const handleChangeVisible = () => {
+		setVisible((visible) => !visible)
+	}
+
 	// Inside component:
-	const [buttonWidth, setButtonWidth] = useState(200)
+	// const [buttonWidth, setButtonWidth] = useState(200)
 
-	useEffect(() => {
-		const handleResize = () => {
-			if (window.innerWidth >= 768) {
-				setButtonWidth(400)
-			} else if (window.innerWidth >= 640) {
-				setButtonWidth(360)
-			} else {
-				setButtonWidth(300)
-			}
-		}
+	// useEffect(() => {
+	// 	const handleResize = () => {
+	// 		if (window.innerWidth >= 768) {
+	// 			setButtonWidth(400)
+	// 		} else if (window.innerWidth >= 640) {
+	// 			setButtonWidth(360)
+	// 		} else {
+	// 			setButtonWidth(300)
+	// 		}
+	// 	}
 
-		// Initial check
-		handleResize()
+	// 	// Initial check
+	// 	handleResize()
 
-		// Add listener
-		window.addEventListener("resize", handleResize)
+	// 	// Add listener
+	// 	window.addEventListener("resize", handleResize)
 
-		// Cleanup
-		return () => window.removeEventListener("resize", handleResize)
-	}, [])
+	// 	// Cleanup
+	// 	return () => window.removeEventListener("resize", handleResize)
+	// }, [])
 
 	const [loginMutation] = useLoginMutation()
 	const [loginByGoogleMutation] = useLoginByGoogleMutation()
@@ -78,7 +85,6 @@ const LoginForm = () => {
 		loginMutation({ username: values.username, password: values.password })
 			.unwrap()
 			.then((data) => {
-				console.log(data)
 				dispatch(
 					login({
 						userToken: data.authenticatedResponseModel,
@@ -118,7 +124,12 @@ const LoginForm = () => {
 					</header>
 
 					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						<form
+							noValidate
+							autoComplete="off"
+							onSubmit={form.handleSubmit(onSubmit)}
+							className="space-y-4"
+						>
 							<FormField
 								control={form.control}
 								name="username"
@@ -136,6 +147,7 @@ const LoginForm = () => {
 									</FormItem>
 								)}
 							/>
+
 							<FormField
 								control={form.control}
 								name="password"
@@ -143,17 +155,32 @@ const LoginForm = () => {
 									<FormItem>
 										<FormLabel>Password</FormLabel>
 										<FormControl>
-											<Input
-												type="password"
-												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-												placeholder="Password"
-												{...field}
-											/>
+											<div className="relative">
+												<Input
+													type={visible ? "text" : "password"}
+													className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff] pr-10" // Added pr-10 for icon space
+													placeholder="Password"
+													{...field}
+													autoComplete="new-password"
+												/>
+												{visible ? (
+													<Eye
+														className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+														onClick={handleChangeVisible}
+													/>
+												) : (
+													<EyeOff
+														className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+														onClick={handleChangeVisible}
+													/>
+												)}
+											</div>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
 								)}
 							/>
+
 							<FormField
 								control={form.control}
 								name="remember"
@@ -203,7 +230,7 @@ const LoginForm = () => {
 							shape="pill"
 							size="large"
 							// ux_mode="redirect"
-							width={buttonWidth}
+							// width={buttonWidth}
 							onSuccess={(credentialResponse) => {
 								loginByGoogleMutation({ googleToken: credentialResponse.credential })
 									.unwrap()
@@ -213,11 +240,21 @@ const LoginForm = () => {
 										toast.success("Login successful")
 									})
 									.catch((error) => {
-										console.error(error)
+										// Handle specific error codes
+										if (error.status === 423) {
+											toast.error(
+												"Account is temporarily locked. Please try again later or contact support."
+											)
+										} else if (error.status === 401) {
+											toast.error("Invalid credentials. Please try again.")
+										} else {
+											toast.error("Login failed. Please try again.")
+										}
+										console.error("Google login error:", error)
 									})
 							}}
 							onError={() => {
-								console.log("Login Failed")
+								console.error("Login Failed")
 							}}
 						/>
 					</div>

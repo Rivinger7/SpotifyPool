@@ -57,6 +57,10 @@ using BusinessLogicLayer.Implement.Microservices.Genius;
 using SetupLayer.Setting.Microservices.Genius;
 using SetupLayer.Setting.Microservices.Spotify;
 using SetupLayer.Enum.EnumMember;
+using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
+using BusinessLogicLayer.Implement.Services.Recommendation;
+using DataAccessLayer.Implement.MongoDB.Generic_Repository;
+using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -468,6 +472,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Playlist
             services.AddScoped<IFavoritesPlaylist, FavoritesPlaylistBLL>();
+
+            // Data Reccomendation
+            services.AddScoped<IRecommendation, RecommendationBLL>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
@@ -748,13 +755,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
         {
             // Load MongoDB settings from environment variables
-            var connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
-            var databaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME");
-
-            if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(databaseName))
-            {
-                throw new DataNotFoundCustomException("MongoDB connection string or database name is not set in environment variables");
-            }
+            string connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")
+                ?? throw new InvalidDataCustomException("MongoDB connection string is not set in environment variables");
+            var databaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME")
+                ?? throw new InvalidDataCustomException("MongoDB database name is not set in environment variables");
 
             // Register the MongoDB settings as a singleton
             var mongoDbSettings = new MongoDBSetting
@@ -772,8 +776,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 return new MongoClient(mongoDbSettings.ConnectionString);
             });
 
+            // Register IMongoDatabase as a scoped service
+            services.AddScoped(sp =>
+            {
+                var client = sp.GetRequiredService<IMongoClient>();
+                return client.GetDatabase(mongoDbSettings.DatabaseName);
+            });
+
             // Register the MongoDB context (or client)
             services.AddSingleton<SpotifyPoolDBContext>();
+            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
         }
 
