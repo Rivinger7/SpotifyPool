@@ -4,7 +4,7 @@ export const trackApi = apiSlice.injectEndpoints({
 	endpoints: (build) => ({
 		getTracks: build.query({
 			query: () => ({
-				url: "/tracks/tracks",
+				url: "/tracks",
 				method: "GET",
 			}),
 			transformResponse: (response) => response,
