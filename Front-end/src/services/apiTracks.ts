@@ -29,9 +29,4 @@ export const trackApi = apiSlice.injectEndpoints({
 	}),
 })
 
-export const {
-	useGetTracksQuery,
-	useGetTopTracksQuery,
-	useUploadImageMutation,
-	useUploadTrackMutation,
-} = trackApi
+export const { useGetTracksQuery, useUploadImageMutation, useUploadTrackMutation } = trackApi
