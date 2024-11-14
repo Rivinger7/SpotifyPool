@@ -17,7 +17,8 @@ namespace BusinessLogicLayer.Implement.Microservices.Geolocation
 
         public async Task<GeolocationResponseModel> GetLocationFromHeaderAsync()
         {
-            string ip = Util.GetIpAddress();
+            //string ip = Util.GetIpAddress();
+            string ip = "";
 
             var requestUri = $"https://api.ipgeolocation.io/ipgeo?apiKey={_geolocationSettings.ApiKey}&ip={ip}";
 

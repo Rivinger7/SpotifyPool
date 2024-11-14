@@ -1,5 +1,9 @@
 ﻿using DataAccessLayer.Interface.MongoDB.Generic_Repository;
-using Microsoft.EntityFrameworkCore;
+using DataAccessLayer.Repository.Aggregate_Storage;
+
+using DataAccessLayer.Repository.Entities;
+
+//using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System.Linq.Expressions;
@@ -9,6 +13,7 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
     public class GenericRepository<TDocument>(IMongoDatabase database) : IGenericRepository<TDocument> where TDocument : class
     {
         private readonly IMongoDatabase _database = database;
+        private IMongoCollection<TCollection> InCollection<TCollection>() where TCollection : class => _database.GetCollection<TCollection>(typeof(TCollection).Name);
 
         public IMongoCollection<TDocument> Collection => _database.GetCollection<TDocument>(typeof(TDocument).Name);
 
@@ -33,8 +38,6 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
             return results; // Return the results (which would be of type ASTrack in your case)
         }
-
-
 
         public async Task<IEnumerable<TDocument>> GetAllAsync()
         {
@@ -61,6 +64,65 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             await Collection.DeleteOneAsync(Builders<TDocument>.Filter.Eq("_id", id));
         }
 
+        public async Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync()
+        {
+            // Projection
+            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
+                .Include(track => track.Name)
+                .Include(track => track.Description)
+                .Include(track => track.Lyrics)
+                .Include(track => track.PreviewURL)
+                .Include(track => track.Duration)
+                .Include(track => track.Images)
+                .Include(track => track.Artists);
+
+            // Empty Pipeline  
+            IAggregateFluent<Track> pipeLine = InCollection<Track>().Aggregate();
+
+            // Lookup  
+            IAggregateFluent<ASTrack> trackPipelines = pipeLine.Lookup<Track, Artist, ASTrack>
+                (InCollection<Artist>(), // The foreign collection  
+                track => track.ArtistIds, // The field in Track that are joining on  
+                artist => artist.Id, // The field in Artist that are matching against  
+                result => result.Artists) // The field in ASTrack to hold the matched artists  
+                .Project(projectionDefinition)
+                .As<ASTrack>();
+
+            // Pipeline to list  
+            IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
+
+            return tracks;
+        }
+
+        public async Task<ASTrack> GetTrackWithArtistAsync(string trackId)
+        {
+            // Projection
+            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
+                .Include(track => track.Name)
+                .Include(track => track.Description)
+                .Include(track => track.Lyrics)
+                .Include(track => track.PreviewURL)
+                .Include(track => track.Duration)
+                .Include(track => track.Images)
+                .Include(track => track.Artists);
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = InCollection<Track>().Aggregate();
+
+            // Lookup
+            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent.Lookup<Track, Artist, ASTrack>
+                (InCollection<Artist>(), // The foreign collection
+                track => track.ArtistIds, // The field in Track that are joining on
+                artist => artist.Id, // The field in Artist that are matching against
+                result => result.Artists) // The field in ASTrack to hold the matched artists
+                .Match(track => track.Id == trackId) // Match the track by id
+                .Project(projectionDefinition)
+                .As<ASTrack>();
+
+            return await trackPipelines.FirstOrDefaultAsync();
+        }
 
         public async Task<IEnumerable<TDocument>> Paging(int offset, int limit, FilterDefinition<TDocument>? filter = null, SortDefinition<TDocument>? sort = null)
         {

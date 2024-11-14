@@ -1,7 +1,5 @@
 ﻿using System.Globalization;
 using System.Text;
-using System.Drawing;
-using Microsoft.AspNetCore.Http;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Reflection;
@@ -98,7 +96,7 @@ namespace Utility.Coding
         public static string? ValidateAndCombineName(string? firstName, string? lastName)
         {
             // Nếu cả 2 biến đều là null thì trả về null thay vì chuỗi rỗng
-            if(firstName == null && lastName == null)
+            if (firstName == null && lastName == null)
             {
                 return null;
             }
@@ -114,26 +112,6 @@ namespace Utility.Coding
         }
 
         public static string? GetTitleCustomException(string? title, string baseTitle) => string.IsNullOrEmpty(title) ? baseTitle : title;
-
-        [Obsolete("Không nên dùng hàm này khi deploy")]
-        public static async Task<Image> GetImageInfoFromUrlSystemDrawing(string url)
-        {
-            using HttpClient client = new();
-
-            // Tải dữ liệu ảnh từ URL
-            var response = await client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            // Đọc nội dung dưới dạng byte
-            var imageData = await response.Content.ReadAsByteArrayAsync();
-
-            // Tạo đối tượng Image từ dữ liệu byte
-            using var ms = new MemoryStream(imageData);
-
-            // Sử dụng System.Drawing.Image
-            var image = Image.FromStream(ms); 
-            return image;
-        }
 
         [Obsolete("Không nên dùng hàm này khi deploy. Đang gặp lỗi khởi tạo")]
         public static async Task<(int height, int width)> GetImageInfoFromUrlSkiaSharp(string url)
@@ -152,7 +130,6 @@ namespace Utility.Coding
 
             // Return the dimensions
             return (bitmap.Height, bitmap.Width);
-
         }
 
         public static string EscapeSpecialCharacters(string input)
@@ -160,21 +137,21 @@ namespace Utility.Coding
             return Regex.Escape(input);  // Thoát toàn bộ ký tự đặc biệt trong Regular Expression
         }
 
-        private static IHttpContextAccessor _httpContextAccessor;
+        //private static IHttpContextAccessor _httpContextAccessor;
 
-        // Hàm này để truyền IHttpContextAccessor từ DI vào lớp static
-        public static void Configure(IHttpContextAccessor httpContextAccessor)
-        {
-            _httpContextAccessor = httpContextAccessor;
-        }
+        //// Hàm này để truyền IHttpContextAccessor từ DI vào lớp static
+        //public static void Configure(IHttpContextAccessor httpContextAccessor)
+        //{
+        //    _httpContextAccessor = httpContextAccessor;
+        //}
 
-        public static string GetIpAddress()
-        {
-            var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-            return ipAddress ?? "IP address not available";
-        }
+        //public static string GetIpAddress()
+        //{
+        //    var ipAddress = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+        //    return ipAddress ?? "IP address not available";
+        //}
 
-        public static  string GenerateOTP()
+        public static string GenerateOTP()
         {
             //using thay cho .Dispose, rng sẽ được giải phóng sau khi đóng using
             using var rng = RandomNumberGenerator.Create();
@@ -211,13 +188,19 @@ namespace Utility.Coding
 
         public static (int height, int width) GetImageDimensions(Stream? stream)
         {
-            // Load the image from the stream
-            using var image = Image.FromStream(stream);
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            // Load the image from the stream using SkiaSharp
+            using var skiaStream = new SKManagedStream(stream);
+            using var bitmap = SKBitmap.Decode(skiaStream) ?? throw new InvalidOperationException("Unable to decode the image stream.");
 
             // Retrieve width and height
-            int height = image.Height;
-            int width = image.Width;
-            
+            int height = bitmap.Height;
+            int width = bitmap.Width;
+
             return (height, width);
         }
     }

@@ -72,7 +72,7 @@ var app = builder.Build();
 
 
 // Cấu hình IpAddressHelper với IHttpContextAccessor từ DI
-Util.Configure(app.Services.GetRequiredService<IHttpContextAccessor>());
+//Util.Configure(app.Services.GetRequiredService<IHttpContextAccessor>());
 
 app.UseProblemDetails();
 

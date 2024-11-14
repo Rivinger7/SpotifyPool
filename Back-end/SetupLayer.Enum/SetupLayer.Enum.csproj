@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="MongoDB.Bson" Version="3.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.9.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.0.0" />
   </ItemGroup>
 
 </Project>
