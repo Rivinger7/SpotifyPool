@@ -17,9 +17,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
         {
+            // Lấy tất cả các track với artist
             IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetAllTracksWithArtistAsync();
 
-            // Map the aggregate result to TrackResponseModel  
+            // Map the aggregate result to TrackResponseModel
             IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
 
             return responseModel;
@@ -27,7 +28,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<TrackResponseModel> GetTrackAsync(string id)
         {
-            // Get the track with artist
+            // Lấy track với artist
             ASTrack track = await _unitOfWork.GetRepository<ASTrack>().GetTrackWithArtistAsync(id);
 
             // Map the aggregate result to TrackResponseModel

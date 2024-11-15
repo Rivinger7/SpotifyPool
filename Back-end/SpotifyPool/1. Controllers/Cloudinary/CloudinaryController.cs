@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Microservices.Cloudinary;
@@ -8,6 +9,7 @@ namespace SpotifyPool._1._Controllers.Cloudinary
 {
     [Route("api/v1/cloudinary")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class CloudinaryController(CloudinaryService cloudinaryService) : ControllerBase
     {
         private readonly CloudinaryService cloudinaryService = cloudinaryService;
@@ -17,7 +19,7 @@ namespace SpotifyPool._1._Controllers.Cloudinary
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-image/{publicID}")]
+        [Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpGet("get-image/{publicID}")]
         public IActionResult GetImageResult(string publicID)
         {
             var getResult = cloudinaryService.GetImageResult(publicID);
@@ -41,7 +43,7 @@ namespace SpotifyPool._1._Controllers.Cloudinary
         /// </summary>
         /// <param name="formFile"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpPost("test-content-type-file")]
+        [Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpPost("test-content-type-file")]
         public IActionResult TestContentTypeFile(IFormFile formFile)
         {
             if (formFile == null)
@@ -62,7 +64,7 @@ namespace SpotifyPool._1._Controllers.Cloudinary
         /// <param name="imageFile"></param>
         /// <param name="imageTag"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpPost("upload-image")]
+        [Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpPost("upload-image")]
         public IActionResult UploadImage(IFormFile imageFile, ImageTag imageTag)
         {
             var uploadResult = cloudinaryService.UploadImage(imageFile, imageTag);
@@ -76,7 +78,7 @@ namespace SpotifyPool._1._Controllers.Cloudinary
         /// <param name="audioTagParent"></param>
         /// <param name="audioTagChild"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpPost("upload-track")]
+        [Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpPost("upload-track")]
         public IActionResult UploadTrack(IFormFile trackFile, AudioTagParent audioTagParent, AudioTagChild audioTagChild)
         {
             var uploadResult = cloudinaryService.UploadTrack(trackFile, audioTagParent, audioTagChild);
@@ -88,7 +90,7 @@ namespace SpotifyPool._1._Controllers.Cloudinary
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpDelete("delete-image/{publicID}")]
+        [Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpDelete("delete-image/{publicID}")]
         public IActionResult DeleteImage(string publicID)
         {
             var deleteResult = cloudinaryService.DeleteImage(publicID);
@@ -100,7 +102,7 @@ namespace SpotifyPool._1._Controllers.Cloudinary
         /// </summary>
         /// <param name="publicID"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpDelete("delete-track/{publicID}")]
+        [Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpDelete("delete-track/{publicID}")]
         public IActionResult DeleteTrack(string publicID)
         {
             var deleteResult = cloudinaryService.DeleteTrack(publicID);
