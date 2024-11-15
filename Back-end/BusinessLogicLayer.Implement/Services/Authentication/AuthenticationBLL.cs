@@ -61,9 +61,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
 
-            // User's avatar (Temp)
-            string avatarURL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730097883/60d5dc467b950c5ccc8ced95_spotify-for-artists_on4me9.jpg";
-
             User newUser = new()
             {
                 DisplayName = displayName,
@@ -83,9 +80,9 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 [
                     new()
                     {
-                        URL = avatarURL,
-                        Height = 500,
-                        Width = 313,
+                        URL = null,
+                        Height = 0,
+                        Width = 0,
                     },
                 ]
             };
@@ -167,7 +164,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             // Xóa session khi người dùng resend email confirm
             // Session này phục vụ cho hàm ReActiveAccountByToken khi chưa active account
-            _httpContextAccessor.HttpContext.Session.Remove("UserNameTemp");
+            _httpContextAccessor.HttpContext?.Session.Remove("UserNameTemp");
 
             return;
         }
@@ -216,7 +213,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync();
 
             // Lấy thông tin ảnh từ URL
-            //(int imageHeight, int imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
+            (int? imageHeight, int? imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
 
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
@@ -237,8 +234,8 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                         new()
                         {
                             URL = avatar,
-                            Height = 96,
-                            Width = 96,
+                            Height = imageHeight ?? 96,
+                            Width = imageWidth ?? 96,
                         },
                     ],
                     Role = UserRole.Customer,

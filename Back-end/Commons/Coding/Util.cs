@@ -113,8 +113,7 @@ namespace Utility.Coding
 
         public static string? GetTitleCustomException(string? title, string baseTitle) => string.IsNullOrEmpty(title) ? baseTitle : title;
 
-        [Obsolete("Không nên dùng hàm này khi deploy. Đang gặp lỗi khởi tạo")]
-        public static async Task<(int height, int width)> GetImageInfoFromUrlSkiaSharp(string url)
+        public static async Task<(int? height, int? width)> GetImageInfoFromUrlSkiaSharp(string url)
         {
             using HttpClient client = new();
 
@@ -186,7 +185,6 @@ namespace Utility.Coding
             return enumValue.ToString();
         }
 
-        [Obsolete("Hàm này không còn được sử dụng nữa.")]
         public static (int height, int width) GetImageDimensions(Stream? stream)
         {
             ArgumentNullException.ThrowIfNull(stream);

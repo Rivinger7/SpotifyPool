@@ -10,7 +10,7 @@ namespace BusinessLogicLayer.Mapper.Mappers.Users
 		public UserMapping()
 		{
 			// Map between Image classes
-			CreateMap<EditProfileRequestModel, User>().ReverseMap().ForMember(dest => dest.Image, otp => otp.Ignore());
+			CreateMap<EditProfileRequestModel, User>().ReverseMap();
 		}
 	}
 }
