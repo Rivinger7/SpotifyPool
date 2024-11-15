@@ -274,6 +274,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
             IEnumerable<Claim> claimsList =
             [
+                new Claim(JwtRegisteredClaimNames.NameId, retrieveUser.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, payload.Email),
                 new Claim(JwtRegisteredClaimNames.GivenName, payload.GivenName),
                 new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName),
