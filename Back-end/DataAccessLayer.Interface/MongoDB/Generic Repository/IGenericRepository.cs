@@ -12,14 +12,14 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         Task<IEnumerable<TDocument>> GetAllAsync();
         Task<TDocument> GetByIdAsync(string id);
         Task AddAsync(TDocument entity);
-        Task UpdateAsync(string id, TDocument entity);
+        Task UpdateAsync(string id, UpdateDefinition<TDocument> entity);
         Task DeleteAsync(string id);
 
         /// <summary>
         /// Lấy tất cả các track bao gồm thông tin về artist
         /// </summary>
         /// <returns></returns>
-        Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync();
+        Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync(int offset, int limit);
 
         /// <summary>
         /// Lấy track bao gồm thông tin về artist theo trackId

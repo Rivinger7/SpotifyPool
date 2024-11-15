@@ -38,7 +38,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Favorites
                     Name = PlaylistName.FavoriteSong,
                     Description = string.Empty,
                     UserID = userID,
-                    CreatedTime = Util.GetUtcPlus7Time(),
                     TrackIds = [trackID],
                     Images =
                     [

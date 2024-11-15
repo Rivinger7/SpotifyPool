@@ -2,10 +2,13 @@
 using DataAccessLayer.Repository.Aggregate_Storage;
 
 using DataAccessLayer.Repository.Entities;
+using MongoDB.Bson;
+
 
 //using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
@@ -46,7 +49,7 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
         public async Task<TDocument> GetByIdAsync(string id)
         {
-            return await Collection.Find(Builders<TDocument>.Filter.Eq("_id", id)).FirstOrDefaultAsync();
+			return await Collection.Find(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id))).FirstOrDefaultAsync();
         }
 
         public async Task AddAsync(TDocument entity)
@@ -54,17 +57,17 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             await Collection.InsertOneAsync(entity);
         }
 
-        public async Task UpdateAsync(string id, TDocument entity)
+        public async Task UpdateAsync(string id, UpdateDefinition<TDocument> entity)
         {
-            await Collection.ReplaceOneAsync(Builders<TDocument>.Filter.Eq("_id", id), entity);
+			await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), entity);
         }
 
         public async Task DeleteAsync(string id)
         {
-            await Collection.DeleteOneAsync(Builders<TDocument>.Filter.Eq("_id", id));
+            await Collection.DeleteOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)));
         }
 
-        public async Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync()
+        public async Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync(int offset, int limit)
         {
             // Projection
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
@@ -92,7 +95,8 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             // Pipeline to list  
             IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
 
-            return tracks;
+            return tracks.Skip((offset - 1) * limit)
+                         .Take(limit);
         }
 
         public async Task<ASTrack> GetTrackWithArtistAsync(string trackId)
@@ -129,10 +133,10 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             sort ??= Builders<TDocument>.Sort.Ascending("_id");
             filter ??= Builders<TDocument>.Filter.Empty;
 
-            // NOTE: aggregate facet là 1 phần trong aggreagate dùng để thu thập dữ liệu tổng hợp từ 1 tập dữ liệu. Trong facet có thể có nhiều pipeline
+			// NOTE: aggregate facet là 1 phần trong aggreagate dùng để thu thập dữ liệu tổng hợp từ 1 tập dữ liệu. Trong facet có thể có nhiều pipeline
 
-            // tạo một facet "count" để đếm số lượng dữ liệu
-            AggregateFacet<TDocument, AggregateCountResult> countFacet = AggregateFacet.Create("count",
+			// tạo một facet "count" để đếm số lượng dữ liệu
+			AggregateFacet<TDocument, AggregateCountResult> countFacet = AggregateFacet.Create("count",
                 PipelineDefinition<TDocument, AggregateCountResult>.Create(new[]
                 {
             PipelineStageDefinitionBuilder.Count<TDocument>()
@@ -154,15 +158,15 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
                 .Match(filter)
                 .Facet(countFacet, dataFacet).ToListAsync();
 
-            //** NẾU MUỐN LẤY SỐ LƯỢNG TRANG TẤT CẢ 
-            //var count = aggregation.First()
-            //                       .Facets.First(x => x.Name == "count")
-            //                       .Output<AggregateCountResult>().FirstOrDefault()?.Count;
+			//** NẾU MUỐN LẤY SỐ LƯỢNG TRANG TẤT CẢ 
+			//var count = aggregation.First()
+			//                       .Facets.First(x => x.Name == "count")
+			//                       .Output<AggregateCountResult>().FirstOrDefault()?.Count;
 
-            //var totalPages = (int)Math.Ceiling((double)count! / limit);
+			//var totalPages = (int)Math.Ceiling((double)count! / limit);
 
-            // trường hợp nếu lấy trong aggregate có count
-            IEnumerable<TDocument> data = aggregation.First()
+			// trường hợp nếu lấy trong aggregate có count
+			IEnumerable<TDocument> data = aggregation.First()
                 .Facets.First(x => x.Name == "data")
                 .Output<TDocument>();
 

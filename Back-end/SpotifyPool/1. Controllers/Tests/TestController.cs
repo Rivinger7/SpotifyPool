@@ -1,7 +1,6 @@
 ﻿using BusinessLogicLayer.Implement.Services.Tests;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Services.User;
 
@@ -32,5 +31,5 @@ namespace SpotifyPool._1._Controllers.Tests
             await testBLL.SetLyricsToDatabase();
             return Ok();
         }
-    }
+	}
 }

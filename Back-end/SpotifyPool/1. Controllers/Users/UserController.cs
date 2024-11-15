@@ -42,7 +42,7 @@ namespace SpotifyPool._1._Controllers.Users
         /// <param name="limit">Số lượng phần tử</param>
         /// <returns></returns>
         [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
-		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset, [FromQuery] int limit)
+		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset = 1, [FromQuery] int limit = 5)
 		{
 			var users = await _userBLL.TestPaging(offset, limit);
 			return Ok(users);

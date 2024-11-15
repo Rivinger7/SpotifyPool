@@ -61,6 +61,8 @@ using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
 using BusinessLogicLayer.Implement.Services.Recommendation;
 using DataAccessLayer.Implement.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.Generic_Repository;
+using BusinessLogicLayer.Interface.Services_Interface.Playlists.Own;
+using BusinessLogicLayer.Implement.Services.Playlists.Own;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -470,11 +472,14 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Track
             services.AddScoped<ITrack, TrackBLL>();
 
-            // Playlist
+            // Favourite Playlist
             services.AddScoped<IFavoritesPlaylist, FavoritesPlaylistBLL>();
 
-            // Data Reccomendation
-            services.AddScoped<IRecommendation, RecommendationBLL>();
+			//Own Playlist
+			services.AddScoped<IOwnPlaylist, OwnPlaylistBLL>();
+
+			// Data Reccomendation
+			services.AddScoped<IRecommendation, RecommendationBLL>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
