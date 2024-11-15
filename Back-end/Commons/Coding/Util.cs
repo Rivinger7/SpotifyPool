@@ -186,12 +186,10 @@ namespace Utility.Coding
             return enumValue.ToString();
         }
 
+        [Obsolete("Hàm này không còn được sử dụng nữa.")]
         public static (int height, int width) GetImageDimensions(Stream? stream)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             // Load the image from the stream using SkiaSharp
             using var skiaStream = new SKManagedStream(stream);
@@ -200,6 +198,9 @@ namespace Utility.Coding
             // Retrieve width and height
             int height = bitmap.Height;
             int width = bitmap.Width;
+
+            // Reset lại vị trí của stream
+            stream.Position = 0;
 
             return (height, width);
         }
