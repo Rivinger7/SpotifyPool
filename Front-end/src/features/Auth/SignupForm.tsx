@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button"
 import CustomTooltip from "@/components/CustomTooltip"
 
 import { z } from "zod"
+import { useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import toast from "react-hot-toast"
@@ -49,6 +51,19 @@ const formSchema = z.object({
 const SignupForm = () => {
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
+
+	// First, modify the state declarations
+	const [passwordVisible, setPasswordVisible] = useState(false)
+	const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false)
+
+	// Create a toggle function that handles both fields
+	const handlePasswordVisibility = (field: "password" | "confirm") => {
+		if (field === "password") {
+			setPasswordVisible((prev) => !prev)
+		} else {
+			setConfirmPasswordVisible((prev) => !prev)
+		}
+	}
 
 	const [registerMutation] = useRegisterMutation()
 	const [loginByGoogleMutation] = useLoginByGoogleMutation()
@@ -185,12 +200,25 @@ const SignupForm = () => {
 								<FormItem>
 									<FormLabel>Password</FormLabel>
 									<FormControl>
-										<Input
-											className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-											placeholder="Password"
-											type="password"
-											{...field}
-										/>
+										<div className="relative">
+											<Input
+												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
+												placeholder="Password"
+												type={passwordVisible ? "text" : "password"}
+												{...field}
+											/>
+											{passwordVisible ? (
+												<Eye
+													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+													onClick={() => handlePasswordVisibility("password")}
+												/>
+											) : (
+												<EyeOff
+													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+													onClick={() => handlePasswordVisibility("password")}
+												/>
+											)}
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -205,12 +233,25 @@ const SignupForm = () => {
 								<FormItem>
 									<FormLabel>Confirm password</FormLabel>
 									<FormControl>
-										<Input
-											className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-											placeholder="Confirm password"
-											type="password"
-											{...field}
-										/>
+										<div className="relative">
+											<Input
+												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
+												placeholder="Confirm password"
+												type={confirmPasswordVisible ? "text" : "password"}
+												{...field}
+											/>
+											{confirmPasswordVisible ? (
+												<Eye
+													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+													onClick={() => handlePasswordVisibility("confirm")}
+												/>
+											) : (
+												<EyeOff
+													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+													onClick={() => handlePasswordVisibility("confirm")}
+												/>
+											)}
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -240,11 +281,7 @@ const SignupForm = () => {
 					Sign up with Google
 				</Button> */}
 
-				<div
-					className="mt-8"
-					// className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-3 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
-					// type="submit"
-				>
+				<div className="mt-8">
 					<GoogleLogin
 						shape="pill"
 						size="large"

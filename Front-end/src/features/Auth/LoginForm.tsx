@@ -45,6 +45,7 @@ const LoginForm = () => {
 		setVisible((visible) => !visible)
 	}
 
+	// NOTE: google login button width change based on window size
 	// Inside component:
 	// const [buttonWidth, setButtonWidth] = useState(200)
 
