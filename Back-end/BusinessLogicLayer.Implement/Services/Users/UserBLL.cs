@@ -166,22 +166,36 @@ namespace BusinessLogicLayer.Implement.Services.Users
             //map từ model qua user
             _mapper.Map<EditProfileRequestModel, User>(requestModel, user);
 
-            // Cập nhật Image Field nếu có
-            UpdateDefinition<User>? updateDefinition = null;
-            if (requestModel.Image is not null)
-            {
-                ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image, ImageTag.Users_Profile);
-                updateDefinition = Builders<User>.Update.Set(user => user.Images.First().URL, result.SecureUrl.ToString());
-            }
-
-            // Cập nhật các fields khác
-            updateDefinition.Set(user => user.DisplayName, requestModel.DisplayName)
+            // Cập nhật các field sẵn có
+            UpdateDefinition<User> updateDefinition = Builders<User>.Update.Set(user => user.DisplayName, requestModel.DisplayName)
                     .Set(user => user.PhoneNumber, requestModel.PhoneNumber)
                     .Set(user => user.Birthdate, requestModel.Birthdate)
                     .Set(user => user.Gender, Enum.Parse<UserGender>(requestModel.Gender))
                     .Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time());
-            UpdateResult updateResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == user.Id, updateDefinition);
+
+			// Cập nhật Image Field nếu có
+			if (requestModel.Image is not null)
+            {
+                ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image, ImageTag.Users_Profile);
+                updateDefinition = updateDefinition.Set(user => user.Images.First().URL, result.SecureUrl.ToString());
+            }
+
+            await _unitOfWork.GetRepository<User>().UpdateAsync(user.Id, updateDefinition);
         }
+
+        public async Task<UserProfileResponseModel> GetUserProfile()
+        {
+            string userId = _httpContextAccessor.HttpContext.Session.GetString("UserID")
+                            ?? throw new UnAuthorizedCustomException("Your session is limit, please login again");
+
+            User user = await _unitOfWork.GetCollection<User>()
+                                         .Find(user => user.Id == userId)
+                                         .Project(Builders<User>.Projection.Include(user => user.Images))
+                                         .As<User>()
+                                         .FirstAsync();
+
+			return _mapper.Map<UserProfileResponseModel>(user);
+		}
 
         //test method
         public async Task<IEnumerable<UserResponseModel>> TestPaging(int offset, int limit)
