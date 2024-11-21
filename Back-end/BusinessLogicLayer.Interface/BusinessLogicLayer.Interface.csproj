@@ -7,15 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services Interface\Playlists\Weekly\**" />
+    <EmbeddedResource Remove="Services Interface\Playlists\Weekly\**" />
+    <None Remove="Services Interface\Playlists\Weekly\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BusinessLogicLayer.Mapper\BusinessLogicLayer.Mapper.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services Interface\Playlists\Weekly\" />
   </ItemGroup>
 
 </Project>

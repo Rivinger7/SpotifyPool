@@ -4,7 +4,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Playlists.Favorites
 {
     public interface IFavoritesPlaylist
     {
-        Task AddToPlaylistAsync(string trackID);
+		Task AddToPlaylistAsync(string trackID);
         Task RemoveFromPlaylistAsync(string trackID);
         Task<FavoritesSongsResponseModel> GetPlaylistAsync();
     }

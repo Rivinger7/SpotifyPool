@@ -14,5 +14,8 @@ namespace Business_Logic_Layer.Services_Interface.Users
         Task EditProfileAsync(EditProfileRequestModel requestModel);
 
 		Task<IEnumerable<UserResponseModel>> TestPaging(int offset, int limit);
-    }
+
+        Task<UserProfileResponseModel> GetUserProfile();
+
+	}
 }

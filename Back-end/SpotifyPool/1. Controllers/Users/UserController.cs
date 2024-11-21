@@ -14,35 +14,53 @@ namespace SpotifyPool._1._Controllers.Users
     {
         private readonly IUserBLL _userBLL = userBLL;
 
-        //[Authorize(Roles = nameof(UserRole.Admin)), HttpGet]
-        //public async Task<IActionResult> GetAllUsersAsync([FromQuery] string? fullname, [FromQuery] UserGender gender, [FromQuery] string? email)
-        //{
-        //    var users = await _userBLL.GetAllUsersAsync(fullname, gender, email);
-        //    return Ok(users);
-        //}
+		//[Authorize(Roles = nameof(UserRole.Admin)), HttpGet]
+		//public async Task<IActionResult> GetAllUsersAsync([FromQuery] string? fullname, [FromQuery] UserGender gender, [FromQuery] string? email)
+		//{
+		//    var users = await _userBLL.GetAllUsersAsync(fullname, gender, email);
+		//    return Ok(users);
+		//}
 
-        //[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("{id}")]
-        //public async Task<IActionResult> GetUserByIDAsync(string id)
-        //{
-        //    var user = await _userBLL.GetUserByIDAsync(id, true);
-        //    return Ok(user);
-        //}
+		//[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("{id}")]
+		//public async Task<IActionResult> GetUserByIDAsync(string id)
+		//{
+		//    var user = await _userBLL.GetUserByIDAsync(id, true);
+		//    return Ok(user);
+		//}
 
-        [Authorize(Roles = $"{nameof(UserRole.Customer)},{nameof(UserRole.Admin)}"), HttpPut("edit-profile")]
+
+
+		/// <summary>
+		/// Chỉnh sửa thông tin cá nhân (Tên, SDT, Sinh nhật, Giới tính, ,Ảnh)
+		/// </summary>
+		/// <param name="request"></param>
+		/// <returns></returns>
+		[Authorize(Roles = $"{nameof(UserRole.Customer)},{nameof(UserRole.Admin)}"), HttpPut("edit-profile")]
         public async Task<IActionResult> EditProfileAsync([FromForm] EditProfileRequestModel request)
 		{
 			await _userBLL.EditProfileAsync(request);
 			return Ok("Update profile successfully!");
 		}
 
-        /// <summary>
-        /// Phân trang cho Users
-        /// </summary>
-        /// <param name="offset">Trang thứ n</param>
-        /// <param name="limit">Số lượng phần tử</param>
-        /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
-		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset, [FromQuery] int limit)
+
+
+		[Authorize(Roles = $"{nameof(UserRole.Customer)}"), HttpGet("get-profile")]
+		public async Task<IActionResult> GetProfileAsync()
+		{
+			var profile = await _userBLL.GetUserProfile();
+			return Ok(profile);
+		}
+
+
+
+		/// <summary>
+		/// Phân trang cho Users
+		/// </summary>
+		/// <param name="offset">Trang thứ n</param>
+		/// <param name="limit">Số lượng phần tử</param>
+		/// <returns></returns>
+		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
+		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset = 1, [FromQuery] int limit = 5)
 		{
 			var users = await _userBLL.TestPaging(offset, limit);
 			return Ok(users);

@@ -2,10 +2,13 @@
 using DataAccessLayer.Repository.Aggregate_Storage;
 
 using DataAccessLayer.Repository.Entities;
+using MongoDB.Bson;
+
 
 //using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
@@ -46,7 +49,7 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
         public async Task<TDocument> GetByIdAsync(string id)
         {
-            return await Collection.Find(Builders<TDocument>.Filter.Eq("_id", id)).FirstOrDefaultAsync();
+            return await Collection.Find(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id))).FirstOrDefaultAsync();
         }
 
         public async Task AddAsync(TDocument entity)
@@ -54,17 +57,17 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             await Collection.InsertOneAsync(entity);
         }
 
-        public async Task UpdateAsync(string id, TDocument entity)
+        public async Task UpdateAsync(string id, UpdateDefinition<TDocument> entity)
         {
-            await Collection.ReplaceOneAsync(Builders<TDocument>.Filter.Eq("_id", id), entity);
+            await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), entity);
         }
 
         public async Task DeleteAsync(string id)
         {
-            await Collection.DeleteOneAsync(Builders<TDocument>.Filter.Eq("_id", id));
+            await Collection.DeleteOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)));
         }
 
-        public async Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync()
+        public async Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync(int offset, int limit)
         {
             // Projection
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
@@ -86,8 +89,9 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
                 track => track.ArtistIds, // The field in Track that are joining on  
                 artist => artist.Id, // The field in Artist that are matching against  
                 result => result.Artists) // The field in ASTrack to hold the matched artists  
-                .Project(projectionDefinition)
-                .As<ASTrack>();
+                .Project<ASTrack>(projectionDefinition)
+                .Skip((offset - 1) * limit)
+                .Limit(limit);
 
             // Pipeline to list  
             IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
@@ -95,8 +99,11 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             return tracks;
         }
 
-        public async Task<ASTrack> GetTrackWithArtistAsync(string trackId)
+        public async Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null)
         {
+            // Filter
+            preFilterDefinition ??= Builders<Track>.Filter.Empty;
+
             // Projection
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
                 .Include(track => track.Id)
@@ -112,16 +119,57 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             IAggregateFluent<Track> aggregateFluent = InCollection<Track>().Aggregate();
 
             // Lookup
-            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent.Lookup<Track, Artist, ASTrack>
+            ASTrack trackPipeline = await aggregateFluent
+                .Match(preFilterDefinition) // Match the custom filter
+                .Lookup<Track, Artist, ASTrack>
                 (InCollection<Artist>(), // The foreign collection
                 track => track.ArtistIds, // The field in Track that are joining on
                 artist => artist.Id, // The field in Artist that are matching against
                 result => result.Artists) // The field in ASTrack to hold the matched artists
                 .Match(track => track.Id == trackId) // Match the track by id
-                .Project(projectionDefinition)
-                .As<ASTrack>();
+                .Unwind(result => result.Artists, new AggregateUnwindOptions<ASTrack>
+                {
+                    PreserveNullAndEmptyArrays = true
+                })
+                .Project<ASTrack>(projectionDefinition)
+                .FirstOrDefaultAsync();
 
-            return await trackPipelines.FirstOrDefaultAsync();
+            return trackPipeline;
+        }
+
+        public async Task<IEnumerable<ASTrack>> GetServeralTracksWithArtistAsync(FilterDefinition<Track>? preFilterDefinition = null, FilterDefinition<ASTrack>? filterDefinition = null)
+        {
+            // Filter
+            preFilterDefinition ??= Builders<Track>.Filter.Empty;
+            filterDefinition ??= Builders<ASTrack>.Filter.Empty;
+
+            // Projection
+            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
+                .Include(track => track.Name)
+                .Include(track => track.Description)
+                .Include(track => track.Lyrics)
+                .Include(track => track.PreviewURL)
+                .Include(track => track.Duration)
+                .Include(track => track.Images)
+                .Include(track => track.Artists);
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = InCollection<Track>().Aggregate();
+
+            // Lookup
+            IEnumerable<ASTrack> trackPipeline = await aggregateFluent
+                .Match(preFilterDefinition) // Match the pre custom filter
+                .Lookup<Track, Artist, ASTrack>
+                (InCollection<Artist>(), // The foreign collection
+                track => track.ArtistIds, // The field in Track that are joining on
+                artist => artist.Id, // The field in Artist that are matching against
+                result => result.Artists) // The field in ASTrack to hold the matched artists
+                .Match(filterDefinition) // Match the custom filter
+                .Project<ASTrack>(projectionDefinition)
+                .ToListAsync();
+
+            return trackPipeline;
         }
 
         public async Task<IEnumerable<TDocument>> Paging(int offset, int limit, FilterDefinition<TDocument>? filter = null, SortDefinition<TDocument>? sort = null)

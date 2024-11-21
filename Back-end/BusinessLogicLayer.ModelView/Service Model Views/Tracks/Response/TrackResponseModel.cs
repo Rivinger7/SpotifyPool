@@ -1,5 +1,6 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using System.Text.Json.Serialization;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
 {
@@ -14,5 +15,9 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
         public required string DurationFormated { get; set; }
         public required IEnumerable<ImageResponseModel> Images { get; set; }
         public required IEnumerable<ArtistResponseModel> Artists { get; set; }
+
+        // FaveoriteSongs
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public required string AddedTime { get; set; }
     }
 }

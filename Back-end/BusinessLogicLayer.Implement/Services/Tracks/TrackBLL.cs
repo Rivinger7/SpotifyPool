@@ -15,11 +15,11 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync()
+        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit)
         {
-            IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetAllTracksWithArtistAsync();
-
-            // Map the aggregate result to TrackResponseModel  
+            // Lấy tất cả các track với artist
+            IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetAllTracksWithArtistAsync(offset, limit);
+            // Map the aggregate result to TrackResponseModel
             IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
 
             return responseModel;
@@ -27,7 +27,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<TrackResponseModel> GetTrackAsync(string id)
         {
-            // Get the track with artist
+            // Lấy track với artist
             ASTrack track = await _unitOfWork.GetRepository<ASTrack>().GetTrackWithArtistAsync(id);
 
             // Map the aggregate result to TrackResponseModel
@@ -36,7 +36,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return responseModel;
         }
 
-        public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
+		public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
         {
             // Nếu không có searchTerm thì trả về mảng rỗng  
             if (string.IsNullOrWhiteSpace(searchTerm))

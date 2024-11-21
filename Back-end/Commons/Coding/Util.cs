@@ -113,8 +113,7 @@ namespace Utility.Coding
 
         public static string? GetTitleCustomException(string? title, string baseTitle) => string.IsNullOrEmpty(title) ? baseTitle : title;
 
-        [Obsolete("Không nên dùng hàm này khi deploy. Đang gặp lỗi khởi tạo")]
-        public static async Task<(int height, int width)> GetImageInfoFromUrlSkiaSharp(string url)
+        public static async Task<(int? height, int? width)> GetImageInfoFromUrlSkiaSharp(string url)
         {
             using HttpClient client = new();
 
@@ -188,10 +187,7 @@ namespace Utility.Coding
 
         public static (int height, int width) GetImageDimensions(Stream? stream)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             // Load the image from the stream using SkiaSharp
             using var skiaStream = new SKManagedStream(stream);
@@ -200,6 +196,9 @@ namespace Utility.Coding
             // Retrieve width and height
             int height = bitmap.Height;
             int width = bitmap.Width;
+
+            // Reset lại vị trí của stream
+            stream.Position = 0;
 
             return (height, width);
         }

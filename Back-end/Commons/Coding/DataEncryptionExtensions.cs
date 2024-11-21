@@ -25,14 +25,14 @@ namespace Utility.Coding
             return Convert.ToBase64String(encryptedSHA256).Substring(0, 20);
         }
 
-        public static string ToSHA512Hash(this string password, string? saltKey)
-        {
-            SHA512Managed sha512 = new();
-            byte[] encryptedSHA512 = sha512.ComputeHash(Encoding.UTF8.GetBytes(string.Concat(password, saltKey)));
-            sha512.Clear();
+        //public static string ToSHA512Hash(this string password, string? saltKey)
+        //{
+        //    SHA512Managed sha512 = new();
+        //    byte[] encryptedSHA512 = sha512.ComputeHash(Encoding.UTF8.GetBytes(string.Concat(password, saltKey)));
+        //    sha512.Clear();
 
-            return Convert.ToBase64String(encryptedSHA512).Substring(0, 30);
-        }
+        //    return Convert.ToBase64String(encryptedSHA512).Substring(0, 30);
+        //}
 
         public static string ToMd5Hash(this string password, string? saltKey)
         {

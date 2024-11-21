@@ -20,12 +20,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image", int? height = null, int? width = null)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string userID = _httpContextAccessor.HttpContext.Session.GetString("UserID");
-
-            if (string.IsNullOrEmpty(userID))
-            {
-                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
-            }
+            string userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID") ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
             if (imageFile is null || imageFile.Length == 0)
             {
@@ -64,8 +59,10 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             using Stream? stream = imageFile.OpenReadStream();
 
             // Nếu không đặt giá trị height và width thì sẽ lấy mặc định
-            if(height is null || width is null)
+            if (height is null || width is null)
             {
+                // Lấy kích thước ảnh từ stream
+                // Và đã reset lại vị trí của stream
                 (height, width) = Util.GetImageDimensions(stream);
             }
 
@@ -89,10 +86,10 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             if ((int)uploadResult.StatusCode != StatusCodes.Status200OK)
             {
-                throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Status);
+                throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Error.Message);
             }
 
-            Console.WriteLine(uploadResult.JsonObj);
+            //Console.WriteLine(uploadResult.JsonObj);
 
             return uploadResult;
         }
@@ -100,12 +97,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         public VideoUploadResult UploadTrack(IFormFile trackFile, AudioTagParent audioTagParent, AudioTagChild audioTagChild, string rootFolder = "Audio")
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string userID = _httpContextAccessor.HttpContext.Session.GetString("UserID");
-
-            if (string.IsNullOrEmpty(userID))
-            {
-                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
-            }
+            string userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID") ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
             if (trackFile is null || trackFile.Length == 0)
             {
@@ -156,13 +148,13 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             };
 
             VideoUploadResult? uploadResult = _cloudinary.Upload(uploadParams);
-
+            
             if ((int)uploadResult.StatusCode != StatusCodes.Status200OK)
             {
-                throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Status);
+                throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Error.Message);
             }
 
-            Console.WriteLine(uploadResult.JsonObj);
+            //Console.WriteLine(uploadResult.JsonObj);
 
             return uploadResult;
         }

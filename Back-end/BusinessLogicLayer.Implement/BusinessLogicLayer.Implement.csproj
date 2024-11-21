@@ -7,20 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\Playlists\Weekly\**" />
+    <EmbeddedResource Remove="Services\Playlists\Weekly\**" />
+    <None Remove="Services\Playlists\Weekly\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="CloudinaryDotNet" Version="1.26.2" />
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BusinessLogicLayer.Interface\BusinessLogicLayer.Interface.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Playlists\Weekly\" />
   </ItemGroup>
 
 </Project>

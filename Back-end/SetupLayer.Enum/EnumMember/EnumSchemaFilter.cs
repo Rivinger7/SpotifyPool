@@ -10,6 +10,7 @@ namespace SetupLayer.Enum.EnumMember
         {
             if (context.Type.IsEnum)
             {
+                schema.Type = "string";
                 schema.Enum = context.Type
                     .GetEnumNames()
                     .Select(name => (IOpenApiAny)new OpenApiString(name))
