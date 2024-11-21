@@ -61,8 +61,8 @@ using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
 using BusinessLogicLayer.Implement.Services.Recommendation;
 using DataAccessLayer.Implement.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.Generic_Repository;
-using BusinessLogicLayer.Interface.Services_Interface.Playlists.Own;
-using BusinessLogicLayer.Implement.Services.Playlists.Own;
+using BusinessLogicLayer.Implement.Services.Playlists.Custom;
+using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -161,6 +161,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             stopwatch.Restart();
             services.AddGenius();
             stopwatch.Stop();
+
+            // Hub (SignalR)
+            stopwatch.Restart();
+            services.AddSignalR();
+            stopwatch.Stop();
+            Console.WriteLine($"AddSignalR took {stopwatch.ElapsedMilliseconds} ms");
 
             // Caching (In-memory cache)
             stopwatch.Restart();
@@ -474,9 +480,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Favourite Playlist
             services.AddScoped<IFavoritesPlaylist, FavoritesPlaylistBLL>();
-
-			//Own Playlist
-			services.AddScoped<IOwnPlaylist, OwnPlaylistBLL>();
+            services.AddScoped<ICustomPlaylist, CustomPlaylistBLL>();
 
 			// Data Reccomendation
 			services.AddScoped<IRecommendation, RecommendationBLL>();

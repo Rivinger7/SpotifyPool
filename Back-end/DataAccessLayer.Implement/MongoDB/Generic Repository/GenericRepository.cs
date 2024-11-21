@@ -49,7 +49,7 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
         public async Task<TDocument> GetByIdAsync(string id)
         {
-			return await Collection.Find(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id))).FirstOrDefaultAsync();
+            return await Collection.Find(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id))).FirstOrDefaultAsync();
         }
 
         public async Task AddAsync(TDocument entity)
@@ -59,7 +59,7 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
         public async Task UpdateAsync(string id, UpdateDefinition<TDocument> entity)
         {
-			await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), entity);
+            await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), entity);
         }
 
         public async Task DeleteAsync(string id)
@@ -89,18 +89,21 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
                 track => track.ArtistIds, // The field in Track that are joining on  
                 artist => artist.Id, // The field in Artist that are matching against  
                 result => result.Artists) // The field in ASTrack to hold the matched artists  
-                .Project(projectionDefinition)
-                .As<ASTrack>();
+                .Project<ASTrack>(projectionDefinition)
+                .Skip((offset - 1) * limit)
+                .Limit(limit);
 
             // Pipeline to list  
             IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
 
-            return tracks.Skip((offset - 1) * limit)
-                         .Take(limit);
+            return tracks;
         }
 
-        public async Task<ASTrack> GetTrackWithArtistAsync(string trackId)
+        public async Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null)
         {
+            // Filter
+            preFilterDefinition ??= Builders<Track>.Filter.Empty;
+
             // Projection
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
                 .Include(track => track.Id)
@@ -116,16 +119,57 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             IAggregateFluent<Track> aggregateFluent = InCollection<Track>().Aggregate();
 
             // Lookup
-            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent.Lookup<Track, Artist, ASTrack>
+            ASTrack trackPipeline = await aggregateFluent
+                .Match(preFilterDefinition) // Match the custom filter
+                .Lookup<Track, Artist, ASTrack>
                 (InCollection<Artist>(), // The foreign collection
                 track => track.ArtistIds, // The field in Track that are joining on
                 artist => artist.Id, // The field in Artist that are matching against
                 result => result.Artists) // The field in ASTrack to hold the matched artists
                 .Match(track => track.Id == trackId) // Match the track by id
-                .Project(projectionDefinition)
-                .As<ASTrack>();
+                .Unwind(result => result.Artists, new AggregateUnwindOptions<ASTrack>
+                {
+                    PreserveNullAndEmptyArrays = true
+                })
+                .Project<ASTrack>(projectionDefinition)
+                .FirstOrDefaultAsync();
 
-            return await trackPipelines.FirstOrDefaultAsync();
+            return trackPipeline;
+        }
+
+        public async Task<IEnumerable<ASTrack>> GetServeralTracksWithArtistAsync(FilterDefinition<Track>? preFilterDefinition = null, FilterDefinition<ASTrack>? filterDefinition = null)
+        {
+            // Filter
+            preFilterDefinition ??= Builders<Track>.Filter.Empty;
+            filterDefinition ??= Builders<ASTrack>.Filter.Empty;
+
+            // Projection
+            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
+                .Include(track => track.Name)
+                .Include(track => track.Description)
+                .Include(track => track.Lyrics)
+                .Include(track => track.PreviewURL)
+                .Include(track => track.Duration)
+                .Include(track => track.Images)
+                .Include(track => track.Artists);
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = InCollection<Track>().Aggregate();
+
+            // Lookup
+            IEnumerable<ASTrack> trackPipeline = await aggregateFluent
+                .Match(preFilterDefinition) // Match the pre custom filter
+                .Lookup<Track, Artist, ASTrack>
+                (InCollection<Artist>(), // The foreign collection
+                track => track.ArtistIds, // The field in Track that are joining on
+                artist => artist.Id, // The field in Artist that are matching against
+                result => result.Artists) // The field in ASTrack to hold the matched artists
+                .Match(filterDefinition) // Match the custom filter
+                .Project<ASTrack>(projectionDefinition)
+                .ToListAsync();
+
+            return trackPipeline;
         }
 
         public async Task<IEnumerable<TDocument>> Paging(int offset, int limit, FilterDefinition<TDocument>? filter = null, SortDefinition<TDocument>? sort = null)
@@ -133,10 +177,10 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             sort ??= Builders<TDocument>.Sort.Ascending("_id");
             filter ??= Builders<TDocument>.Filter.Empty;
 
-			// NOTE: aggregate facet là 1 phần trong aggreagate dùng để thu thập dữ liệu tổng hợp từ 1 tập dữ liệu. Trong facet có thể có nhiều pipeline
+            // NOTE: aggregate facet là 1 phần trong aggreagate dùng để thu thập dữ liệu tổng hợp từ 1 tập dữ liệu. Trong facet có thể có nhiều pipeline
 
-			// tạo một facet "count" để đếm số lượng dữ liệu
-			AggregateFacet<TDocument, AggregateCountResult> countFacet = AggregateFacet.Create("count",
+            // tạo một facet "count" để đếm số lượng dữ liệu
+            AggregateFacet<TDocument, AggregateCountResult> countFacet = AggregateFacet.Create("count",
                 PipelineDefinition<TDocument, AggregateCountResult>.Create(new[]
                 {
             PipelineStageDefinitionBuilder.Count<TDocument>()
@@ -158,15 +202,15 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
                 .Match(filter)
                 .Facet(countFacet, dataFacet).ToListAsync();
 
-			//** NẾU MUỐN LẤY SỐ LƯỢNG TRANG TẤT CẢ 
-			//var count = aggregation.First()
-			//                       .Facets.First(x => x.Name == "count")
-			//                       .Output<AggregateCountResult>().FirstOrDefault()?.Count;
+            //** NẾU MUỐN LẤY SỐ LƯỢNG TRANG TẤT CẢ 
+            //var count = aggregation.First()
+            //                       .Facets.First(x => x.Name == "count")
+            //                       .Output<AggregateCountResult>().FirstOrDefault()?.Count;
 
-			//var totalPages = (int)Math.Ceiling((double)count! / limit);
+            //var totalPages = (int)Math.Ceiling((double)count! / limit);
 
-			// trường hợp nếu lấy trong aggregate có count
-			IEnumerable<TDocument> data = aggregation.First()
+            // trường hợp nếu lấy trong aggregate có count
+            IEnumerable<TDocument> data = aggregation.First()
                 .Facets.First(x => x.Name == "data")
                 .Output<TDocument>();
 

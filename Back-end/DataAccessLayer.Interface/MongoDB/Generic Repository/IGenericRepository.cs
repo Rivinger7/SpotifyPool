@@ -1,4 +1,5 @@
 ﻿using DataAccessLayer.Repository.Aggregate_Storage;
+using DataAccessLayer.Repository.Entities;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Linq.Expressions;
@@ -25,8 +26,16 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         /// Lấy track bao gồm thông tin về artist theo trackId
         /// </summary>
         /// <param name="trackId"></param>
+        /// <param name="preFilterDefinition"></param>
         /// <returns></returns>
-        Task<ASTrack> GetTrackWithArtistAsync(string trackId);
+        Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null);
+
+        /// <summary>
+        /// Lấy nhiều track bao gồm thông tin về artist theo trackId
+        /// </summary>
+        /// <param name="filterDefinition"></param>
+        /// <returns></returns>
+        Task<IEnumerable<ASTrack>> GetServeralTracksWithArtistAsync(FilterDefinition<Track>? preFilterDefinition = null, FilterDefinition<ASTrack>? filterDefinition = null);
 
         /// <summary>
         /// 
