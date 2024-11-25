@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode"
 
 // Interface for the decoded JWT token
 interface DecodedToken {
+	"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier": string
 	"http://schemas.microsoft.com/ws/2008/06/identity/claims/role": string
 	"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name": string
 	Avatar: string
@@ -17,6 +18,7 @@ interface DecodedGoogleToken {
 
 // Interface for the user data stored in the state
 interface UserData {
+	userId: string
 	displayName: string
 	role: string
 	avatar: string
@@ -58,12 +60,15 @@ const authSlice = createSlice({
 
 			if (!isGoogle) {
 				state.userData = {
+					userId:
+						decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
 					displayName: decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"],
 					role: decodedToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
 					avatar: decodedToken.Avatar,
 				}
 			} else {
 				state.userData = {
+					userId: decodedGoogleToken.name,
 					displayName: decodedGoogleToken.name,
 					role: decodedGoogleToken["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
 					avatar: decodedGoogleToken.picture,

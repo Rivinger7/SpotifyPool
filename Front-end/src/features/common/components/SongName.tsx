@@ -3,7 +3,7 @@ import { useSelector } from "react-redux"
 import { RootState } from "@/store/store"
 import styled from "styled-components"
 
-import { ChevronUp, CirclePlus } from "lucide-react"
+import { ChevronUp, CirclePlus, Loader } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import CustomTooltip from "@/components/CustomTooltip"
@@ -43,15 +43,16 @@ const SongName = () => {
 			<div className="flex items-center justify-start relative">
 				{/* ==== IMAGE ==== */}
 				<div className="relative h-[56px] w-[56px] group me-2">
-					<div className="w-full h-full">
-						<img
-							className="rounded-lg w-full h-full object-cover flex shrink-0"
-							src={
-								currentSong?.images[2].url ||
-								"https://i.scdn.co/image/ab67616d000048513719eed165d16597bd930595"
-							}
-							alt={currentSong?.name || "Song Name"}
-						/>
+					<div className="w-full h-full flex items-center justify-center">
+						{currentSong?.images ? (
+							<img
+								className="rounded-lg w-full h-full object-cover flex shrink-0"
+								src={currentSong?.images[2].url}
+								alt={currentSong?.name}
+							/>
+						) : (
+							<Loader className="size-4 animate-spin" />
+						)}
 					</div>
 
 					<div className="absolute top-[5px] right-[5px] opacity-0 group-hover:opacity-100 transition-opacity">

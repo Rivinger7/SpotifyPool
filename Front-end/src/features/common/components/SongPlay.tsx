@@ -8,6 +8,8 @@ import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import CustomTooltip from "@/components/CustomTooltip"
 
+import { HttpTransportType, HubConnectionBuilder } from "@microsoft/signalr"
+
 import { RootState } from "@/store/store"
 import { playNext, playPrevious, togglePlay } from "@/store/slice/playerSlice"
 
@@ -25,6 +27,11 @@ const SongPlay = () => {
 	const [volume, setVolume] = useState(30)
 	const [duration, setDuration] = useState(0)
 	const [currentTime, setCurrentTime] = useState(0)
+
+	// CHECKPOINT: TIMER LOGIC SIGNALR
+	const [playTime, setPlayTime] = useState(0)
+	const [hasTriggeredStream, setHasTriggeredStream] = useState(false)
+	const timerRef = useRef<NodeJS.Timeout | null>(null)
 
 	const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -52,6 +59,55 @@ const SongPlay = () => {
 			audio.removeEventListener("ended", handleEnded)
 		}
 	}, [currentSong, dispatch])
+
+	// Effect for tracking play time
+	useEffect(() => {
+		if (isPlaying && !hasTriggeredStream) {
+			timerRef.current = setInterval(() => {
+				setPlayTime((prev) => prev + 1)
+			}, 1000)
+		}
+
+		return () => {
+			if (timerRef.current) {
+				clearInterval(timerRef.current)
+			}
+		}
+	}, [isPlaying, hasTriggeredStream])
+
+	// Effect for SignalR connection after 10 seconds
+	useEffect(() => {
+		if (playTime >= 10 && !hasTriggeredStream) {
+			const connection = new HubConnectionBuilder()
+				.withUrl(import.meta.env.VITE_SPOTIFYPOOL_HUB_STREAM_COUNTING_URL, {
+					// skipNegotiation: true,
+					transport: HttpTransportType.WebSockets, // INFO: set this to websockets to use skipNegotiation
+					// transport: HttpTransportType.LongPolling,
+				})
+				.withAutomaticReconnect()
+				.build()
+
+			connection
+				.start()
+				.then(() => {
+					console.log("Connected to the hub")
+					connection.invoke("UpdateStreamCountAsync", currentSong?.id)
+					setHasTriggeredStream(true) // Prevent multiple triggers
+				})
+				.catch((err) => console.error(err))
+
+			// Clear timer after triggering
+			if (timerRef.current) {
+				clearInterval(timerRef.current)
+			}
+		}
+	}, [playTime, currentSong?.id, hasTriggeredStream])
+
+	// Reset states when song changes
+	useEffect(() => {
+		setPlayTime(0)
+		setHasTriggeredStream(false)
+	}, [currentSong?.id])
 
 	const handleSeek = (value: number[]) => {
 		if (audioRef.current) {

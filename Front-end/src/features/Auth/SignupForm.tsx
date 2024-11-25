@@ -96,11 +96,11 @@ const SignupForm = () => {
 			<div>
 				<Helmet>
 					<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Black.png" />
-					<title>Sign up - Spotify</title>
+					<title>Sign up - SpotifyPool</title>
 				</Helmet>
 
 				<header className="flex flex-col items-center justify-center mb-8">
-					<CustomTooltip label="Back to home" side="top">
+					<CustomTooltip label="Back to SpotifyPool" side="top">
 						<Link to={"/"}>
 							<img
 								src="/Spotify_Icon_RGB_White.png"
