@@ -105,8 +105,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Lấy thông tin Playlist
             Playlist playlist = await _unitOfWork.GetCollection<Playlist>()
                 .Find(playlist => playlist.Id == playlistId)
-                .Project(playlistProjection)
-                .As<Playlist>()
+                .Project<Playlist>(playlistProjection)
                 .FirstOrDefaultAsync()
                 ?? throw new DataNotFoundCustomException($"Not found any playlist with User {userID}");
 

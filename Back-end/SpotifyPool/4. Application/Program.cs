@@ -5,6 +5,8 @@ using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
 using Microsoft.AspNetCore.HttpOverrides;
 using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 // Stopwatch Start
 var stopwatch = new Stopwatch();
@@ -84,7 +86,17 @@ app.UseProblemDetails();
 //}
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    // Đặt tiêu đề
+    c.DocumentTitle = "SpotifyPool API";
+
+    // Đường dẫn đến file JSON của Swagger
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
+
+    // Inject JavaScript để chuyển đổi theme
+    c.InjectJavascript("/theme-switcher.js");
+});
 
 app.UseForwardedHeaders();
 
