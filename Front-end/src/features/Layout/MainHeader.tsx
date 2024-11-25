@@ -27,6 +27,10 @@ const MainHeader = () => {
 
 	const { userData, isAuthenticated } = useSelector((state: RootState) => state.auth)
 
+	const handleNavigate = (url: string) => {
+		navigate(url)
+	}
+
 	const handleLogout = () => {
 		dispatch(logout())
 		toast.success("Logout successful")
@@ -38,7 +42,7 @@ const MainHeader = () => {
 				{/* LOGO */}
 				<div className="pointer-events-auto z-20">
 					<Link to={"/"}>
-						<CustomTooltip label="Spotify" side="bottom" align="center">
+						<CustomTooltip label="SpotifyPool" side="bottom" align="center">
 							<img
 								src="Spotify_Icon_RGB_White.png"
 								alt="Spotify Logo white RGB"
@@ -141,16 +145,18 @@ const MainHeader = () => {
 								<DropdownMenuSeparator />
 
 								{/* PROFILE BUTTON */}
-								<DropdownMenuItem className="p-3 pr-2">
-									<Link to={"/user"} className="w-full text-lg">
-										Profile
-									</Link>
+								<DropdownMenuItem
+									onSelect={() => handleNavigate(`/user/${userData?.userId}`)}
+									className="p-3 pr-2 text-lg cursor-pointer"
+								>
+									Profile
 								</DropdownMenuItem>
 
-								<DropdownMenuItem className="p-3 pr-2">
-									<Link to={"/settings"} className="w-full text-lg">
-										Settings
-									</Link>
+								<DropdownMenuItem
+									onSelect={() => handleNavigate("/")}
+									className="p-3 pr-2 text-lg cursor-pointer"
+								>
+									Settings
 								</DropdownMenuItem>
 
 								<DropdownMenuSeparator />

@@ -1,13 +1,13 @@
 import { HelmetProvider } from "react-helmet-async"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 
-import AppLayout from "./pages/AppLayout"
-import LoginSceen from "./pages/LoginScreen"
-import SignupScreen from "./pages/SignupScreen"
-import SearchScreen from "./pages/SearchScreen"
-import HomeScreen from "./pages/Home/HomeScreen"
-import ProfileScreen from "./pages/Profile/ProfileScreen"
-import ConfirmEmailScreen from "./pages/ConfirmEmailScreen"
+import AppLayout from "@/pages/AppLayout"
+import LoginSceen from "@/pages/LoginScreen"
+import SignupScreen from "@/pages/SignupScreen"
+import SearchScreen from "@/pages/SearchScreen"
+import HomeScreen from "@/pages/Home/HomeScreen"
+import ProfileScreen from "@/pages/ProfileScreen"
+import ConfirmEmailScreen from "@/pages/ConfirmEmailScreen"
 
 const router = createBrowserRouter([
 	{
@@ -22,7 +22,7 @@ const router = createBrowserRouter([
 				element: <SearchScreen />,
 			},
 			{
-				path: "/user",
+				path: "/user/:userId",
 				element: <ProfileScreen />,
 			},
 		],
