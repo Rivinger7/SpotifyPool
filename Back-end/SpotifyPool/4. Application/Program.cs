@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
 
 // Stopwatch Start
 var stopwatch = new Stopwatch();
@@ -117,6 +118,7 @@ app.UseCors("AllowSpecificOrigin");
 app.MapControllers();
 
 app.MapHub<StreamCountingHub>($"/{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_STREAM_COUNTING_URL")}");
+app.MapHub<PlaylistHub>($"/{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_FAVORITE_PLAYLIST")}");
 
 // Stopwatch End
 stopwatch.Stop();

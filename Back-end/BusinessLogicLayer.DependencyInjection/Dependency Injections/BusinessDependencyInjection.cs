@@ -41,8 +41,6 @@ using SetupLayer.Setting.Database;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.Implement.Services.Tracks;
 using System.Security.Claims;
-using BusinessLogicLayer.Interface.Services_Interface.Playlists.Favorites;
-using BusinessLogicLayer.Implement.Services.Playlists.Favorites;
 using MongoDB.Bson.Serialization;
 using SetupLayer.Enum.Services.Playlist;
 using SetupLayer.Enum.Services.User;
@@ -168,7 +166,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Caching (In-memory cache)
             stopwatch.Restart();
-            services.AddMemoryCache();
+            services.AddMemoryCache(configuration);
             stopwatch.Stop();
             Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -477,8 +475,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<ITrack, TrackBLL>();
 
             // Favourite Playlist
-            services.AddScoped<IFavoritesPlaylist, FavoritesPlaylistBLL>();
-            services.AddScoped<ICustomPlaylist, CustomPlaylistBLL>();
+            services.AddScoped<IPlaylist, PlaylistBLL>();
 
             // Data Reccomendation
             services.AddScoped<IRecommendation, RecommendationBLL>();

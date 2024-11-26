@@ -1,12 +1,13 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 
 namespace BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom
 {
-    public interface ICustomPlaylist
+    public interface IPlaylist
     {
         Task CreatePlaylistAsync(string playlistName);
         Task AddToPlaylistAsync(string trackId, string playlistId);
-        Task<FavoritesSongsResponseModel> GetPlaylistAsync(string playlistId);
+        Task<IEnumerable<TrackPlaylistResponseModel>> GetTracksInPlaylistAsync(string playlistId);
         Task RemoveFromPlaylistAsync(string trackId, string playlistId);
     }
 }

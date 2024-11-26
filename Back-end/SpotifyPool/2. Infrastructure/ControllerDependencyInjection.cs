@@ -62,7 +62,8 @@ namespace SpotifyPool.Infrastructure
                         .WithOrigins("http://localhost:5173")
                         .WithOrigins(clientUrl)
                         .AllowAnyHeader()
-                        .AllowAnyMethod());
+                        .AllowAnyMethod()
+                        .AllowCredentials());
             });
         }
     }
