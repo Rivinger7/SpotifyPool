@@ -8,16 +8,37 @@ using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
-using SetupLayer.Enum.Services.Playlist;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
 {
-    public class CustomPlaylistBLL(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IMapper mapper) : ICustomPlaylist
+    public class PlaylistBLL(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IMapper mapper) : IPlaylist
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IMapper _mapper = mapper;
+
+        public async Task<IEnumerable<PlaylistsResponseModel>> GetAllPlaylistsAsync()
+        {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string? userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+
+            // Kiểm tra UserId
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
+            // Lấy thông tin Playlist
+            IEnumerable<Playlist> playlists = await _unitOfWork.GetCollection<Playlist>()
+                .Find(playlist => playlist.UserID == userID)
+                .ToListAsync();
+
+            // Mapping
+            IEnumerable<PlaylistsResponseModel> playlistsResponse = _mapper.Map<IEnumerable<PlaylistsResponseModel>>(playlists);
+
+            return playlistsResponse;
+        }
 
         public async Task CreatePlaylistAsync(string playlistName)
         {
@@ -37,6 +58,32 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 throw new DataExistCustomException("The playlist has been already created");
             }
 
+            // Tạo hình ảnh cho playlist
+            List<Image> images = [];
+
+            // Nếu playlist là Favorite Songs thì sử dụng hình ảnh mặc định
+            if (playlistName.Equals("Favorite Songs", StringComparison.OrdinalIgnoreCase))
+            {
+                images =
+                [
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-640_xnff8r.png",
+                        Height = 640,
+                        Width = 640
+                    },
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-300_vitqvn.png",
+                        Height = 300,
+                        Width = 300
+                    },
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-64_izigfw.png",
+                        Height = 64,
+                        Width = 64
+                    }
+                ];
+            }
+
             // Tạo mới playlist
             Playlist playlist = new()
             {
@@ -44,7 +91,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 UserID = userID,
                 CreatedTime = Util.GetUtcPlus7Time(),
                 TrackIds = [],
-                Images = []
+                Images = images
             };
 
             // Thêm playlist vào DB
@@ -85,10 +132,12 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
 
             // Cập nhật playlist với danh sách TrackIds mới
             UpdateDefinition<Playlist> updateDefinition = Builders<Playlist>.Update.Set(playlist => playlist.TrackIds, playlist.TrackIds);
-            UpdateResult updateResult = await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlistId, updateDefinition);
+            await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlistId, updateDefinition);
+
+            return;
         }
 
-        public async Task<FavoritesSongsResponseModel> GetPlaylistAsync(string playlistId)
+        public async Task<IEnumerable<TrackPlaylistResponseModel>> GetTracksInPlaylistAsync(string playlistId)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string? userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
@@ -126,25 +175,19 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Filter
             FilterDefinition<Track> trackFilter = Builders<Track>.Filter.In(track => track.Id, trackIdsSet);
 
-            // Empty Pipeline
-            IAggregateFluent<Track> trackPipeline = _unitOfWork.GetCollection<Track>().Aggregate();
-
             // Lấy thông tin Tracks với Artist
             IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetServeralTracksWithArtistAsync(trackFilter);
 
-            // Mapping the Playlist to FavoritesSongsResponseModel
-            FavoritesSongsResponseModel playlistResponseModel = _mapper.Map<FavoritesSongsResponseModel>(playlist);
-
             // Mapping tracks with artists to TrackResponseModel
-            //playlistResponseModel.Tracks = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
-            playlistResponseModel.Tracks = tracks.Select(track =>
+            // Thêm thông tin AddedTime vào TrackResponseModel
+            IEnumerable<TrackPlaylistResponseModel> tracksResponse = tracks.Select(track =>
             {
-                TrackResponseModel trackResponse = _mapper.Map<TrackResponseModel>(track);
+                TrackPlaylistResponseModel trackResponse = _mapper.Map<TrackPlaylistResponseModel>(track);
                 trackResponse.AddedTime = trackIdAddedTimeMap[track.Id].ToString("yyyy-MM-dd");
                 return trackResponse;
-            });
+            }).ToList();
 
-            return playlistResponseModel;
+            return tracksResponse;
         }
 
         public async Task RemoveFromPlaylistAsync(string trackId, string playlistId)

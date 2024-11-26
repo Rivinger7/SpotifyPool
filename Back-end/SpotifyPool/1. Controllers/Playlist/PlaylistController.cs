@@ -1,5 +1,4 @@
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
-using BusinessLogicLayer.Interface.Services_Interface.Playlists.Favorites;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,77 +9,58 @@ namespace SpotifyPool._1._Controllers.Playlist
     [Route("api/v1/playlists")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class PlaylistController(IFavoritesPlaylist favoritesPlaylistService, ICustomPlaylist customPlaylistService) : ControllerBase
+    public class PlaylistController(IPlaylist playlistService) : ControllerBase
     {
-        private readonly IFavoritesPlaylist _favoritesPlaylistService = favoritesPlaylistService;
-        private readonly ICustomPlaylist _customPlaylistService = customPlaylistService;
+        private readonly IPlaylist playlistService = playlistService;
 
-        #region Favorites Playlist
         /// <summary>
-        /// Lấy danh sách các track yêu thích
+        /// Lấy danh sách track trong playlist
         /// </summary>
+        /// <param name="id">Playlist Id</param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("favorite-songs")]
-        public async Task<IActionResult> GetFavoriteSongs()
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
+        public async Task<IActionResult> GetTrackPlaylist(string id)
         {
-            var result = await _favoritesPlaylistService.GetPlaylistAsync();
+            var result = await playlistService.GetTracksInPlaylistAsync(id);
             return Ok(result);
         }
 
         /// <summary>
-        /// Thêm track vào danh sách yêu thích
+        /// Tạo playlist mới
         /// </summary>
-        /// <param name="trackID"></param>
+        /// <param name="playlistName"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("add-to-favorite-list")]
-        public async Task<IActionResult> AddToFavoriteListAsync([FromBody] string trackID)
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("{playlistName}")]
+        public async Task<IActionResult> CreatePlaylistAsync(string playlistName)
         {
-            await _favoritesPlaylistService.AddToPlaylistAsync(trackID);
-            return Ok(new { Message = "Add to Favorite Song Successfully" });
+            await playlistService.CreatePlaylistAsync(playlistName);
+            return Ok(new { Message = "Create Playlist Successfully" });
         }
 
         /// <summary>
-        /// Xóa track ra khỏi danh sách yêu thích
+        /// Thêm track vào playlist
         /// </summary>
         /// <param name="trackID"></param>
+        /// <param name="playlistId"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpDelete("playlist/favorite-songs/{trackID}")]
-        public async Task<IActionResult> RemoveTrackFromFavoriteSongs(string trackID)
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("{playlistId}/add-track")]
+        public async Task<IActionResult> AddToPlaylistAsync([FromBody] string trackID, string playlistId)
         {
-            await _favoritesPlaylistService.RemoveFromPlaylistAsync(trackID);
-            return Ok(new { Message = "Remove Favorite Song Successfully" });
-        }
-        #endregion
-
-        #region Custom Playlist
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("custom-playlist/{id}")]
-        public async Task<IActionResult> GetCustomPlaylist(string id)
-        {
-            var result = await _customPlaylistService.GetPlaylistAsync(id);
-            return Ok(result);
+            await playlistService.AddToPlaylistAsync(trackID, playlistId);
+            return Ok(new { Message = "Add to Playlist Successfully" });
         }
 
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("create-custom-playlist")]
-        public async Task<IActionResult> CreateCustomPlaylistAsync([FromBody] string playlistName)
-        {
-            await _customPlaylistService.CreatePlaylistAsync(playlistName);
-            return Ok(new { Message = "Create Custom Playlist Successfully" });
-        }
-
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("add-to-custom-playlist")]
-        public async Task<IActionResult> AddToCustomPlaylistAsync([FromBody] string trackID, string playlistID)
-        {
-            await _customPlaylistService.AddToPlaylistAsync(trackID, playlistID);
-            return Ok(new { Message = "Add to Custom Playlist Successfully" });
-        }
-
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpDelete("playlist/custom-playlist/{playlistID}")]
+        /// <summary>
+        /// Xóa track khỏi playlist
+        /// </summary>
+        /// <param name="trackID"></param>
+        /// <param name="playlistID"></param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpDelete("{playlistID}")]
         public async Task<IActionResult> RemoveTrackFromCustomPlaylist(string trackID, string playlistID)
         {
-            await _customPlaylistService.RemoveFromPlaylistAsync(trackID, playlistID);
+            await playlistService.RemoveFromPlaylistAsync(trackID, playlistID);
             return Ok(new { Message = "Remove Custom Playlist Successfully" });
         }
-
-        #endregion
     }
 }
