@@ -8,6 +8,7 @@ using DataAccessLayer.Repository.Entities.SignalR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
+using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
@@ -193,7 +194,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             }
 
             // Lấy thông tin user từ Context
-            string? userId = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             // Nếu không có thông tin user thì không thực hiện gì cả
             if (userId is null)
@@ -241,7 +242,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
         public async Task AddToPlaylistAsync(string trackId, string? playlistId = null, string? playlistName = null)
         {
             // Lấy thông tin user từ Context
-            string? userId = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             // Nếu không có thông tin user thì không thực hiện gì cả
             if (userId is null)

@@ -365,7 +365,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             switch (retrieveUser.Status)
             {
                 case UserStatus.Inactive:
-                    _httpContextAccessor.HttpContext.Session.SetString("UserNameTemp", retrieveUser.UserName);
+                    _httpContextAccessor.HttpContext?.Session.SetString("UserNameTemp", retrieveUser.UserName);
                     throw new UnAuthorizedCustomException("Not active");
                 case UserStatus.Banned: throw new UnAuthorizedCustomException("Banned");
             }
@@ -399,8 +399,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Nếu chỗ này throw exception thì người dùng sẽ không login được
             UpdateDefinition<User> lastLoginTimeUpdate = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, lastLoginTimeUpdate);
-
-            _httpContextAccessor.HttpContext.Session.SetString("UserID", retrieveUser.Id);
 
             return authenticationModel;
         }

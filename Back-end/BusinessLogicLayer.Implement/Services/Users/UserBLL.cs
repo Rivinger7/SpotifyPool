@@ -14,6 +14,7 @@ using CloudinaryDotNet.Actions;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using Utility.Coding;
+using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
@@ -102,53 +103,28 @@ namespace BusinessLogicLayer.Implement.Services.Users
         }
 
 
-        public async Task<UserResponseModel> GetUserByIDAsync(string id, bool isCache = false)
+        public async Task<UserResponseModel> GetUserByIDAsync(string id)
         {
-            //ObjectId objectId = ObjectId.Parse(id);
+            // Projection
+            ProjectionDefinition<User> userProjection = Builders<User>.Projection
+                .Include(user => user.Id)
+                .Include(user => user.DisplayName)
+                .Include(user => user.Images);
 
-            UserResponseModel user;
+            // Lấy thông tin người dùng theo ID
+            User user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == id)
+                .Project<User>(userProjection)
+                .FirstOrDefaultAsync();
 
-            if (isCache)
-            {
-                user = await _cache.GetOrSetAsync(id.ToString(), () => _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
-                {
-                    UserId = user.Id.ToString(),
-                    Role = user.Role.ToString(),
-                    Email = user.Email,
-                    DisplayName = user.DisplayName,
-                    Gender = user.Gender.ToString(),
-                    Birthdate = user.Birthdate,
-                    //ImageResponseModel = user.Images,
-                    IsLinkedWithGoogle = user.IsLinkedWithGoogle,
-                    Status = user.Status.ToString(),
-                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
-                }).FirstOrDefaultAsync());
-            }
-            else
-            {
-                user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
-                {
-                    UserId = user.Id.ToString(),
-                    Role = user.Role.ToString(),
-                    Email = user.Email,
-                    DisplayName = user.DisplayName,
-                    Gender = user.Gender.ToString(),
-                    Birthdate = user.Birthdate,
-                    //ImageResponseModel = user.ImageResponseModel,
-                    IsLinkedWithGoogle = user.IsLinkedWithGoogle,
-                    Status = user.Status.ToString(),
-                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
-                }).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException($"Not found User with ID {id}");
-            }
+            // Mapping từ User sang UserResponseModel
+            UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(user);
 
-            //UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(user);
-
-            return user;
+            return userResponseModel;
         }
 
         public async Task EditProfileAsync(EditProfileRequestModel requestModel)
         {
-            string userId = _httpContextAccessor.HttpContext.Session.GetString("UserID");
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             User user = await _unitOfWork.GetCollection<User>()
                                          .Find(user => user.Id == userId)
@@ -183,20 +159,6 @@ namespace BusinessLogicLayer.Implement.Services.Users
             await _unitOfWork.GetRepository<User>().UpdateAsync(user.Id, updateDefinition);
         }
 
-        public async Task<UserProfileResponseModel> GetUserProfile()
-        {
-            string userId = _httpContextAccessor.HttpContext.Session.GetString("UserID")
-                            ?? throw new UnAuthorizedCustomException("Your session is limit, please login again");
-
-            User user = await _unitOfWork.GetCollection<User>()
-                                         .Find(user => user.Id == userId)
-                                         .Project(Builders<User>.Projection.Include(user => user.Images))
-                                         .As<User>()
-                                         .FirstAsync();
-
-			return _mapper.Map<UserProfileResponseModel>(user);
-		}
-
         //test method
         public async Task<IEnumerable<UserResponseModel>> TestPaging(int offset, int limit)
         {
@@ -216,7 +178,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             ////*** nếu muốn có sort thì thêm SortDefinition, như lày
             // SortDefinition<User> sort = Builders<User>.Sort.Descending(user => user.FullName);
 
-            var result = await _unitOfWork.GetRepository<User>().Paging(offset, limit);
+            IEnumerable<User> result = await _unitOfWork.GetRepository<User>().Paging(offset, limit);
             return _mapper.Map<IReadOnlyCollection<UserResponseModel>>(result);
         }
     }

@@ -14,21 +14,12 @@ namespace SpotifyPool._1._Controllers.Users
     {
         private readonly IUserBLL _userBLL = userBLL;
 
-		//[Authorize(Roles = nameof(UserRole.Admin)), HttpGet]
-		//public async Task<IActionResult> GetAllUsersAsync([FromQuery] string? fullname, [FromQuery] UserGender gender, [FromQuery] string? email)
-		//{
-		//    var users = await _userBLL.GetAllUsersAsync(fullname, gender, email);
-		//    return Ok(users);
-		//}
-
-		//[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("{id}")]
-		//public async Task<IActionResult> GetUserByIDAsync(string id)
-		//{
-		//    var user = await _userBLL.GetUserByIDAsync(id, true);
-		//    return Ok(user);
-		//}
-
-
+		[Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
+		public async Task<IActionResult> GetUserByIDAsync(string id)
+		{
+			var user = await _userBLL.GetUserByIDAsync(id);
+			return Ok(user);
+		}
 
 		/// <summary>
 		/// Chỉnh sửa thông tin cá nhân (Tên, SDT, Sinh nhật, Giới tính, ,Ảnh)
@@ -41,17 +32,6 @@ namespace SpotifyPool._1._Controllers.Users
 			await _userBLL.EditProfileAsync(request);
 			return Ok("Update profile successfully!");
 		}
-
-
-
-		[Authorize(Roles = $"{nameof(UserRole.Customer)}"), HttpGet("get-profile")]
-		public async Task<IActionResult> GetProfileAsync()
-		{
-			var profile = await _userBLL.GetUserProfile();
-			return Ok(profile);
-		}
-
-
 
 		/// <summary>
 		/// Phân trang cho Users

@@ -13,6 +13,7 @@ using MongoDB.Driver;
 using Newtonsoft.Json;
 using SetupLayer.Enum.Services.Track;
 using SetupLayer.Setting.Microservices.Spotify;
+using System.Security.Claims;
 using System.Text.Json;
 using Utility.Coding;
 
@@ -155,7 +156,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 string audioFeaturesID = ObjectId.GenerateNewId().ToString();
 
                 // Lấy ra UserID từ Session
-                string userId = _httpContextAccessor.HttpContext.Session.GetString("UserID") ?? throw new InvalidDataCustomException("Session timed out. Please login again.");
+                string userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new InvalidDataCustomException("Session timed out. Please login again.");
 
                 // Gán ArtistIds dựa trên ObjectId mới
                 //List<string> artistObjectIds = item.TrackDetails.Artists
@@ -340,7 +341,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 string audioFeaturesID = ObjectId.GenerateNewId().ToString();
 
                 // Lấy ra UserID từ Session
-                string userId = _httpContextAccessor.HttpContext.Session.GetString("UserID") ?? throw new InvalidDataCustomException("Session timed out. Please login again.");
+                string userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new InvalidDataCustomException("Session timed out. Please login again.");
 
                 #region Lấy hoặc tạo mới ArtistIds
                 // Lấy tất cả các SpotifyArtistId của track hiện tại từ response

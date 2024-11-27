@@ -84,15 +84,16 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             IAggregateFluent<Track> pipeLine = InCollection<Track>().Aggregate();
 
             // Lookup  
-            IAggregateFluent<ASTrack> trackPipelines = pipeLine.Lookup<Track, Artist, ASTrack>
+            IAggregateFluent<ASTrack> trackPipelines = pipeLine
+                .Skip((offset - 1) * limit)
+                .Limit(limit)
+                .Lookup<Track, Artist, ASTrack>
                 (InCollection<Artist>(), // The foreign collection  
                 track => track.ArtistIds, // The field in Track that are joining on  
                 artist => artist.Id, // The field in Artist that are matching against  
                 result => result.Artists) // The field in ASTrack to hold the matched artists  
-                .Project<ASTrack>(projectionDefinition)
-                .Skip((offset - 1) * limit)
-                .Limit(limit);
-
+                .Project<ASTrack>(projectionDefinition);
+                
             // Pipeline to list  
             IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
 
@@ -181,20 +182,21 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
             // tạo một facet "count" để đếm số lượng dữ liệu
             AggregateFacet<TDocument, AggregateCountResult> countFacet = AggregateFacet.Create("count",
-                PipelineDefinition<TDocument, AggregateCountResult>.Create(new[]
-                {
+                PipelineDefinition<TDocument, AggregateCountResult>.Create(
+                [
             PipelineStageDefinitionBuilder.Count<TDocument>()
-                }
+                ]
             ));
 
             // tạo một facet "data" để lấy dữ liệu + phân trang
             AggregateFacet<TDocument, TDocument> dataFacet = AggregateFacet.Create("data",
-                PipelineDefinition<TDocument, TDocument>.Create(new[] // build 1 pipeline để sắp xếp, bỏ qua (skip) và giới hạn (limit) số lượng dữ liệu trả về. thứ trả về là 1 TDocument
-                {
+                PipelineDefinition<TDocument, TDocument>.Create(
+                // build 1 pipeline để sắp xếp, bỏ qua (skip) và giới hạn (limit) số lượng dữ liệu trả về. thứ trả về là 1 TDocument
+                [
             PipelineStageDefinitionBuilder.Sort(sort),
             PipelineStageDefinitionBuilder.Skip<TDocument>((offset - 1) * limit),
             PipelineStageDefinitionBuilder.Limit<TDocument>(limit)
-                }
+                ]
             ));
 
             //chơi aggregate, kết hợp các facet trên cùng với filter cho ra kết quả

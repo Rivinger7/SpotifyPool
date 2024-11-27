@@ -61,9 +61,6 @@ using DataAccessLayer.Implement.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Interfaces;
-using Microsoft.Extensions.Options;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -193,6 +190,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             {
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
+                options.Cookie.SameSite = SameSiteMode.None; // Cần thiết cho cross-origin
+                options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Hoặc Always nếu dùng HTTPS
                 options.IdleTimeout = TimeSpan.FromDays(7);
                 //options.IdleTimeout = TimeSpan.FromMinutes(30);
             });

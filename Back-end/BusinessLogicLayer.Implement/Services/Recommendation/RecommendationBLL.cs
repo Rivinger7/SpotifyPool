@@ -40,6 +40,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             // Truy vấn các đặc trưng âm thanh tương tự với track đầu vào
             IEnumerable<AudioFeatures> similarFeatures = await _unitOfWork.GetCollection<AudioFeatures>()
                 .Find(f => f.Id != matchedAudioFeatures.Id)
+                .Limit(20)
                 .ToListAsync();
 
             // Tính toán độ tương đồng và sắp xếp trực tiếp trên danh sách truy vấn

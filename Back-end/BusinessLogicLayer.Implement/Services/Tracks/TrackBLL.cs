@@ -19,6 +19,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         {
             // Lấy tất cả các track với artist
             IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetAllTracksWithArtistAsync(offset, limit);
+
             // Map the aggregate result to TrackResponseModel
             IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
 

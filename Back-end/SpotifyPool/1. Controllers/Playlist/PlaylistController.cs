@@ -13,6 +13,13 @@ namespace SpotifyPool._1._Controllers.Playlist
     {
         private readonly IPlaylist playlistService = playlistService;
 
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet]
+        public async Task<IActionResult> GetAllPlaylistsAsync()
+        {
+            var result = await playlistService.GetAllPlaylistsAsync();
+            return Ok(result);
+        }
+
         /// <summary>
         /// Lấy danh sách track trong playlist
         /// </summary>

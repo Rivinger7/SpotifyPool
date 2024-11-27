@@ -8,6 +8,7 @@ using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
+using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
@@ -21,7 +22,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
         public async Task<IEnumerable<PlaylistsResponseModel>> GetAllPlaylistsAsync()
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string? userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             // Kiểm tra UserId
             if (string.IsNullOrEmpty(userID))
@@ -43,7 +44,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
         public async Task CreatePlaylistAsync(string playlistName)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string? userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userID))
             {
                 throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
@@ -101,7 +102,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
         public async Task AddToPlaylistAsync(string trackId, string playlistId)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string? userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userID))
             {
                 throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
@@ -140,7 +141,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
         public async Task<IEnumerable<TrackPlaylistResponseModel>> GetTracksInPlaylistAsync(string playlistId)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string? userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userID))
             {
@@ -193,7 +194,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
         public async Task RemoveFromPlaylistAsync(string trackId, string playlistId)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string? userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID");
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userID))
             {
                 throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
