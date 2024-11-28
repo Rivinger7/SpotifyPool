@@ -7,7 +7,7 @@ interface AreaHeaderProps {
 
 const AreaHeader = ({ children }: AreaHeaderProps) => {
 	return (
-		<div className="area-headers">
+		<div className="area-headers flex items-center justify-between mb-1">
 			{/* Display title */}
 			<div className="text-2xl font-bold">{children}</div>
 			<div>

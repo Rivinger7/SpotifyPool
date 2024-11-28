@@ -24,7 +24,7 @@ const SongPlay = () => {
 
 	const { currentSong, isPlaying } = useSelector((state: RootState) => state.play)
 
-	const [volume, setVolume] = useState(30)
+	const [volume, setVolume] = useState(1)
 	const [duration, setDuration] = useState(0)
 	const [currentTime, setCurrentTime] = useState(0)
 
@@ -79,7 +79,7 @@ const SongPlay = () => {
 	useEffect(() => {
 		if (playTime >= 10 && !hasTriggeredStream) {
 			const connection = new HubConnectionBuilder()
-				.withUrl(import.meta.env.VITE_SPOTIFYPOOL_HUB_STREAM_COUNTING_URL, {
+				.withUrl(import.meta.env.VITE_SPOTIFYPOOL_HUB_COUNT_STREAM_URL, {
 					// skipNegotiation: true,
 					transport: HttpTransportType.WebSockets, // INFO: set this to websockets to use skipNegotiation
 					// transport: HttpTransportType.LongPolling,

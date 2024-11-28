@@ -103,9 +103,6 @@ body,
 
 /* ==== COMMON ==== */
 .area-headers {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-end;
 	min-block-size: 56px;
 }
 

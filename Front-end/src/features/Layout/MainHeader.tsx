@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RootState } from "@/store/store"
 import { logout } from "@/store/slice/authSlice"
 import { useDispatch, useSelector } from "react-redux"
+import {resetPlaylist} from "@/store/slice/playlistSlice.ts";
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
 const MainHeader = () => {
@@ -32,6 +33,7 @@ const MainHeader = () => {
 	}
 
 	const handleLogout = () => {
+		dispatch(resetPlaylist())
 		dispatch(logout())
 		toast.success("Logout successful")
 	}
