@@ -35,7 +35,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                     PreserveNullAndEmptyArrays = true
                 })
                 .Project(result => result.AudioFeatures)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync() ?? throw new InvalidDataCustomException("Matched audio features not found");
 
             // Truy vấn các đặc trưng âm thanh tương tự với track đầu vào
             IEnumerable<AudioFeatures> similarFeatures = await _unitOfWork.GetCollection<AudioFeatures>()

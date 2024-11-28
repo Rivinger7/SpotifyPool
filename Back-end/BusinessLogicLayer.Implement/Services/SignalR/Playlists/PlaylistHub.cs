@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
-using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using DataAccessLayer.Repository.Entities.SignalR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using System.Security.Claims;
@@ -13,10 +11,9 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
 {
-    public class PlaylistHub(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IMapper mapper) : Hub
+    public class PlaylistHub(IUnitOfWork unitOfWork, IMapper mapper) : Hub
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IMapper _mapper = mapper;
 
         #region SignalR Base Connection Methods
@@ -194,7 +191,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             }
 
             // Lấy thông tin user từ Context
-            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             // Nếu không có thông tin user thì không thực hiện gì cả
             if (userId is null)
@@ -206,8 +203,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
 
             // Lấy thông tin playlist từ database
             Playlist playlist = await _unitOfWork.GetCollection<Playlist>().Find(x => x.UserID == userId && x.Name == playlistName)
-                .Project(playlist => playlist.Name)
-                .As<Playlist>()
+                .Project<Playlist>(Builders<Playlist>.Projection.Include(playlist => playlist.Name))
                 .FirstOrDefaultAsync();
 
             // Nếu tồn tại thì thông báo lỗi
@@ -239,10 +235,98 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             return;
         }
 
+        public async Task AddToFavoritePlaylistAsync(string trackId)
+        {
+            // Lấy thông tin user từ Context
+            string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Nếu không có thông tin user thì không thực hiện gì cả
+            if (userId is null)
+            {
+                // Nên thông báo lỗi ở đây
+                await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to add to favorite playlist!");
+                return;
+            }
+
+            // Lấy thông tin playlist từ database
+            Playlist playlist = await _unitOfWork.GetCollection<Playlist>().Find(x => x.UserID == userId && x.Name == "Favorite Songs")
+                .Project<Playlist>(Builders<Playlist>.Projection.Include(playlist => playlist.Id))
+                .FirstOrDefaultAsync();
+
+            // Nếu không tồn tại thì tạo mới playlist
+            if (playlist is null)
+            {
+                playlist = new()
+                {
+                    Name = "Favorite Songs",
+                    TrackIds =
+                    [
+                        new PlaylistTracksInfo()
+                        {
+                            TrackId = trackId,
+                            AddedTime = Util.GetUtcPlus7Time()
+                        }
+                    ],
+                    UserID = userId,
+                    CreatedTime = Util.GetUtcPlus7Time(),
+                    Images =
+                        [
+                            new() {
+                            URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-640_xnff8r.png",
+                            Height = 640,
+                            Width = 640,
+                            },
+                            new() {
+                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-300_vitqvn.png",
+                                Height = 300,
+                                Width = 300,
+                            },
+                            new() {
+                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-64_izigfw.png",
+                                Height = 64,
+                                Width = 64,
+                            }
+                        ]
+                };
+
+                // Lưu thông tin playlist vào database
+                await _unitOfWork.GetCollection<Playlist>().InsertOneAsync(playlist);
+
+                // Mapping thông tin playlist sang PlaylistsResponseModel
+                PlaylistsResponseModel playlistResponseModel = _mapper.Map<PlaylistsResponseModel>(playlist);
+
+                // Gửi thông báo đến cho user hiện tại
+                await Clients.Caller.SendAsync("AddToNewFavoritePlaylistSuccessfully", playlistResponseModel);
+
+                return;
+            }
+
+            // Nếu tồn tại thì thêm trackId vào playlist
+            // Chỉ thêm trackID nếu chưa tồn tại để tránh trùng lặp
+            if (playlist.TrackIds.Any(track => track.TrackId == trackId))
+            {
+                await Clients.Caller.SendAsync("ReceiveException", "The song has been already added to your Favorite Songs");
+                return;
+            }
+
+            // Thêm trackId vào danh sách TrackIds
+            playlist.TrackIds.Add(new PlaylistTracksInfo()
+            {
+                TrackId = trackId,
+                AddedTime = Util.GetUtcPlus7Time()
+            });
+
+            // Cập nhật playlist với danh sách TrackIds mới
+            UpdateDefinition<Playlist> updateDefinition = Builders<Playlist>.Update.Set(playlist => playlist.TrackIds, playlist.TrackIds);
+            await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlist.Id, updateDefinition);
+
+            return;
+        }
+
         public async Task AddToPlaylistAsync(string trackId, string? playlistId = null, string? playlistName = null)
         {
             // Lấy thông tin user từ Context
-            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             // Nếu không có thông tin user thì không thực hiện gì cả
             if (userId is null)
@@ -252,23 +336,22 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 return;
             }
 
-            // Projection
-            ProjectionDefinition<Playlist> projectionDefinition = Builders<Playlist>.Projection
-                .Include(x => x.Id)
-                .Include(x => x.TrackIds)
-                .Include(x => x.UserID);
+            // Tạo Optional để kiểm tra playlistId có rỗng không
+            Optional<string?> playlistIdOptional = Optional.Create(playlistId);
 
             // Lấy thông tin playlist từ database
-            Playlist playlist = await _unitOfWork.GetCollection<Playlist>().Find(x => x.Id == playlistId)
-                .Project(playlist => playlist.Id)
-                .As<Playlist>()
-                .FirstOrDefaultAsync();
+            Playlist? playlist = playlistIdOptional.HasValue
+                ? await _unitOfWork.GetCollection<Playlist>()
+                .Find(playlist => playlist.Id == playlistIdOptional.Value)
+                .Project<Playlist>(Builders<Playlist>.Projection.Include(playlist => playlist.Id))
+                .FirstOrDefaultAsync()
+                : null; // Trả về null nếu không có giá trị
 
             // Nếu không tồn tại thì tạo mới playlist
             if (playlist is null)
             {
                 // Kiểm tra xem playlistName có rỗng không
-                if (string.IsNullOrEmpty(playlistName))
+                if (string.IsNullOrWhiteSpace(playlistName))
                 {
                     await Clients.Caller.SendAsync("ReceiveException", "Playlist name is required");
                     return;
@@ -290,17 +373,17 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                     Images =
                         [
                             new() {
-                            URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-640_xnff8r.png",
+                            URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
                             Height = 640,
                             Width = 640,
                             },
                             new() {
-                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-300_vitqvn.png",
+                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
                                 Height = 300,
                                 Width = 300,
                             },
                             new() {
-                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-64_izigfw.png",
+                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
                                 Height = 64,
                                 Width = 64,
                             }
@@ -336,6 +419,9 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 AddedTime = currentTime
             });
 
+            UpdateDefinition<Playlist> updateDefinition = Builders<Playlist>.Update.Set(playlist => playlist.TrackIds, playlist.TrackIds);
+            await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlistId, updateDefinition);
+
             // Projection
             ProjectionDefinition<Track> trackProjection = Builders<Track>.Projection
                 .Include(x => x.Id)
@@ -358,6 +444,40 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
 
             // Cập nhật playlist với danh sách TrackIds mới
             await Clients.Caller.SendAsync("AddToPlaylistSuccessfully", trackPlaylistResponseModel);
+
+            return;
+        }
+
+        public async Task DeletePlaylistAsync(string playlistId)
+        {
+            // Lấy thông tin user từ Context
+            string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Nếu không có thông tin user thì không thực hiện gì cả
+            if (userId is null)
+            {
+                // Nên thông báo lỗi ở đây
+                await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to delete playlist!");
+                return;
+            }
+
+            // Lấy thông tin playlist từ database
+            Playlist playlist = await _unitOfWork.GetCollection<Playlist>().Find(x => x.Id == playlistId)
+                .Project<Playlist>(Builders<Playlist>.Projection.Include(playlist => playlist.Id))
+                .FirstOrDefaultAsync();
+
+            // Nếu không tồn tại thì thông báo lỗi
+            if (playlist is null)
+            {
+                await Clients.Caller.SendAsync("ReceiveException", "Playlist not found");
+                return;
+            }
+
+            // Xóa playlist khỏi database
+            await _unitOfWork.GetCollection<Playlist>().DeleteOneAsync(x => x.Id == playlistId);
+
+            // Gửi thông báo đến cho user hiện tại
+            await Clients.Caller.SendAsync("DeletePlaylistSuccessfully", playlistId);
 
             return;
         }

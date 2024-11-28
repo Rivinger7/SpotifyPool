@@ -103,7 +103,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
         }
 
 
-        public async Task<UserResponseModel> GetUserByIDAsync(string id)
+        public async Task<UserProfileResponseModel> GetUserByIDAsync(string id)
         {
             // Projection
             ProjectionDefinition<User> userProjection = Builders<User>.Projection
@@ -117,7 +117,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 .FirstOrDefaultAsync();
 
             // Mapping từ User sang UserResponseModel
-            UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(user);
+            UserProfileResponseModel userResponseModel = _mapper.Map<UserProfileResponseModel>(user);
 
             return userResponseModel;
         }

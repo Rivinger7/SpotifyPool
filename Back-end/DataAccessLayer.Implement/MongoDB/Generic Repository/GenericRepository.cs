@@ -87,6 +87,7 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             IAggregateFluent<ASTrack> trackPipelines = pipeLine
                 .Skip((offset - 1) * limit)
                 .Limit(limit)
+                .SortBy(track => track.Id)
                 .Lookup<Track, Artist, ASTrack>
                 (InCollection<Artist>(), // The foreign collection  
                 track => track.ArtistIds, // The field in Track that are joining on  
