@@ -30,6 +30,8 @@ const baseQuery = fetchBaseQuery({
 export const apiSlice = createApi({
 	reducerPath: "api",
 	baseQuery: baseQuery,
-	tagTypes: ["Auth", "Media"],
+	tagTypes: ["Auth", "Playlist", "Track", "User"],
 	endpoints: () => ({}),
+	keepUnusedDataFor: 5,
+	refetchOnMountOrArgChange: true,
 })

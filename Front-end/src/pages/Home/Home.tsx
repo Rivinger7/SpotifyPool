@@ -1,5 +1,5 @@
 import { useDispatch } from "react-redux"
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { Helmet } from "react-helmet-async"
 
 import Loader from "@/components/ui/Loader"
@@ -38,14 +38,11 @@ function Home() {
 		isLoading: boolean
 	}
 
-	// Memoize limitedTracks to prevent unnecessary recalculations
-	const limitedTracks = useMemo(() => tracksData.slice(0, 10), [tracksData])
-
 	useEffect(() => {
-		if (limitedTracks.length > 0) {
-			dispatch(initializeQueue(limitedTracks))
+		if (tracksData.length > 0) {
+			dispatch(initializeQueue(tracksData))
 		}
-	}, [dispatch, limitedTracks])
+	}, [dispatch, tracksData])
 
 	if (isLoading) return <Loader />
 
@@ -63,9 +60,9 @@ function Home() {
 				<section className="pt-6">
 					<div className="flex flex-row flex-wrap pl-6 pr-6 gap-x-6 gap-y-8">
 						<section className="relative flex flex-col flex-1 max-w-full min-w-full">
-							<AreaHeader>Popular artists</AreaHeader>
+							<AreaHeader>Popular tracks</AreaHeader>
 							<div className="grid area-body">
-								{limitedTracks?.map((track) => (
+								{tracksData?.map((track) => (
 									<BoxComponent key={track.id} track={track} />
 								))}
 							</div>

@@ -1,10 +1,10 @@
-interface Images {
+export interface Images {
 	url: string
 	width: number
 	height: number
 }
 
-interface Artists {
+export interface Artists {
 	name: string
 	followers: number
 	genreIds: string[]
@@ -19,4 +19,10 @@ export interface Song {
 	duration: number
 	images: Images[]
 	artists: Artists[]
+}
+
+export interface Playlist {
+	id: string
+	name: string
+	images: Images[]
 }
