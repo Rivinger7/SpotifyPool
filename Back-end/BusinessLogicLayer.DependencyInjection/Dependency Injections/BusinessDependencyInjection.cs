@@ -680,16 +680,41 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 {
                     OnMessageReceived = context =>
                     {
-                        // Nếu header chứa token, sử dụng nó
-                        string accessToken = context.Request.Headers.Authorization.ToString();
-                        //.Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase);
+                        // Lấy origin từ request
+                        string? origin = context.Request.Headers.Origin;
 
-                        string secretKey = Environment.GetEnvironmentVariable("APIKeySettings_SecretKey") ?? throw new InvalidDataCustomException("API Key is not set in the environment variables");
-
-                        if (!string.IsNullOrEmpty(accessToken) && accessToken.Equals($"Bearer {secretKey}", StringComparison.OrdinalIgnoreCase))
+                        // Các origin được phép truy cập
+                        IEnumerable<string?> securedOrigins = new[]
                         {
+                            Environment.GetEnvironmentVariable("SPOTIFY_HUB_CORS_ORIGIN_FE_PRODUCTION"),
+                            Environment.GetEnvironmentVariable("SPOTIFY_HUB_CORS_ORIGIN_FE_01_DEVELOPMENT"),
+                        }.Where(origin => !string.IsNullOrWhiteSpace(origin));
+
+                        // Kiểm tra xem origin có trong danh sách được phép không
+                        if (string.IsNullOrWhiteSpace(origin) || !securedOrigins.Any(securedOrigin => securedOrigin is not null && securedOrigin.Equals(origin, StringComparison.Ordinal)))
+                        {
+                            return Task.CompletedTask;
+                        }
+
+                        // Query chứa token, sử dụng nó
+                        string? accessToken = context.Request.Query["access_token"];
+                        PathString path = context.HttpContext.Request.Path;
+
+                        // Các segment được bảo mật
+                        IEnumerable<string?> securedSegments = new[]
+                        {
+                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL"),
+                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_TO_PLAYLIST_URL"),
+
+                        }.Where(segment => !string.IsNullOrWhiteSpace(segment)); // Lọc ra các segment không rỗng
+
+                        // Kiểm tra xem path có chứa segment cần xác thực không
+                        if (!string.IsNullOrWhiteSpace(accessToken) && securedSegments.Any(segment => path.StartsWithSegments($"/{segment}", StringComparison.Ordinal)))
+                        {
+                            //context.Token = accessToken["Bearer ".Length..].Trim(); // SubString()
                             context.Token = accessToken;
                         }
+
                         return Task.CompletedTask;
                     }
                 };

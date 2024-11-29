@@ -23,11 +23,8 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
             UpdateDefinition<Track> updateDefinition = Builders<Track>.Update.Inc(track => track.StreamCount, 1);
             UpdateResult trackUpdateResult = await _unitOfWork.GetCollection<Track>().UpdateOneAsync(track => track.Id == trackId, updateDefinition);
 
-            // Nếu không tìm thấy track, dừng xử lý
-            if (trackUpdateResult.ModifiedCount == 0)
-            {
-                throw new DataNotFoundCustomException("Track not found");
-            }
+            // Ngắt kết nối
+            Context.Abort();
 
             //FilterDefinition<TopTrack> filterDefinitionBuilder = Builders<TopTrack>.Filter.Eq(topTrack => topTrack.UserId, userId);
             //UpdateDefinition<TopTrack> updateDefinitionTopTrack = Builders<TopTrack>.Update.AddToSet(topTrack => topTrack.TrackIds, trackId);

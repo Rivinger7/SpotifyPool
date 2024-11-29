@@ -210,6 +210,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             if (playlist is not null)
             {
                 await Clients.Caller.SendAsync("ReceiveException", "Playlist name already exists");
+
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -232,11 +236,21 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             // Gửi thông báo đến cho user hiện tại
             await Clients.Caller.SendAsync("CreatePlaylistSuccessfully", playlistResponseModel);
 
+            // Ngắt kết nối
+            Context.Abort();
+
             return;
         }
 
         public async Task AddToFavoritePlaylistAsync(string trackId)
         {
+            if(Context.User?.Identities is null)
+            {
+                await Clients.Caller.SendAsync("Unauthorized", "You do not have permission to access to SpotifyPool's Hub");
+                Context.Abort();
+                return;
+            }
+
             // Lấy thông tin user từ Context
             string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -245,6 +259,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             {
                 // Nên thông báo lỗi ở đây
                 await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to add to favorite playlist!");
+
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -298,6 +316,9 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 // Gửi thông báo đến cho user hiện tại
                 await Clients.Caller.SendAsync("AddToNewFavoritePlaylistSuccessfully", playlistResponseModel);
 
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -306,6 +327,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             if (playlist.TrackIds.Any(track => track.TrackId == trackId))
             {
                 await Clients.Caller.SendAsync("ReceiveException", "The song has been already added to your Favorite Songs");
+
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -320,11 +345,49 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             UpdateDefinition<Playlist> updateDefinition = Builders<Playlist>.Update.Set(playlist => playlist.TrackIds, playlist.TrackIds);
             await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlist.Id, updateDefinition);
 
+            // Projection
+            ProjectionDefinition<Track> trackProjection = Builders<Track>.Projection
+                .Include(x => x.Id)
+                .Include(x => x.Name)
+                .Include(x => x.Duration)
+                .Include(x => x.PreviewURL)
+                .Include(x => x.ArtistIds)
+                .Include(x => x.Images);
+
+            // Lấy thông tin track từ database
+            Track tracks = await _unitOfWork.GetCollection<Track>().Find(x => x.Id == trackId)
+                .Project<Track>(trackProjection)
+                .FirstOrDefaultAsync();
+
+            // Mapping thông tin track sang TrackPlaylistResponseModel
+            TrackPlaylistResponseModel trackPlaylistResponseModel = _mapper.Map<TrackPlaylistResponseModel>(tracks);
+
+            // Thêm thông tin AddedTime vào TrackResponseModel
+            trackPlaylistResponseModel.AddedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd");
+
+            // Cập nhật playlist với danh sách TrackIds mới
+            await Clients.Caller.SendAsync("AddToFavoritePlaylistSuccessfully", trackPlaylistResponseModel);
+
+            // Ngắt kết nối
+            Context.Abort();
+
             return;
         }
 
         public async Task AddToPlaylistAsync(string trackId, string? playlistId = null, string? playlistName = null)
         {
+            // Nếu playlistName là Favorite Songs thì không thực hiện gì cả
+            if (playlistName is not null && playlistName.Equals("Favorite Songs", StringComparison.Ordinal))
+            {
+                // Nên thông báo lỗi ở đây
+                await Clients.Caller.SendAsync("ReceiveException", "Playlist name must not named Favorite Songs");
+
+                // Ngắt kết nối
+                Context.Abort();
+
+                return;
+            }
+
             // Lấy thông tin user từ Context
             string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -333,6 +396,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             {
                 // Nên thông báo lỗi ở đây
                 await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to add to playlist!");
+
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -354,6 +421,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 if (string.IsNullOrWhiteSpace(playlistName))
                 {
                     await Clients.Caller.SendAsync("ReceiveException", "Playlist name is required");
+
+                    // Ngắt kết nối
+                    Context.Abort();
+
                     return;
                 }
 
@@ -398,6 +469,9 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 // Gửi thông báo đến cho user hiện tại
                 await Clients.Caller.SendAsync("AddToNewPlaylistSuccessfully", playlistResponseModel);
 
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -406,6 +480,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             if (playlist.TrackIds.Any(track => track.TrackId == trackId))
             {
                 await Clients.Caller.SendAsync("ReceiveException", "The song has been already added to your Playlist");
+
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -445,6 +523,9 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             // Cập nhật playlist với danh sách TrackIds mới
             await Clients.Caller.SendAsync("AddToPlaylistSuccessfully", trackPlaylistResponseModel);
 
+            // Ngắt kết nối
+            Context.Abort();
+
             return;
         }
 
@@ -458,6 +539,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             {
                 // Nên thông báo lỗi ở đây
                 await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to delete playlist!");
+
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -470,6 +555,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             if (playlist is null)
             {
                 await Clients.Caller.SendAsync("ReceiveException", "Playlist not found");
+
+                // Ngắt kết nối
+                Context.Abort();
+
                 return;
             }
 
@@ -478,6 +567,9 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
 
             // Gửi thông báo đến cho user hiện tại
             await Clients.Caller.SendAsync("DeletePlaylistSuccessfully", playlistId);
+
+            // Ngắt kết nối
+            Context.Abort();
 
             return;
         }
