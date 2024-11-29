@@ -1,5 +1,4 @@
-﻿using BusinessLogicLayer.Implement.CustomExceptions;
-using DataAccessLayer.Interface.MongoDB.UOW;
+﻿using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;

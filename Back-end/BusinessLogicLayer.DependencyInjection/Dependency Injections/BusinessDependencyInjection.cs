@@ -61,6 +61,7 @@ using DataAccessLayer.Implement.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
+using BusinessLogicLayer.DataAnalytics;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -461,6 +462,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         {
             // Test
             services.AddScoped<TestBLL>();
+            services.AddScoped<IDataPrediction, DataPrediction>();
 
             // Register BLL services
 

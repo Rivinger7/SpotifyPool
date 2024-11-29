@@ -1,10 +1,77 @@
 ﻿using Microsoft.ML;
-using Microsoft.ML.Data;
+using Microsoft.ML.Trainers;
 
 namespace BusinessLogicLayer.DataAnalytics
 {
     public class DataPrediction : IDataPrediction
     {
+        private static readonly string _modelFilePath = "model.zip";
+        private readonly MLContext _mlContext;
+
+        public DataPrediction()
+        {
+            _mlContext = new MLContext();
+        }
+
+        public void TrainModel()
+        {
+            var ratings = new List<UserRating>
+    {
+        new UserRating { UserId = 1, ProductId = 1, Rating = 5 },
+        new UserRating { UserId = 1, ProductId = 2, Rating = 3 },
+        new UserRating { UserId = 2, ProductId = 1, Rating = 4 },
+        new UserRating { UserId = 2, ProductId = 3, Rating = 2 },
+        new UserRating { UserId = 3, ProductId = 2, Rating = 5 },
+        new UserRating { UserId = 3, ProductId = 3, Rating = 4 }
+    };
+
+            // Chuyển dữ liệu thành IDataView
+            IDataView trainData = _mlContext.Data.LoadFromEnumerable(ratings);
+
+            // Huấn luyện mô hình sử dụng Matrix Factorization với KeyType cho cột chỉ số ma trận
+            var options = new MatrixFactorizationTrainer.Options
+            {
+                MatrixColumnIndexColumnName = nameof(UserRating.UserId), // Cột người dùng
+                MatrixRowIndexColumnName = nameof(UserRating.ProductId), // Cột sản phẩm
+                LabelColumnName = nameof(UserRating.Rating),             // Cột rating
+                NumberOfIterations = 20,
+                Alpha = 0.1f
+            };
+
+            var trainer = _mlContext.Recommendation().Trainers.MatrixFactorization(options);
+
+            var model = trainer.Fit(trainData);
+
+            // Lưu mô hình đã huấn luyện vào file
+            _mlContext.Model.Save(model, trainData.Schema, _modelFilePath);
+        }
+
+        public float Predict(UserPredictionRequest input)
+        {
+            /// Nếu mô hình chưa được huấn luyện, huấn luyện lại
+            if (!File.Exists(_modelFilePath))
+            {
+                TrainModel();
+            }
+
+            // Tải mô hình đã huấn luyện
+            var model = _mlContext.Model.Load(_modelFilePath, out var modelInputSchema);
+
+            // In thông tin schema của mô hình
+            foreach (var column in modelInputSchema)
+            {
+                Console.WriteLine($"Column Name: {column.Name}, Type: {column.Type}");
+            }
+
+            // Tạo prediction engine để dự đoán
+            var predictionEngine = _mlContext.Model.CreatePredictionEngine<UserPredictionRequest, ProductPrediction>(model);
+
+            // Dự đoán điểm số cho sản phẩm của người dùng
+            ProductPrediction prediction = predictionEngine.Predict(input);
+
+            return prediction.PredictedRating;  // Trả về điểm số dự đoán
+        }
+
         //public static IEnumerable<AudioFeaturesResponseModel> LoadDataFromFile(IFormFile file)
         //{
         //    var mlContext = new MLContext();
