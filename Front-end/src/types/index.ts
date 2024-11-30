@@ -11,12 +11,13 @@ export interface Artists {
 	images: Images[]
 }
 
-export interface Song {
+export interface Track {
 	id: string
 	name: string
 	description: string
 	previewURL: string
 	duration: number
+	durationFormated: string
 	images: Images[]
 	artists: Artists[]
 }

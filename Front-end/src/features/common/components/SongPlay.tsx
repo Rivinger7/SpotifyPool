@@ -22,7 +22,7 @@ const formatTime = (seconds: number) => {
 const SongPlay = () => {
 	const dispatch = useDispatch()
 
-	const { currentSong, isPlaying } = useSelector((state: RootState) => state.play)
+	const { currentTrack, isPlaying } = useSelector((state: RootState) => state.play)
 
 	const [volume, setVolume] = useState(1)
 	const [duration, setDuration] = useState(0)
@@ -58,7 +58,7 @@ const SongPlay = () => {
 			audio.removeEventListener("loadedmetadata", updateDuration)
 			audio.removeEventListener("ended", handleEnded)
 		}
-	}, [currentSong, dispatch])
+	}, [currentTrack, dispatch])
 
 	// Effect for tracking play time
 	useEffect(() => {
@@ -91,7 +91,7 @@ const SongPlay = () => {
 				.start()
 				.then(() => {
 					console.log("Connected to the hub")
-					connection.invoke("UpdateStreamCountAsync", currentSong?.id)
+					connection.invoke("UpdateStreamCountAsync", currentTrack?.id)
 					setHasTriggeredStream(true) // Prevent multiple triggers
 				})
 				.catch((err) => console.error(err))
@@ -101,13 +101,13 @@ const SongPlay = () => {
 				clearInterval(timerRef.current)
 			}
 		}
-	}, [playTime, currentSong?.id, hasTriggeredStream])
+	}, [playTime, currentTrack?.id, hasTriggeredStream])
 
 	// Reset states when song changes
 	useEffect(() => {
 		setPlayTime(0)
 		setHasTriggeredStream(false)
-	}, [currentSong?.id])
+	}, [currentTrack?.id])
 
 	const handleSeek = (value: number[]) => {
 		if (audioRef.current) {

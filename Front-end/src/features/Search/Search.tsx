@@ -12,7 +12,12 @@ export default function Search() {
 				<h1 className="mt-6 text-lg font-extrabold tracking-wide scroll-m-20 lg:text-3xl">
 					Browse all
 				</h1>
-				<div className="grid mt-4 search-container ms-[-12px] me-[-12px]">
+				<div className="grid mt-4 grid-auto-rows-min grid-cols-4 ms-[-12px] me-[-12px]">
+					<SearchItem />
+					<SearchItem />
+					<SearchItem />
+					<SearchItem />
+					<SearchItem />
 					<SearchItem />
 				</div>
 			</div>

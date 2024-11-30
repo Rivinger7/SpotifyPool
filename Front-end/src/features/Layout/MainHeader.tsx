@@ -9,14 +9,14 @@ import {
 
 import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
-import { House, Package, Search } from "lucide-react"
+import { House, Package, Search, User, LogOut, Settings2 } from "lucide-react"
 import CustomTooltip from "@/components/CustomTooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { RootState } from "@/store/store"
 import { logout } from "@/store/slice/authSlice"
 import { useDispatch, useSelector } from "react-redux"
-import {resetPlaylist} from "@/store/slice/playlistSlice.ts";
+import { resetPlaylist } from "@/store/slice/playlistSlice.ts"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
 const MainHeader = () => {
@@ -151,23 +151,24 @@ const MainHeader = () => {
 									onSelect={() => handleNavigate(`/user/${userData?.userId}`)}
 									className="p-3 pr-2 text-lg cursor-pointer"
 								>
-									Profile
+									<User />
+									<span>Profile</span>
 								</DropdownMenuItem>
 
 								<DropdownMenuItem
 									onSelect={() => handleNavigate("/")}
 									className="p-3 pr-2 text-lg cursor-pointer"
 								>
-									Settings
+									<Settings2 />
+									<span>Settings</span>
 								</DropdownMenuItem>
 
 								<DropdownMenuSeparator />
 
 								{/* LOGOUT BUTTON */}
-								<DropdownMenuItem className="p-3 pr-2">
-									<div onClick={handleLogout} className="w-full text-lg">
-										Logout
-									</div>
+								<DropdownMenuItem className="p-3 pr-2 text-lg" onSelect={handleLogout}>
+									<LogOut />
+									<span>Logout</span>
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>

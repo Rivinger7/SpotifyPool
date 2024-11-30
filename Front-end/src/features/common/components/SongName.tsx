@@ -43,7 +43,7 @@ const SongName = () => {
 	const dispatch = useDispatch()
 
 	const { userToken } = useSelector((state: RootState) => state.auth)
-	const { currentSong } = useSelector((state: RootState) => state.play)
+	const { currentTrack } = useSelector((state: RootState) => state.play)
 	// const { playlists } = useSelector((state: RootState) => state.playlist)
 
 	// console.log(playlists)
@@ -67,7 +67,7 @@ const SongName = () => {
 			.start()
 			.then(() => {
 				console.log("Connected to the hub")
-				connection.invoke("AddToFavoritePlaylistAsync", currentSong?.id)
+				connection.invoke("AddToFavoritePlaylistAsync", currentTrack?.id)
 				// connection.invoke("AddToPlaylistAsync", currentSong?.id, null, "Favorites Songs")
 			})
 			.catch((err) => console.error(err))
@@ -110,11 +110,11 @@ const SongName = () => {
 				{/* ==== IMAGE ==== */}
 				<div className="relative h-[56px] w-[56px] group me-2">
 					<div className="w-full h-full flex items-center justify-center">
-						{currentSong?.images ? (
+						{currentTrack?.images ? (
 							<img
 								className="rounded-lg w-full h-full object-cover flex shrink-0"
-								src={currentSong?.images[2].url}
-								alt={currentSong?.name}
+								src={currentTrack?.images[2].url}
+								alt={currentTrack?.name}
 							/>
 						) : (
 							<Loader className="size-4 animate-spin" />
@@ -138,14 +138,14 @@ const SongName = () => {
 				<div className="mx-2 flex flex-col justify-center">
 					<div className="text-sm font-bold text-white">
 						<Link to={"/"} className="hover:underline hover:text-white">
-							{currentSong?.name || "Song Name"}
+							{currentTrack?.name || "Track Name"}
 						</Link>
 					</div>
 					<div className="text-xs text-[#b3b3b3]">
-						{Array.isArray(currentSong?.artists) ? (
+						{Array.isArray(currentTrack?.artists) ? (
 							<ScrollContainer>
 								<ScrollingText>
-									{currentSong.artists.map((artist, index) => (
+									{currentTrack.artists.map((artist, index) => (
 										<Link
 											key={artist.name || index}
 											to={"/"}
@@ -153,7 +153,7 @@ const SongName = () => {
 										>
 											<span className="truncate">
 												{artist.name}
-												{index < currentSong.artists.length - 1 && ", "}
+												{index < currentTrack.artists.length - 1 && ", "}
 											</span>
 										</Link>
 									))}

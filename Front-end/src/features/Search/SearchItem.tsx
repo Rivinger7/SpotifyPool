@@ -1,6 +1,11 @@
+import { RootState } from "@/store/store"
+import { useSelector } from "react-redux"
+
 const SearchItem = () => {
+	const { isCollapsed } = useSelector((state: RootState) => state.ui)
+
 	return (
-		<div className="h-56 p-3">
+		<div className={`${isCollapsed ? "min-h-52" : "min-h-40"} p-3`}>
 			<a href="#" className="relative">
 				<div className="w-full h-full relative overflow-hidden rounded-lg bg-[#006450]">
 					<img

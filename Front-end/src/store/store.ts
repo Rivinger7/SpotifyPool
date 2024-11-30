@@ -1,23 +1,26 @@
-import {configureStore} from "@reduxjs/toolkit"
-import {apiSlice} from "@/apis/apiSlice"
+import { configureStore } from "@reduxjs/toolkit"
+
+import uiReducer from "./slice/uiSlice"
+import { apiSlice } from "@/apis/apiSlice"
 import authReducer from "./slice/authSlice"
 import playerReducer from "./slice/playerSlice"
 import playlistReducer from "./slice/playlistSlice"
 
 const rootReducer = {
-    auth: authReducer,
-    play: playerReducer,
-    playlist: playlistReducer
+	ui: uiReducer,
+	auth: authReducer,
+	play: playerReducer,
+	playlist: playlistReducer,
 }
 
 const store = configureStore({
-    reducer: {
-        [apiSlice.reducerPath]: apiSlice.reducer,
+	reducer: {
+		[apiSlice.reducerPath]: apiSlice.reducer,
 
-        ...rootReducer,
-    },
+		...rootReducer,
+	},
 
-    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),
+	middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),
 })
 
 // Define RootState type

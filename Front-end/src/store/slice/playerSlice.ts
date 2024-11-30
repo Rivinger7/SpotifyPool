@@ -1,15 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit"
-import { Song } from "@/types"
+import { Track } from "@/types"
 
 interface PlayerStore {
-	currentSong: Song | null
+	currentTrack: Track | null
 	isPlaying: boolean
-	queue: Song[]
+	queue: Track[]
 	currentIndex: number
 }
 
 const initialState: PlayerStore = {
-	currentSong: null,
+	currentTrack: null,
 	isPlaying: false,
 	queue: [],
 	currentIndex: -1,
@@ -20,21 +20,21 @@ const PlayerSlice = createSlice({
 	initialState,
 	reducers: {
 		initializeQueue: (state, action) => {
-			const songs: Song[] = action.payload
+			const songs: Track[] = action.payload
 
 			state.queue = songs
-			state.currentSong = state.currentSong || songs[0]
+			state.currentTrack = state.currentTrack || songs[0]
 			state.currentIndex = state.currentIndex === -1 ? 0 : state.currentIndex
 		},
-		setCurrentSong: (state, action) => {
-			const song: Song | null = action.payload
+		setCurrentTrack: (state, action) => {
+			const track: Track | null = action.payload
 
-			if (!song) return
+			if (!track) return
 
-			const songIndex = state.queue.findIndex((s) => s.id === song.id)
+			const songIndex = state.queue.findIndex((tr) => tr.id === track.id)
 
 			state.isPlaying = true
-			state.currentSong = song
+			state.currentTrack = track
 			state.currentIndex = songIndex !== -1 ? songIndex : state.currentIndex
 		},
 		togglePlay: (state) => {
@@ -43,24 +43,24 @@ const PlayerSlice = createSlice({
 		playNext: (state) => {
 			if (state.currentIndex < state.queue.length - 1) {
 				state.currentIndex++
-				state.currentSong = state.queue[state.currentIndex]
+				state.currentTrack = state.queue[state.currentIndex]
 			} else {
 				state.currentIndex = 0
-				state.currentSong = state.queue[state.currentIndex]
+				state.currentTrack = state.queue[state.currentIndex]
 			}
 		},
 		playPrevious: (state) => {
 			if (state.currentIndex > 0) {
 				state.currentIndex--
-				state.currentSong = state.queue[state.currentIndex]
+				state.currentTrack = state.queue[state.currentIndex]
 			} else {
 				state.currentIndex = state.queue.length - 1
-				state.currentSong = state.queue[state.currentIndex]
+				state.currentTrack = state.queue[state.currentIndex]
 			}
 		},
 	},
 })
 
-export const { initializeQueue, setCurrentSong, togglePlay, playNext, playPrevious } =
+export const { initializeQueue, setCurrentTrack, togglePlay, playNext, playPrevious } =
 	PlayerSlice.actions
 export default PlayerSlice.reducer

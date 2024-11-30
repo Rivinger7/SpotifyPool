@@ -8,7 +8,7 @@ const AudioPlayer = () => {
 	const prevSongRef = useRef<string | null>(null)
 	const dispatch = useDispatch()
 
-	const { currentSong, isPlaying } = useSelector((state: RootState) => state.play)
+	const { currentTrack, isPlaying } = useSelector((state: RootState) => state.play)
 
 	// NOTE: handle play/pause logic
 	useEffect(() => {
@@ -16,7 +16,7 @@ const AudioPlayer = () => {
 		else audioRef.current?.pause()
 	}, [isPlaying])
 
-	// NOTE: handle song ends -- when this song ends, play the next song
+	// NOTE: handle track ends -- when this track ends, play the next track
 	useEffect(() => {
 		const audio = audioRef.current
 
@@ -31,22 +31,22 @@ const AudioPlayer = () => {
 
 	// NOTE: handle song changes
 	useEffect(() => {
-		if (!audioRef.current || !currentSong) return
+		if (!audioRef.current || !currentTrack) return
 
 		const audio = audioRef.current
 
 		// NOTE: check if this is actually a new song
-		const isSongChange = prevSongRef.current !== currentSong?.previewURL
+		const isSongChange = prevSongRef.current !== currentTrack?.previewURL
 		if (isSongChange) {
-			audio.src = currentSong?.previewURL
+			audio.src = currentTrack?.previewURL
 			// reset the playback position
 			audio.currentTime = 0
 
-			prevSongRef.current = currentSong?.previewURL
+			prevSongRef.current = currentTrack?.previewURL
 
 			if (isPlaying) audio.play()
 		}
-	}, [currentSong, isPlaying])
+	}, [currentTrack, isPlaying])
 
 	return <audio ref={audioRef} />
 }
