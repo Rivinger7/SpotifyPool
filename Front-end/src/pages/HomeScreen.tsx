@@ -1,4 +1,4 @@
-import Home from './Home'
+import Home from "@/features/Home/Home"
 
 function HomeScreen() {
 	return <Home />
