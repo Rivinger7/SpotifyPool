@@ -1,12 +1,15 @@
 ﻿using AutoMapper;
+using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Collections.Generic;
+using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
@@ -15,6 +18,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit)
         {
@@ -92,12 +96,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         
         public async Task<IEnumerable<ASTopTrack>> GetTopTracksAsync()
 		{
-			IEnumerable<ASTopTrack> tracks = await _unitOfWork.GetRepository<ASTopTrack>().GetTopItemWithArtistAsync(1, 5);
-
-			// Map the aggregate result to TrackResponseModel
-			//IEnumerable<TopTracksResponseModel> responseModel = _mapper.Map<IEnumerable<TopTracksResponseModel>>(tracks);
-
-			return tracks;
+            // string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            //                 ?? throw new DataNotFoundCustomException("Not found any user");
+            //tạm thời viết hàm trong Repository, sau này tách ra sau
+			return await _unitOfWork.GetRepository<ASTopTrack>().GetTopTrackstAsync("6736c563216626b7bf5f1441", 1, 50);
 		}
     }
 }

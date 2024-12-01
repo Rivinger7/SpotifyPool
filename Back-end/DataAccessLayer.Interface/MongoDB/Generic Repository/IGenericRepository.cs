@@ -54,7 +54,7 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
             Expression<Func<TForeignDocument, object>> foreignField,
             Expression<Func<TResult, IEnumerable<TForeignDocument>>> resultField);
 
-        Task<IEnumerable<ASTopTrack>> GetTopItemWithArtistAsync(int offset, int limit);
+        Task<IEnumerable<ASTopTrack>> GetTopTrackstAsync(string userId, int offset, int limit);
 
 	}
 }

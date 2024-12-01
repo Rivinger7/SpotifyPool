@@ -34,5 +34,7 @@ namespace DataAccessLayer.Repository.Entities
         public DateTime FirstAccessTime { get; set; } = Util.GetUtcPlus7Time();
 
         public Track? Track { get; set; }
+
+        public Artist? Artist { get; set; }
     }
 }
