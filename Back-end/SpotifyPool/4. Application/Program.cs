@@ -120,6 +120,7 @@ app.MapControllers();
 app.MapHub<StreamCountingHub>($"/{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL")}");
 app.MapHub<PlaylistHub>($"/{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_TO_PLAYLIST_URL")}");
 
+
 // Stopwatch End
 stopwatch.Stop();
 app.Logger.LogInformation($"Application startup completed in {stopwatch.ElapsedMilliseconds} ms");

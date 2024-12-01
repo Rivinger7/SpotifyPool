@@ -35,7 +35,6 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
                 new ExpressionFieldDefinition<TForeignDocument>(foreignField),  // Foreign field from TForeignDocument (e.g., SpotifyId in Artist)
                 new ExpressionFieldDefinition<TResult>(resultField)         // Result field in TResult (e.g., Artists in ASTrack)
             ).As<TResult>();
-
             // Execute the pipeline and get the result as a list of TResult (e.g., ASTrack)
             IEnumerable<TResult> results = await pipeline.ToListAsync();
 
@@ -57,9 +56,9 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             await Collection.InsertOneAsync(entity);
         }
 
-        public async Task UpdateAsync(string id, UpdateDefinition<TDocument> entity)
+        public async Task UpdateAsync(string id, UpdateDefinition<TDocument> updateDefinition)
         {
-            await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), entity);
+            await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), updateDefinition);
         }
 
         public async Task DeleteAsync(string id)
@@ -101,7 +100,59 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             return tracks;
         }
 
-        public async Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null)
+
+
+	public async Task<IEnumerable<ASTopTrack>> GetTopTrackstAsync(string userId, int offset, int limit)
+	{
+        //join TopTrack với Track, aggregate lại dạng list ASTopTrack để tí sửa trong list này, ko để IEnumerable
+         List<ASTopTrack> topTracksWithTracks = InCollection<TopTrack>()
+            .Aggregate()
+            .Match(topTrack => topTrack.UserId == userId)
+            .Lookup<TopTrack, Track, ASTopTrack>(
+                foreignCollection: InCollection<Track>(),
+                localField: topTrack => topTrack.TrackInfo.Select(info => info.TrackId),
+                foreignField: track => track.Id,
+                @as: result => result.Tracks
+            ).ToList();
+        
+
+        // gộp thông tin từ list trên vào ASTopTrack mới
+        IEnumerable<ASTopTrack> enrichedResult = topTracksWithTracks
+        .Select(topTrack => new ASTopTrack
+        { 
+            TopTrackId = topTrack.TopTrackId,
+            UserId = topTrack.UserId,
+            Tracks = [], // cái này bị thừa, đang ko biết bỏ sao, bên ÁSTopTrack
+            TrackInfo = topTrack.TrackInfo.Select(info => new TopTracksInfo
+            {
+                //lấy mấy cái cần thiết liên quan đến Track rồi gán vào TrackInfo
+                TrackId = info.TrackId,
+                StreamCount = info.StreamCount,
+                FirstAccessTime = info.FirstAccessTime,
+                Track = topTrack.Tracks.FirstOrDefault(t => t.Id == info.TrackId),
+                Artist = topTrack.Tracks
+                                //lấy artist từ các track trong TrackInfo và duy nhất
+                                .SelectMany(track => track.ArtistIds) 
+                                .Distinct()
+                                .Select(artistId => InCollection<Artist>()
+                                    .Find(artist => artist.Id == artistId)
+                                    .FirstOrDefault()) // lấy artist có artistId tương ứng đã select ở bên trên
+                                .Where(artist => artist != null)
+                                .FirstOrDefault() // chỉ lấy mỗi artist đầu tiên từ kết quả 
+            }).ToList()
+        });
+
+        // phân trang
+        IEnumerable<ASTopTrack> paginatedResult = enrichedResult
+        .Skip((offset - 1) * limit)
+        .Take(limit);
+
+        return await Task.FromResult(paginatedResult);
+    }
+
+
+
+		public async Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null)
         {
             // Filter
             preFilterDefinition ??= Builders<Track>.Filter.Empty;

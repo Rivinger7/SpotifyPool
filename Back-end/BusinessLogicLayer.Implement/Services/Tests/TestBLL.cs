@@ -7,6 +7,7 @@ using System.Text.Json;
 using HtmlAgilityPack;
 using MongoDB.Driver;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using MongoDB.Bson;
 
 namespace BusinessLogicLayer.Implement.Services.Tests
 {
@@ -15,6 +16,68 @@ namespace BusinessLogicLayer.Implement.Services.Tests
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly HttpClient _httpClient = httpClient;
+
+        public async Task TestTopTrack(string trackId){
+            // Lấy thông tin user từ Context
+            string? userId = "6736c563216626b7bf5f1441";
+
+			string? topItemId = await _unitOfWork.GetCollection<TopTrack>()
+                                                 .Find(topItem => topItem.UserId == userId) //&& topItem.TrackInfo.Any(track => track.TrackId == trackId))
+	                                             .Project(topItem => topItem.TopTrackId)
+	                                             .FirstOrDefaultAsync();
+
+			if (topItemId is null)
+            {
+
+				// create new
+				TopTrack newTopItem = new ()
+				{
+					UserId = userId,
+					TrackInfo =
+					[
+						new TopTracksInfo
+						{
+							TrackId = trackId,
+							StreamCount = 1
+						}
+					],
+				};
+				await _unitOfWork.GetCollection<TopTrack>().InsertOneAsync(newTopItem);
+				return;
+			}
+
+
+            TopTracksInfo? trackInfo = await _unitOfWork.GetCollection<TopTrack>()
+                                             .Find(topItem => topItem.TopTrackId == topItemId && topItem.TrackInfo.Any(track => track.TrackId == trackId))
+                                             .Project(topItem => topItem.TrackInfo.FirstOrDefault(track => track.TrackId == trackId))
+                                             .FirstOrDefaultAsync();
+
+            if (trackInfo is null){
+                // add new track
+                FilterDefinition<TopTrack> addTrackInfofilter = Builders<TopTrack>.Filter.Eq(topItem => topItem.TopTrackId, topItemId);
+
+                UpdateDefinition<TopTrack> addTrackInfoUpdateDefinition = Builders<TopTrack>.Update.Push(topItem => topItem.TrackInfo, new TopTracksInfo
+                {
+                    TrackId = trackId,
+                    StreamCount = 1
+                });
+                UpdateOptions addTrackInfoUpdateOptions = new() { IsUpsert = false };
+
+                await _unitOfWork.GetCollection<TopTrack>().UpdateOneAsync(addTrackInfofilter, addTrackInfoUpdateDefinition, addTrackInfoUpdateOptions);
+                return;
+            }
+
+            var filter = Builders<TopTrack>.Filter.And(
+                Builders<TopTrack>.Filter.Eq(topItem => topItem.TopTrackId, topItemId),
+                Builders<TopTrack>.Filter.ElemMatch(topItem => topItem.TrackInfo, track => track.TrackId == trackId)
+            );
+
+            var updateDefinition = Builders<TopTrack>.Update.Inc("TrackInfo.$.StreamCount", 1);
+            var updateOptions = new UpdateOptions { IsUpsert = false };
+
+            UpdateResult trackUpdateResult = await _unitOfWork.GetCollection<TopTrack>().UpdateOneAsync(filter, updateDefinition, updateOptions);
+		
+        }
 
         public async Task SetLyricsToDatabase()
         {
