@@ -35,7 +35,6 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
                 new ExpressionFieldDefinition<TForeignDocument>(foreignField),  // Foreign field from TForeignDocument (e.g., SpotifyId in Artist)
                 new ExpressionFieldDefinition<TResult>(resultField)         // Result field in TResult (e.g., Artists in ASTrack)
             ).As<TResult>();
-
             // Execute the pipeline and get the result as a list of TResult (e.g., ASTrack)
             IEnumerable<TResult> results = await pipeline.ToListAsync();
 
@@ -57,9 +56,9 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             await Collection.InsertOneAsync(entity);
         }
 
-        public async Task UpdateAsync(string id, UpdateDefinition<TDocument> entity)
+        public async Task UpdateAsync(string id, UpdateDefinition<TDocument> updateDefinition)
         {
-            await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), entity);
+            await Collection.UpdateOneAsync(Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)), updateDefinition);
         }
 
         public async Task DeleteAsync(string id)
@@ -100,7 +99,63 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             return tracks;
         }
 
-        public async Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null)
+
+
+
+
+
+
+
+
+
+	public async Task<IEnumerable<ASTopTrack>> GetTopItemWithArtistAsync(int offset, int limit)
+	{
+
+        // Lookup: Fetch related tracks for each TrackId in TrackInfo
+        IEnumerable<ASTopTrack> pipeline = InCollection<TopTrack>().Aggregate()
+            .Lookup<TopTrack, Track, ASTopTrack>(
+                foreignCollection: InCollection<Track>(),
+                localField: topTrack => topTrack.TrackInfo.Select(info => info.TrackId),
+                foreignField: track => track.Id,
+                @as: result => result.Tracks
+            )
+        // Enrich TrackInfo with Track details
+        .ToList()
+        .Select(topTrack => new ASTopTrack
+        {
+            Artists = topTrack.Artists,
+            TopTrackId = topTrack.TopTrackId,
+            UserId = topTrack.UserId,
+            Tracks = topTrack.Tracks, // Set the Tracks property
+            TrackInfo = topTrack.TrackInfo.Select(info => new TopTracksInfo
+            {
+                TrackId = info.TrackId,
+                StreamCount = info.StreamCount,
+                FirstAccessTime = info.FirstAccessTime,
+                Track = topTrack.Tracks.FirstOrDefault(t => t.Id == info.TrackId)
+            }).ToList()
+        });
+
+        // Apply pagination
+        var paginatedResult = pipeline
+            .Skip((offset - 1) * limit)
+            .Take(limit);
+
+        return await Task.FromResult(paginatedResult);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+		public async Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null)
         {
             // Filter
             preFilterDefinition ??= Builders<Track>.Filter.Empty;

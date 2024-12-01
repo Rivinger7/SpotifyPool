@@ -6,6 +6,7 @@ using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using System.Collections.Generic;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
@@ -26,7 +27,9 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return responseModel;
         }
 
-        public async Task<TrackResponseModel> GetTrackAsync(string id)
+
+
+		public async Task<TrackResponseModel> GetTrackAsync(string id)
         {
             // Lấy track với artist
             ASTrack track = await _unitOfWork.GetRepository<ASTrack>().GetTrackWithArtistAsync(id);
@@ -85,6 +88,16 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
 
             return responseModels;
-        }
+        }		
+        
+        public async Task<IEnumerable<ASTopTrack>> GetTopTracksAsync()
+		{
+			IEnumerable<ASTopTrack> tracks = await _unitOfWork.GetRepository<ASTopTrack>().GetTopItemWithArtistAsync(1, 5);
+
+			// Map the aggregate result to TrackResponseModel
+			//IEnumerable<TopTracksResponseModel> responseModel = _mapper.Map<IEnumerable<TopTracksResponseModel>>(tracks);
+
+			return tracks;
+		}
     }
 }

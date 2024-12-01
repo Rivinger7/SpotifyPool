@@ -31,5 +31,12 @@ namespace SpotifyPool._1._Controllers.Tests
             await testBLL.SetLyricsToDatabase();
             return Ok();
         }
+
+        [AllowAnonymous,HttpGet("test-top-track")]
+        public async Task<IActionResult> TestTopTrack(string trackId)
+        {
+            await testBLL.TestTopTrack(trackId);
+            return Ok();
+        }
 	}
 }

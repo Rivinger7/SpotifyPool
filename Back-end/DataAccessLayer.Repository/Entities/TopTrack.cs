@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using Utility.Coding;
 
 namespace DataAccessLayer.Repository.Entities
 {
@@ -7,17 +8,20 @@ namespace DataAccessLayer.Repository.Entities
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } = null!;
+        public string TopTrackId { get; set; } = null!;
 
-        public string? Description { get; set; }
+
+        //public TopItemType Type { get; set; }
+
 
         [BsonRepresentation(BsonType.ObjectId)]
         public required string UserId { get; set; }
 
-        [BsonRepresentation(BsonType.ObjectId)]
-        public List<TopTracksInfo> TrackIds { get; set; } = [];
 
-        public DateTime CreatedTime { get; set; }
+        public List<TopTracksInfo> TrackInfo { get; set; } = [];
+
+		//public int Popularity { get; set; } =0;
+
     }
 
     public class TopTracksInfo
@@ -26,5 +30,9 @@ namespace DataAccessLayer.Repository.Entities
         public string TrackId { get; set; } = null!;
 
         public int StreamCount { get; set; }
+
+        public DateTime FirstAccessTime { get; set; } = Util.GetUtcPlus7Time();
+
+        public Track? Track { get; set; }
     }
 }

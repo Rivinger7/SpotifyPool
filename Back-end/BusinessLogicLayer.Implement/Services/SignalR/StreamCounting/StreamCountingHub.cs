@@ -2,7 +2,9 @@
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.SignalR;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
 {
@@ -13,26 +15,63 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
         public async Task UpdateStreamCountAsync(string trackId)
         {
             // Lấy thông tin user từ Context
-            string? userId = Context.User?.Identity?.Name;
+            string? userId = "6736c563216626b7bf5f1441";
 
-            if (IsValidateData(userId, trackId))
+			string? topTrackId = await _unitOfWork.GetCollection<TopTrack>()
+                                                 .Find(topTrack => topTrack.UserId == userId) //&& topTrack.TrackInfo.Any(track => track.TrackId == trackId))
+	                                             .Project(topTrack => topTrack.TopTrackId)
+	                                             .FirstOrDefaultAsync();
+
+			if (topTrackId is null)
             {
+
+				// create new
+				TopTrack newtopTrack = new ()
+				{
+					UserId = userId,
+					TrackInfo =
+					[
+						new TopTracksInfo
+						{
+							TrackId = trackId,
+							StreamCount = 1
+						}
+					],
+				};
+				await _unitOfWork.GetCollection<TopTrack>().InsertOneAsync(newtopTrack);
+				return;
+			}
+
+
+            TopTracksInfo? trackInfo = await _unitOfWork.GetCollection<TopTrack>()
+                                             .Find(topTrack => topTrack.TopTrackId == topTrackId && topTrack.TrackInfo.Any(track => track.TrackId == trackId))
+                                             .Project(topTrack => topTrack.TrackInfo.FirstOrDefault(track => track.TrackId == trackId))
+                                             .FirstOrDefaultAsync();
+
+            if (trackInfo is null){
+                // add new track
+                FilterDefinition<TopTrack> addTrackInfofilter = Builders<TopTrack>.Filter.Eq(topTrack => topTrack.TopTrackId, topTrackId);
+
+                UpdateDefinition<TopTrack> addTrackInfoUpdateDefinition = Builders<TopTrack>.Update.Push(topTrack => topTrack.TrackInfo, new TopTracksInfo
+                {
+                    TrackId = trackId,
+                    StreamCount = 1
+                });
+                UpdateOptions addTrackInfoUpdateOptions = new() { IsUpsert = false };
+
+                await _unitOfWork.GetCollection<TopTrack>().UpdateOneAsync(addTrackInfofilter, addTrackInfoUpdateDefinition, addTrackInfoUpdateOptions);
                 return;
             }
 
-            UpdateDefinition<Track> updateDefinition = Builders<Track>.Update.Inc(track => track.StreamCount, 1);
-            UpdateResult trackUpdateResult = await _unitOfWork.GetCollection<Track>().UpdateOneAsync(track => track.Id == trackId, updateDefinition);
+            var filter = Builders<TopTrack>.Filter.And(
+                Builders<TopTrack>.Filter.Eq(topTrack => topTrack.TopTrackId, topTrackId),
+                Builders<TopTrack>.Filter.ElemMatch(topTrack => topTrack.TrackInfo, track => track.TrackId == trackId)
+            );
 
-            // Nếu không tìm thấy track, dừng xử lý
-            if (trackUpdateResult.ModifiedCount == 0)
-            {
-                throw new DataNotFoundCustomException("Track not found");
-            }
+            var updateDefinition = Builders<TopTrack>.Update.Inc("TrackInfo.$.StreamCount", 1);
+            var updateOptions = new UpdateOptions { IsUpsert = false };
 
-            //FilterDefinition<TopTrack> filterDefinitionBuilder = Builders<TopTrack>.Filter.Eq(topTrack => topTrack.UserId, userId);
-            //UpdateDefinition<TopTrack> updateDefinitionTopTrack = Builders<TopTrack>.Update.AddToSet(topTrack => topTrack.TrackIds, trackId);
-
-            //await _unitOfWork.GetCollection<TopTrack>().UpdateOneAsync(filterDefinitionBuilder, updateDefinitionTopTrack, new UpdateOptions { IsUpsert = true });
+            UpdateResult trackUpdateResult = await _unitOfWork.GetCollection<TopTrack>().UpdateOneAsync(filter, updateDefinition, updateOptions);
         }
 
         private static bool IsValidateData(string? userId = "xxx", string? trackId = "xxx")

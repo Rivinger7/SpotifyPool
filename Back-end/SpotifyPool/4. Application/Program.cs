@@ -117,8 +117,8 @@ app.UseCors("AllowSpecificOrigin");
 
 app.MapControllers();
 
-app.MapHub<StreamCountingHub>($"/{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_STREAM_COUNTING_URL")}");
-app.MapHub<PlaylistHub>($"/{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_FAVORITE_PLAYLIST")}");
+app.MapHub<StreamCountingHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_STREAM_COUNTING_URL")}");
+app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_FAVORITE_PLAYLIST")}");
 
 // Stopwatch End
 stopwatch.Stop();

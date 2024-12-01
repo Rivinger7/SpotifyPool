@@ -46,5 +46,12 @@ namespace SpotifyPool._1._Controllers.Track
             var result = await _trackService.SearchTracksAsync(searchTerm);
             return Ok(result);
         }
-    }
+
+        [AllowAnonymous, HttpGet("top-track")]
+		public async Task<IActionResult> GetTopTracksAsync()
+		{
+			var result = await _trackService.GetTopTracksAsync();
+			return Ok(result);
+		}
+	}
 }
