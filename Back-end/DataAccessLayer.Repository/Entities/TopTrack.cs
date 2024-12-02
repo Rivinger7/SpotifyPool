@@ -35,6 +35,6 @@ namespace DataAccessLayer.Repository.Entities
 
         public Track? Track { get; set; }
 
-        public Artist? Artist { get; set; }
+        public List<Artist>? Artist { get; set; }
     }
 }

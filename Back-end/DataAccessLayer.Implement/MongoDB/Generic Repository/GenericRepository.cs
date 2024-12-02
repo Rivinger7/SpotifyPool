@@ -104,50 +104,54 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
 	public async Task<IEnumerable<ASTopTrack>> GetTopTrackstAsync(string userId, int offset, int limit)
 	{
-        //join TopTrack với Track, aggregate lại dạng list ASTopTrack để tí sửa trong list này, ko để IEnumerable
-         List<ASTopTrack> topTracksWithTracks = InCollection<TopTrack>()
-            .Aggregate()
-            .Match(topTrack => topTrack.UserId == userId)
-            .Lookup<TopTrack, Track, ASTopTrack>(
-                foreignCollection: InCollection<Track>(),
-                localField: topTrack => topTrack.TrackInfo.Select(info => info.TrackId),
-                foreignField: track => track.Id,
-                @as: result => result.Tracks
-            ).ToList();
+        return null;
+//         #region aggregate
+//             //join TopTrack với Track, aggregate lại dạng list ASTopTrack để tí sửa trong list này, ko để IEnumerable
+//              List<ASTopTrack> topTracksWithTracks = InCollection<TopTrack>()
+//                 .Aggregate()
+//                 .Match(topTrack => topTrack.UserId == userId)
+//                 .Lookup<TopTrack, Track, ASTopTrack>(
+//                     foreignCollection: InCollection<Track>(),
+//                     localField: topTrack => topTrack.TrackInfo.Select(info => info.TrackId),
+//                     foreignField: track => track.Id,
+//                     @as: result => result.Tracks
+//                 ).ToList();
+//         #endregion
         
 
-        // gộp thông tin từ list trên vào ASTopTrack mới
-        IEnumerable<ASTopTrack> enrichedResult = topTracksWithTracks
-        .Select(topTrack => new ASTopTrack
-        { 
-            TopTrackId = topTrack.TopTrackId,
-            UserId = topTrack.UserId,
-            Tracks = [], // cái này bị thừa, đang ko biết bỏ sao, bên ÁSTopTrack
-            TrackInfo = topTrack.TrackInfo.Select(info => new TopTracksInfo
-            {
-                //lấy mấy cái cần thiết liên quan đến Track rồi gán vào TrackInfo
-                TrackId = info.TrackId,
-                StreamCount = info.StreamCount,
-                FirstAccessTime = info.FirstAccessTime,
-                Track = topTrack.Tracks.FirstOrDefault(t => t.Id == info.TrackId),
-                Artist = topTrack.Tracks
-                                //lấy artist từ các track trong TrackInfo và duy nhất
-                                .SelectMany(track => track.ArtistIds) 
-                                .Distinct()
-                                .Select(artistId => InCollection<Artist>()
-                                    .Find(artist => artist.Id == artistId)
-                                    .FirstOrDefault()) // lấy artist có artistId tương ứng đã select ở bên trên
-                                .Where(artist => artist != null)
-                                .FirstOrDefault() // chỉ lấy mỗi artist đầu tiên từ kết quả 
-            }).ToList()
-        });
+//         // gộp thông tin từ list trên vào ASTopTrack mới
+//         IEnumerable<ASTopTrack> enrichedResult = topTracksWithTracks
+//         .Select(topTrack => new ASTopTrack
+//         { 
+//             TopTrackId = topTrack.TopTrackId,
+//             UserId = topTrack.UserId,
+//             TrackInfo = topTrack.TrackInfo.Select(info => new TopTracksInfo
+//             {
+//                 //lấy mấy cái cần thiết liên quan đến Track rồi gán vào TrackInfo
+//                 TrackId = info.TrackId,
+//                 StreamCount = info.StreamCount,
+//                 FirstAccessTime = info.FirstAccessTime,
+//                 Track = topTrack.Tracks.FirstOrDefault(t => t.Id == info.TrackId),
+//                 Artist = topTrack.Tracks.Where(t => t.Id == info.TrackId) //lấy track từ topTrack.Tracks có Id trùng với info.TrackId
+//                                 //lấy artist từ các track trong TrackInfo và duy nhất
+//                                 .SelectMany(track => track.ArtistIds)
+//                                 .Distinct()
+//                                 .Select(artistId => InCollection<Artist>()
+//                                     .Find(artist => artist.Id == artistId)
+//                                     .FirstOrDefault()) // lấy artist có artistId tương ứng đã select ở bên trên
+//                                 //.Where(artist => artist != null)
+//                                 .ToList() // chỉ lấy mỗi artist đầu tiên từ kết quả 
+//             }).ToList()
+//         });
 
-        // phân trang
-        IEnumerable<ASTopTrack> paginatedResult = enrichedResult
-        .Skip((offset - 1) * limit)
-        .Take(limit);
-
-        return await Task.FromResult(paginatedResult);
+//     #region phân trang + trả về
+//             // phân trang
+//             IEnumerable<ASTopTrack> paginatedResult = enrichedResult
+//             .Skip((offset - 1) * limit)
+//             .Take(limit);
+    
+//             return await Task.FromResult(paginatedResult);
+// #endregion
     }
 
 

@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
+using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack;
+using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
@@ -14,11 +16,11 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
-    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper) : ITrack
+    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor) : ITrack
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit)
         {
@@ -94,12 +96,54 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return responseModels;
         }		
         
-        public async Task<IEnumerable<ASTopTrack>> GetTopTracksAsync()
+        public async Task<TopTrackResponseModel?> GetTopTracksAsync()
 		{
-            // string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            //                 ?? throw new DataNotFoundCustomException("Not found any user");
-            //tạm thời viết hàm trong Repository, sau này tách ra sau
-			return await _unitOfWork.GetRepository<ASTopTrack>().GetTopTrackstAsync("6736c563216626b7bf5f1441", 1, 50);
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                                ?? throw new DataNotFoundCustomException("Your session is limit. Please login again.");
+            
+
+            //join TopTrack với Track, aggregate lại dạng list ASTopTrack để tí sửa trong list này, ko để IEnumerable
+            List<ASTopTrack> topTracksWithTracks = await _unitOfWork.GetRepository<TopTrack>().Collection
+                .Aggregate()
+                .Match(topTrack => topTrack.UserId == userId)
+                .Lookup<TopTrack, Track, ASTopTrack>(
+                    foreignCollection: _unitOfWork.GetRepository<Track>().Collection,
+                    localField: topTrack => topTrack.TrackInfo.Select(info => info.TrackId),
+                    foreignField: track => track.Id,
+                    @as: result => result.Tracks
+                )
+            .ToListAsync();
+
+        
+
+            // gộp thông tin từ list trên vào ASTopTrack mới
+            TopTrackResponseModel? enrichedResult = topTracksWithTracks
+            .Select(topTrack => new TopTrackResponseModel
+            { 
+                TopTrackId = topTrack.TopTrackId,
+                UserId = topTrack.UserId,
+                TrackInfo = topTrack.TrackInfo.Select(info => new TracksInfoResponse
+                {
+                    //lấy mấy cái cần thiết liên quan đến Track rồi gán vào TrackInfo
+                    TrackId = info.TrackId,
+                    StreamCount = info.StreamCount,
+                    FirstAccessTime = info.FirstAccessTime,
+                    Track = _mapper.Map<TrackInTopTrackResponseModel>(topTrack.Tracks.FirstOrDefault(t => t.Id == info.TrackId)),
+                    Artists = topTrack.Tracks.Where(t => t.Id == info.TrackId) //lấy track từ topTrack.Tracks có Id trùng với info.TrackId
+                                    //lấy artist từ các track trong TrackInfo và duy nhất
+                                    .SelectMany(track => track.ArtistIds)
+                                    .Distinct()
+                                    // lấy artist có artistId tương ứng đã select ở bên trên
+                                    .Select(artistId => _unitOfWork.GetRepository<Artist>().Collection
+                                        .Find(artist => artist.Id == artistId)
+                                        .Project(artist => artist.Name)
+                                        .FirstOrDefault()
+                                    ) 
+                                    .ToList() 
+                }).OrderByDescending(info => info.StreamCount).Skip((1-1)*50).Take(50).ToList()
+            }).FirstOrDefault();
+
+            return enrichedResult;
 		}
     }
 }
