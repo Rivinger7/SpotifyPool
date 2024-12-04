@@ -3,6 +3,7 @@ using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Recommendation
 {
@@ -13,21 +14,24 @@ namespace SpotifyPool._1._Controllers.Recommendation
     {
         private readonly IRecommendation _recommendationService = recommendationService;
 
-        [AllowAnonymous, HttpGet("{trackId}/EuclideanDistance")]
-        public async Task<IActionResult> GetRecommendedSongByEuclideanDistance(string trackId)
-        {
-            var result = await _recommendationService.GetRecommendations(trackId, RecommendationBLL.CalculateEuclideanDistance);
-            return Ok(result);
-        }
-
-        [AllowAnonymous, HttpGet("{trackId}/WeightedEuclideanDistance")]
+        /// <summary>
+        /// Sử dụng thuật toán Euclidean Distance với trọng số để tìm ra bài hát gợi ý
+        /// </summary>
+        /// <param name="trackId"></param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{trackId}/Weighted-Euclidean-Distance")]
         public async Task<IActionResult> GetRecommendedSongByWeightedEulideanDisctance(string trackId)
         {
             var result = await _recommendationService.GetRecommendations(trackId, RecommendationBLL.CalculateWeightedEulideanDisctance);
             return Ok(result);
         }
 
-        [HttpGet("{trackId}/CosineSimilarity")]
+        /// <summary>
+        /// Sử dụng thuật toán Cosine Similarity (Không có trọng số) để tìm ra bài hát gợi ý
+        /// </summary>
+        /// <param name="trackId"></param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{trackId}/Cosine-Similarity")]
         public async Task<IActionResult> GetRecommendedSongByCosineSimilarity(string trackId)
         {
             var result = await _recommendationService.GetRecommendations(trackId, RecommendationBLL.CalculateCosineSimilarity);

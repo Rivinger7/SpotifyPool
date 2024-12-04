@@ -54,7 +54,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
             // Dùng mã hóa cho email khi tạo link
-            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
+            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"));
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";
 
@@ -412,7 +412,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             string email = retrieveUser.Email;
 
-            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
+            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"));
 
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";

@@ -94,6 +94,17 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             return responseBody;
         }
 
+        public async Task<string> GetseveralAudioFeaturesAsync(string accessToken, string trackIds)
+        {
+            // URI của Spotify
+            string uri = $"https://api.spotify.com/v1/audio-features?ids={trackIds}";
+
+            // Gọi API trả về Response
+            string responseBody = await GetResponseAsync(uri, accessToken);
+
+            return responseBody;
+        }
+
         #region Update Fetch Playlist Items
         public async Task UpdateFetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", int? limit = null, int offset = 0)
         {

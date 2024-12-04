@@ -669,7 +669,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                     //ký vào token
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"))),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"))),
 
                     ClockSkew = TimeSpan.Zero,
 
@@ -786,7 +786,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             string? geolocationApiKey = Environment.GetEnvironmentVariable("IPGEOLOCATION_API_KEY");
             if (string.IsNullOrEmpty(geolocationApiKey))
             {
-                throw new DataNotFoundCustomException("Geolocation API Key is not set in the environment variables");
+                throw new DataNotFoundCustomException("Geolocation API Mode is not set in the environment variables");
             }
 
             // Initialize Cloudinary instance

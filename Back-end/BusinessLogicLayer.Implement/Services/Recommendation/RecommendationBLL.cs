@@ -40,7 +40,6 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             // Truy vấn các đặc trưng âm thanh tương tự với track đầu vào
             IEnumerable<AudioFeatures> similarFeatures = await _unitOfWork.GetCollection<AudioFeatures>()
                 .Find(f => f.Id != matchedAudioFeatures.Id)
-                .Limit(20)
                 .ToListAsync();
 
             // Tính toán độ tương đồng và sắp xếp trực tiếp trên danh sách truy vấn
@@ -53,7 +52,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                     Similarity = similarityScore(matchedAudioFeatures, audioFeatures)
                 })
                 .OrderByDescending(x => x.Similarity)
-                //.Where(x => x.Similarity > 0.5)
+                .Where(x => x.Similarity > 0.5)
                 .Take(k)
                 .Select(x => x.Feature.Id)
                 .ToList();
@@ -94,60 +93,6 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             return responseModels;
         }
 
-        #region Sử dụng thuật toán Euclidean Distance
-        // https://en.wikipedia.org/wiki/Euclidean_distance
-        public static double CalculateEuclideanDistance(AudioFeatures song1, AudioFeatures song2)
-        {
-            // Tập hợp các đặc trưng cần so sánh
-            // Tập hợp X: [Acousticness, Danceability, Energy, Instrumentalness, Liveness, Speechiness, Tempo, Valence]
-            double[] features1 = [
-                song1.Acousticness, song1.Danceability, song1.Energy,
-                    song1.Instrumentalness, song1.Liveness, song1.Speechiness,
-                    song1.Tempo, song1.Valence
-            ];
-
-            // Tập hợp Y: [Acousticness, Danceability, Energy, Instrumentalness, Liveness, Speechiness, Tempo, Valence]
-            double[] features2 = [
-                song2.Acousticness, song2.Danceability, song2.Energy,
-                    song2.Instrumentalness, song2.Liveness, song2.Speechiness,
-                    song2.Tempo, song2.Valence
-            ];
-
-            // Đảm bảo cả hai tập hợp có cùng độ dài
-            if (features1.Length != features2.Length)
-            {
-                throw new InvalidDataCustomException("Features length mismatch");
-            }
-
-            // Chuẩn hóa các đặc trưng theo range [0, 1]
-            // Công thức chuẩn hóa: (x - min) / (max - min)
-            // Trong đó: x là giá trị cần chuẩn hóa, min là giá trị nhỏ nhất trong tập hợp, max là giá trị lớn nhất trong tập hợp
-            // Ví dụ: Chuẩn hóa giá trị 0.5 trong tập hợp [0, 1] => (0.5 - 0) / (1 - 0) = 0.5
-            // Tạm thời chưa cần vì thuật toán KNN không cần chuẩn hóa dữ liệu
-
-            // Khoảng cách giữa 2 đặc trưng
-            double distanceMini = 0;
-
-            // Tính tổng bình phương khoảng cách giữa các đặc trưng
-            for (int index = 0; index < features1.Length; ++index)
-            {
-                distanceMini += Math.Pow(features1[index] - features2[index], 2);
-            }
-
-            // Tính khoảng cách Euclidean giữa hai track
-            double distance = Math.Sqrt(distanceMini);
-
-            // Tính toán độ tương đồng giữa hai track
-            double similarity = 1 / (1 + Math.Sqrt(distance));
-
-            //Console.WriteLine("===========================");
-            //Console.WriteLine($"{similarity}");
-            //Console.WriteLine("===========================");
-
-            return similarity;
-        }
-        #endregion
-
         #region Sử dụng thuật toán Weighted Euclidean Distance
         public static double CalculateWeightedEulideanDisctance(AudioFeatures song1, AudioFeatures song2)
         {
@@ -162,6 +107,8 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             // Trong đó: x là giá trị cần chuẩn hóa, min là giá trị nhỏ nhất trong tập hợp, max là giá trị lớn nhất trong tập hợp
             // Ví dụ: Chuẩn hóa giá trị 0.5 trong tập hợp [0, 1] => (0.5 - 0) / (1 - 0) = 0.5
             // Chuẩn hóa theo miền giá trị [0, 1] của các đặc trưng
+            double keyStandardization1 = Standardize(song1.Key, (double)Key.C, (double)Key.B);
+            double keyStandardization2 = Standardize(song2.Key, (double)Key.C, (double)Key.B);
             double tempoStandardization1 = Standardize(song1.Tempo, (double)Tempo.MinimumBPM, (double)Tempo.MaximumBPM);
             double tempoStandardization2 = Standardize(song2.Tempo, (double)Tempo.MinimumBPM, (double)Tempo.MaximumBPM);
 
@@ -171,18 +118,20 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             // Tập hợp các đặc trưng cần so sánh
             // Tập hợp X: [Acousticness, Danceability, Energy, Instrumentalness, Liveness, Speechiness, Tempo, Valence]
             double[] features1 = [
-               song1.Valence, song1.Energy, song1.Danceability, tempoStandardization1,
-               song1.Acousticness, song1.Instrumentalness, song1.Speechiness,
-               //AISAvarageSong1,
-                //song1.Mode
+                //keyModeAvarageSong1,
+                //song1.Key,
+                keyStandardization1,
+                song1.Valence, song1.Energy, song1.Danceability, tempoStandardization1,
+                song1.Acousticness, song1.Instrumentalness, song1.Speechiness,
             ];
 
             // Tập hợp Y: [Acousticness, Danceability, Energy, Instrumentalness, Liveness, Speechiness, Tempo, Valence]
             double[] features2 = [
+                //keyModeAvarageSong2,
+                //song2.Key,
+                keyStandardization2,
                 song2.Valence, song2.Energy, song2.Danceability, tempoStandardization2,
                 song2.Acousticness, song2.Instrumentalness, song2.Speechiness,
-                //AISAvarageSong2,
-                //song2.Mode
             ];
 
             // Đảm bảo cả hai tập hợp có cùng độ dài
@@ -199,12 +148,20 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             // Điều này giúp tránh việc dùng vòng lặp
             // Công thức tính các trọng số Weights theo quy tắc cấp số nhân giảm dần với một hệ số
             // Đặt W(i) có trọng số cao nhất < 1 là k​
-            // Tính k
             // Các phép tính được ghi trong notebook
             double coefficientDescending = (double)CoefficientDescending.Beta / 100;
             double upperLimit = features1.Length;
 
-            double k = (1 - coefficientDescending) / (1 - Math.Pow(coefficientDescending, upperLimit + 1));
+            // Tính k
+            double k;
+            if (coefficientDescending == 1)
+            {
+                k = 1;
+            }
+            else
+            {
+                k = (1 - Math.Pow(coefficientDescending, upperLimit)) / (1 - coefficientDescending);
+            }
 
             // Khoảng cách giữa 2 đặc trưng
             double distanceMini = 0;
@@ -220,6 +177,11 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
 
             // Tính toán độ tương đồng giữa hai track
             double similarity = 1 / (1 + Math.Sqrt(distance));
+
+            if (song1.Mode != song2.Mode)
+            {
+                similarity *= -1;
+            }
 
             //Console.WriteLine("===========================");
             //Console.WriteLine($"{similarity}");
@@ -250,30 +212,61 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         // Để tính toán Cosine Similarity, cần chuẩn hóa các đặc trưng về cùng một range
         public static double CalculateCosineSimilarity(AudioFeatures song1, AudioFeatures song2)
         {
+            double keyStandardization1 = Standardize(song1.Key, (double)Key.C, (double)Key.B);
+            double keyStandardization2 = Standardize(song2.Key, (double)Key.C, (double)Key.B);
+            double tempoStandardization1 = Standardize(song1.Tempo, (double)Tempo.MinimumBPM, (double)Tempo.MaximumBPM);
+            double tempoStandardization2 = Standardize(song2.Tempo, (double)Tempo.MinimumBPM, (double)Tempo.MaximumBPM);
+
+            // Tập hợp các đặc trưng cần so sánh
+            // Tập hợp X: [Acousticness, Danceability, Energy, Instrumentalness, Liveness, Speechiness, Tempo, Valence]
             double[] features1 = [
-                song1.Acousticness, song1.Danceability, song1.Energy,
-                    song1.Instrumentalness, song1.Liveness, song1.Speechiness,
-                    song1.Tempo, song1.Valence
+                //keyModeAvarageSong1,
+                //song1.Key,
+                keyStandardization1,
+                song1.Valence, song1.Energy, song1.Danceability, tempoStandardization1,
+                song1.Acousticness, song1.Instrumentalness, song1.Speechiness,
             ];
 
+            // Tập hợp Y: [Acousticness, Danceability, Energy, Instrumentalness, Liveness, Speechiness, Tempo, Valence]
             double[] features2 = [
-                song2.Acousticness, song2.Danceability, song2.Energy,
-                    song2.Instrumentalness, song2.Liveness, song2.Speechiness,
-                    song2.Tempo, song2.Valence
+                //keyModeAvarageSong2,
+                //song2.Key,
+                keyStandardization2,
+                song2.Valence, song2.Energy, song2.Danceability, tempoStandardization2,
+                song2.Acousticness, song2.Instrumentalness, song2.Speechiness,
             ];
 
-            double dotProduct = 0, magnitude1 = 0, magnitude2 = 0;
-
-            for (int i = 0; i < features1.Length; i++)
+            // Đảm bảo cả hai tập hợp có cùng độ dài
+            if (features1.Length != features2.Length)
             {
-                dotProduct += features1[i] * features2[i];
-                magnitude1 += features1[i] * features1[i];
-                magnitude2 += features2[i] * features2[i];
+                throw new InvalidDataCustomException("Features length mismatch");
             }
 
-            if (magnitude1 == 0 || magnitude2 == 0) return 0;
+            double dotProduct = features1.Zip(features2, (a, b) => a * b).Sum();
+            double magnitude1 = Math.Sqrt(features1.Sum(a => a * a));
+            double magnitude2 = Math.Sqrt(features2.Sum(b => b * b));
 
-            double cosineSimilarity = dotProduct / (float)(Math.Sqrt(magnitude1) * Math.Sqrt(magnitude2));
+            double cosineSimilarity = dotProduct / (magnitude1 * magnitude2);
+
+            #region Dùng vòng lặp
+            //double dotProduct = 0, magnitude1 = 0, magnitude2 = 0;
+
+            //for (int i = 0; i < features1.Length; i++)
+            //{
+            //    dotProduct += features1[i] * features2[i];
+            //    magnitude1 += features1[i] * features1[i];
+            //    magnitude2 += features2[i] * features2[i];
+            //}
+
+            //if (magnitude1 == 0 || magnitude2 == 0) return 0;
+
+            //double cosineSimilarity = dotProduct / (float)(Math.Sqrt(magnitude1) * Math.Sqrt(magnitude2));
+            #endregion
+
+            if (song1.Mode != song2.Mode)
+            {
+                cosineSimilarity *= -1;
+            }
 
             //Console.WriteLine("===========================");
             //Console.WriteLine($"{cosineSimilarity}");

@@ -120,5 +120,24 @@ namespace SpotifyPool._1._Controllers.Spotify
 
             return Ok(topTracks); // Return the top tracks as the response
         }
+
+        [AllowAnonymous, HttpGet("audio-features")]
+        public async Task<IActionResult> GetSeveralAudioFeatures([FromQuery] string accessToken, string trackIds)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest("Access token is required.");
+            }
+
+            if (string.IsNullOrEmpty(trackIds))
+            {
+                return BadRequest("Track IDs are required.");
+            }
+
+            // Use the access token to get audio features for several tracks
+            string audioFeatures = await _spotifyService.GetseveralAudioFeaturesAsync(accessToken, trackIds);
+
+            return Ok(audioFeatures); // Return the audio features as the response
+        }
     }
 }

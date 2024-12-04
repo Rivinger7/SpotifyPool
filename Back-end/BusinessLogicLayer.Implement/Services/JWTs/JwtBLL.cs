@@ -28,7 +28,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             int expireMinutes = 60; //set default expire time is 60 minutes
 
             //get secret key from appsettings.json
-            var secretKey = Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found");
+            var secretKey = Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found");
 
             //convert secret key to byte array
             var symmetricKey = Encoding.UTF8.GetBytes(secretKey);
@@ -87,7 +87,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
                 ValidateIssuerSigningKey = true,
 
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"))), //Sign with encoded secret key
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"))), //Sign with encoded secret key
 
                 ValidateLifetime = false //this field not need to check validate because we just want to get principal from that token
             };
@@ -200,7 +200,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-            var secretKeyBytes = Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
+            var secretKeyBytes = Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"));
 
             var tokenDescription = new SecurityTokenDescriptor
             {
