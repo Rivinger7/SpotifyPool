@@ -266,9 +266,14 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 return;
             }
 
+            // Projection
+            ProjectionDefinition<Playlist> projectionDefinition = Builders<Playlist>.Projection
+                .Include(playlist => playlist.TrackIds)
+                .Include(playlist => playlist.Id);
+
             // Lấy thông tin playlist từ database
             Playlist playlist = await _unitOfWork.GetCollection<Playlist>().Find(x => x.UserID == userId && x.Name == "Favorite Songs")
-                .Project<Playlist>(Builders<Playlist>.Projection.Include(playlist => playlist.Id))
+                .Project<Playlist>(projectionDefinition)
                 .FirstOrDefaultAsync();
 
             // Nếu không tồn tại thì tạo mới playlist
@@ -290,9 +295,9 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                     Images =
                         [
                             new() {
-                            URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-640_xnff8r.png",
-                            Height = 640,
-                            Width = 640,
+                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-640_xnff8r.png",
+                                Height = 640,
+                                Width = 640,
                             },
                             new() {
                                 URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-300_vitqvn.png",
@@ -335,15 +340,17 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             }
 
             // Thêm trackId vào danh sách TrackIds
-            playlist.TrackIds.Add(new PlaylistTracksInfo()
+            playlist.TrackIds.Add(new PlaylistTracksInfo
             {
                 TrackId = trackId,
                 AddedTime = Util.GetUtcPlus7Time()
             });
 
+            string playlistId = playlist.Id;
+
             // Cập nhật playlist với danh sách TrackIds mới
             UpdateDefinition<Playlist> updateDefinition = Builders<Playlist>.Update.Set(playlist => playlist.TrackIds, playlist.TrackIds);
-            await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlist.Id, updateDefinition);
+            await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlistId, updateDefinition);
 
             // Projection
             ProjectionDefinition<Track> trackProjection = Builders<Track>.Projection

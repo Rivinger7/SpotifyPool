@@ -191,22 +191,6 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         }
         #endregion
 
-        private static double Standardize(double value, double min = 0, double max = 0)
-        {
-            bool isValidMinMax = min <= max;
-            bool isValidMinValue = value >= min;
-            bool isValidMaxValue = value <= max;
-            bool isValidMinMaxValue = (value >= 0 && value <= 1) && (min == 0 && max == 0);
-            bool isValidValue = isValidMinMax || isValidMinValue || isValidMaxValue || isValidMinMaxValue;
-
-            if (!isValidValue)
-            {
-                throw new InvalidDataCustomException("Invalid value");
-            }
-
-            return (value - min) / (max - min);
-        }
-
         #region Sử dụng thuật toán Cosine Similarity
         // https://en.wikipedia.org/wiki/Cosine_similarity
         // Để tính toán Cosine Similarity, cần chuẩn hóa các đặc trưng về cùng một range
@@ -275,5 +259,21 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             return cosineSimilarity;
         }
         #endregion
+
+        private static double Standardize(double value, double min = 0, double max = 0)
+        {
+            bool isValidMinMax = min <= max;
+            bool isValidMinValue = value >= min;
+            bool isValidMaxValue = value <= max;
+            bool isValidMinMaxValue = (value >= 0 && value <= 1) && (min == 0 && max == 0);
+            bool isValidValue = isValidMinMax || isValidMinValue || isValidMaxValue || isValidMinMaxValue;
+
+            if (!isValidValue)
+            {
+                throw new InvalidDataCustomException("Invalid value");
+            }
+
+            return (value - min) / (max - min);
+        }
     }
 }
