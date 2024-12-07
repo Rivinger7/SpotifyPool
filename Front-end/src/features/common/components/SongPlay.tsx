@@ -130,7 +130,7 @@ const SongPlay = () => {
 						/>
 					</CustomTooltip>
 
-					<CustomTooltip label="Play">
+					<CustomTooltip label={`${isPlaying ? "Pause" : "Play"}`}>
 						<Button
 							className="group"
 							variant={"play"}

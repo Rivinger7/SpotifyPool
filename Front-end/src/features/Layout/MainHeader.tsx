@@ -9,9 +9,9 @@ import {
 
 import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
-import { House, Package, Search, User, LogOut, Settings2 } from "lucide-react"
 import CustomTooltip from "@/components/CustomTooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { House, Package, Search, User, LogOut, Settings2 } from "lucide-react"
 
 import { RootState } from "@/store/store"
 import { logout } from "@/store/slice/authSlice"

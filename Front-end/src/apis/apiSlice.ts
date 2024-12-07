@@ -34,4 +34,5 @@ export const apiSlice = createApi({
 	endpoints: () => ({}),
 	keepUnusedDataFor: 5,
 	refetchOnMountOrArgChange: true,
+	refetchOnFocus: true,
 })

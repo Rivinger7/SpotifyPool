@@ -27,3 +27,26 @@ export interface Playlist {
 	name: string
 	images: Images[]
 }
+
+export interface Avatar {
+	url: string
+	height: number
+	width: number
+}
+
+export interface User {
+	id: string
+	name: string
+	avatar: Avatar[]
+}
+
+export interface TrackPlaylist {
+	id: string
+	name: string
+	duration: number
+	durationFormated: string
+	previewURL: string
+	addedTime: string
+	images: Images[]
+	artists: Artists[]
+}
