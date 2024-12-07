@@ -5,14 +5,15 @@ interface CustomedTooltipProps {
 	children: React.ReactNode
 	align?: "start" | "center" | "end"
 	side?: "top" | "bottom" | "left" | "right"
+	isHidden?: boolean
 }
 
-const CustomTooltip = ({ label, side, align, children }: CustomedTooltipProps) => {
+const CustomTooltip = ({ label, side, align, isHidden, children }: CustomedTooltipProps) => {
 	return (
 		<TooltipProvider>
 			<Tooltip delayDuration={50}>
 				<TooltipTrigger asChild>{children}</TooltipTrigger>
-				<TooltipContent side={side} align={align}>
+				<TooltipContent side={side} align={align} className={`${isHidden ? "hidden" : ""}`}>
 					<p className="font-medium text-xs">{label}</p>
 				</TooltipContent>
 			</Tooltip>

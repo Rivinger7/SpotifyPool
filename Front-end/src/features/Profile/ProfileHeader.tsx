@@ -1,34 +1,25 @@
+import {User} from "@/types";
+
 import EditIcon from "@/assets/icons/EditIcon"
+import useGetUserId from "./hooks/useGetUserId"
 import ProfileModal from "./components/Modal/ProfileModal"
-// import useGetUserId from "./hooks/useGetUserId"
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
-import {useSelector} from "react-redux"
-import {RootState} from "@/store/store"
 
 import {useGetUserProfileQuery} from "@/services/apiUser.ts";
+import {Loader} from "lucide-react";
 
-interface Avatar {
-    url: string,
-    height: number,
-    width: number,
-}
-
-interface User {
-    id: string,
-    name: string,
-    avatar: Avatar[]
-}
 
 export default function ProfileHeader() {
-    const {userData} = useSelector((state: RootState) => state.auth)
-    // const userId = useGetUserId()
+    const userId = useGetUserId()
 
-    const {data: user} = useGetUserProfileQuery(userData?.userId) as {
-        data: User
+    const {data: user, isLoading} = useGetUserProfileQuery(userId) as {
+        data: User,
+        isLoading: boolean
     }
 
-    console.log(user)
-
+    if (isLoading) {
+        return <Loader className={"animate-spin size-10"}/>
+    }
 
     return (
         <div className="profile">
@@ -42,14 +33,14 @@ export default function ProfileHeader() {
                                 className="bg-[#1f1f1f] items-center justify-center cursor-pointer hover:scale-110 transition-all w-full h-full">
                                 <AvatarImage
                                     referrerPolicy="no-referrer"
-                                    src={userData?.avatar}
+                                    src={user?.avatar[0].url}
                                     // className="object-cover rounded-full w-8 h-8"
                                     className="rounded-full"
                                 />
 
                                 <AvatarFallback
                                     className="bg-green-500 text-sky-100 font-bold text-7xl">
-                                    {userData?.displayName.charAt(0).toUpperCase()}
+                                    {user?.name.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
                         </div>
@@ -77,7 +68,7 @@ export default function ProfileHeader() {
                     <span>
 						<ProfileModal>
 							<button type="button">
-								<h1 className="font-bold tracking-tight text-8xl">{userData?.displayName}</h1>
+								<h1 className="font-bold tracking-tight text-8xl">{user?.name}</h1>
 							</button>
 						</ProfileModal>
 					</span>

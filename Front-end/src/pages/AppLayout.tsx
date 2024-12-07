@@ -8,6 +8,7 @@ import LeftSideBar from "@/features/Layout/LeftSideBar"
 import MainContent from "@/features/Layout/MainContent"
 import MusicPreview from "@/features/common/MusicPreview"
 import { useMemo } from "react"
+import AudioPlayer from "@/features/Audio/AudioPlayer"
 
 function AppLayout() {
 	const { isAuthenticated } = useSelector((state: RootState) => state.auth)
@@ -22,6 +23,9 @@ function AppLayout() {
 			<MainContent mainHeight={mainHeight}>
 				<LeftSideBar />
 				<div className="bg-[var(--background-base)] rounded-lg w-full max-h-full overflow-y-auto">
+					{/* ==== AUDIO ==== */}
+					<AudioPlayer />
+
 					<Outlet />
 				</div>
 			</MainContent>
