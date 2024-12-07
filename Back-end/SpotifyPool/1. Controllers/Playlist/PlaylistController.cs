@@ -21,12 +21,25 @@ namespace SpotifyPool._1._Controllers.Playlist
         }
 
         /// <summary>
+        /// Lấy thông tin playlist bao gồm danh sách track
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
+        public async Task<IActionResult> GetPlaylistAsync(string id)
+        {
+            var result = await playlistService.GetPlaylistAsync(id);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Lấy danh sách track trong playlist
         /// </summary>
         /// <param name="id">Playlist Id</param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
-        public async Task<IActionResult> GetTrackPlaylist(string id)
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}/tracks")]
+        [Obsolete("Hãy sử dụng GetPlaylistAsync")]
+        public async Task<IActionResult> GetTrackPlaylistAsync(string id)
         {
             var result = await playlistService.GetTracksInPlaylistAsync(id);
             return Ok(result);

@@ -8,7 +8,6 @@ using MongoDB.Bson;
 //using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
@@ -86,7 +85,7 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
             IAggregateFluent<ASTrack> trackPipelines = pipeLine
                 .Skip((offset - 1) * limit)
                 .Limit(limit)
-                .SortBy(track => track.Id)
+                //.SortBy(track => track.Id)
                 .Lookup<Track, Artist, ASTrack>
                 (InCollection<Artist>(), // The foreign collection  
                 track => track.ArtistIds, // The field in Track that are joining on  
@@ -177,17 +176,17 @@ namespace DataAccessLayer.Implement.MongoDB.Generic_Repository
 
             // Lookup
             ASTrack trackPipeline = await aggregateFluent
-                .Match(preFilterDefinition) // Match the custom filter
+                //.Match(preFilterDefinition) // Match the custom filter
+                .Match(track => track.Id == trackId) // Match the track by id
                 .Lookup<Track, Artist, ASTrack>
                 (InCollection<Artist>(), // The foreign collection
                 track => track.ArtistIds, // The field in Track that are joining on
                 artist => artist.Id, // The field in Artist that are matching against
                 result => result.Artists) // The field in ASTrack to hold the matched artists
-                .Match(track => track.Id == trackId) // Match the track by id
-                .Unwind(result => result.Artists, new AggregateUnwindOptions<ASTrack>
-                {
-                    PreserveNullAndEmptyArrays = true
-                })
+                //.Unwind(result => result.Artists, new AggregateUnwindOptions<ASTrack>
+                //{
+                //    PreserveNullAndEmptyArrays = true
+                //})
                 .Project<ASTrack>(projectionDefinition)
                 .FirstOrDefaultAsync();
 

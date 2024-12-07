@@ -5,7 +5,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response
     public class ImageResponseModel
     {
         [JsonProperty("url")]
-        public string URL { get; set; } = null!;
+        public string? URL { get; set; } = string.Empty;
 
         [JsonProperty("height")]
         public int Height { get; set; }

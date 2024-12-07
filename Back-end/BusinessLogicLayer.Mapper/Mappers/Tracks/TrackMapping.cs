@@ -29,6 +29,13 @@ namespace BusinessLogicLayer.Mapper.Mappers.Tracks
                 // Format lại Duration thành mm:ss
                 .ForMember(dest => dest.DurationFormated, opt => opt.MapFrom(src => $"{src.Duration / (1000 * 60)}:{(src.Duration / 1000) % 60}"))
                 .ReverseMap();
+
+            CreateMap<ASTrack, TrackPlaylistResponseModel>()
+                // Chuyển ms sang giây (dùng Timespan)
+                .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => (int)TimeSpan.FromMilliseconds(src.Duration).TotalSeconds))
+                // Format lại Duration thành mm:ss
+                .ForMember(dest => dest.DurationFormated, opt => opt.MapFrom(src => $"{src.Duration / (1000 * 60)}:{(src.Duration / 1000) % 60}"))
+                .ReverseMap();
         }
     }
 }

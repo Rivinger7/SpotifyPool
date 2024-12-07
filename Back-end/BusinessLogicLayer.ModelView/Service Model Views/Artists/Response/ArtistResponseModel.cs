@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using DataAccessLayer.Repository.Entities;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response
 {

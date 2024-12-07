@@ -224,7 +224,24 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 TrackIds = [],
                 UserID = userId,
                 CreatedTime = Util.GetUtcPlus7Time(),
-                Images = []
+                Images =
+                        [
+                            new() {
+                            URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
+                            Height = 640,
+                            Width = 640,
+                            },
+                            new() {
+                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
+                                Height = 300,
+                                Width = 300,
+                            },
+                            new() {
+                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
+                                Height = 64,
+                                Width = 64,
+                            }
+                        ]
             };
 
             // Lưu thông tin playlist vào database
@@ -244,7 +261,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
 
         public async Task AddToFavoritePlaylistAsync(string trackId)
         {
-            if(Context.User?.Identities is null)
+            if (Context.User?.Identities is null)
             {
                 await Clients.Caller.SendAsync("Unauthorized", "You do not have permission to access to SpotifyPool's Hub");
                 Context.Abort();
@@ -442,10 +459,11 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                     TrackIds =
                     [
                         new PlaylistTracksInfo()
-                    {
-                        TrackId = trackId,
-                        AddedTime = Util.GetUtcPlus7Time()
-                    }],
+                        {
+                            TrackId = trackId,
+                            AddedTime = Util.GetUtcPlus7Time()
+                        }
+                    ],
                     UserID = userId,
                     CreatedTime = Util.GetUtcPlus7Time(),
                     Images =

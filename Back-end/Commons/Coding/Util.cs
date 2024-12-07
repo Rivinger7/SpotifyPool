@@ -202,5 +202,12 @@ namespace Utility.Coding
 
             return (height, width);
         }
+
+        public static string FormatTimeFromMilliseconds(int miliseconds)
+        {
+            int minutes = miliseconds / (1000 * 60);
+            int seconds = (miliseconds / 1000) % 60;
+            return $"{minutes}:{seconds:D2}";
+        }
     }
 }
