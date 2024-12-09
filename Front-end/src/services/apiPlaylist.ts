@@ -10,7 +10,7 @@ export const playlistApi = apiSlice.injectEndpoints({
 			transformResponse: (response) => response,
 			providesTags: ["Playlist"],
 		}),
-		getTracksByPlaylist: build.query({
+		getPlaylist: build.query({
 			query: (id) => ({
 				url: `/playlists/${id}`,
 				method: "GET",
@@ -45,7 +45,7 @@ export const playlistApi = apiSlice.injectEndpoints({
 
 export const {
 	useGetAllPlaylistsQuery,
-	useGetTracksByPlaylistQuery,
+	useGetPlaylistQuery,
 	useCreatePlaylistMutation,
 	useAddTrackToPlaylistMutation,
 	useDeleteTrackFromPlaylistMutation,

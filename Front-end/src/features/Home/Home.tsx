@@ -14,7 +14,7 @@ function Home() {
 	const dispatch = useDispatch()
 
 	// NOTE: Hiện tại chỉ lấy 6 bài hát đầu tiên
-	const { data: tracksData = [], isLoading } = useGetTracksQuery({ limit: 6 }) as {
+	const { data: tracksData = [], isLoading } = useGetTracksQuery({ limit: 30 }) as {
 		data: Track[]
 		isLoading: boolean
 	}
@@ -39,7 +39,7 @@ function Home() {
 					<div className="flex flex-row flex-wrap pl-6 pr-6 gap-x-6 gap-y-8">
 						<section className="relative flex flex-col flex-1 max-w-full min-w-full">
 							<TracksHeader>Popular tracks</TracksHeader>
-							<div className="grid grid-cols-6">
+							<div className="grid grid-cols-5">
 								{tracksData?.map((track) => (
 									<TracksComponent key={track.id} track={track} />
 								))}
