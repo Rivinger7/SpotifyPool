@@ -1,14 +1,16 @@
-import { Playlist, TrackPlaylist } from "@/types"
+import { Playlist, PlaylistDetail, TrackPlaylist } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
 interface PlaylistState {
 	playlists: Playlist[]
-	playlistTracks: TrackPlaylist[]
+	playlistDetail: PlaylistDetail | null
+	currentPlaylist: Playlist | null
 }
 
 const initialState: PlaylistState = {
 	playlists: [],
-	playlistTracks: [],
+	playlistDetail: null,
+	currentPlaylist: null,
 }
 
 const playlistSlice = createSlice({
@@ -25,13 +27,13 @@ const playlistSlice = createSlice({
 			state.playlists = state.playlists.filter((playlist) => playlist.id !== action.payload)
 		},
 		resetPlaylist(state) {
-			state.playlists = [] // Clear playlists on logout
+			state.playlists = []
 		},
-		setPlaylistTracks: (state, action: PayloadAction<TrackPlaylist[]>) => {
-			state.playlistTracks = action.payload
+		setPlaylistDetail: (state, action: PayloadAction<PlaylistDetail>) => {
+			state.playlistDetail = action.payload
 		},
 		appendPlaylistTracks: (state, action: PayloadAction<TrackPlaylist>) => {
-			state.playlistTracks.push(action.payload)
+			state.playlistDetail?.tracks.push(action.payload)
 		},
 	},
 })
@@ -41,7 +43,7 @@ export const {
 	appendPlaylist,
 	deletePlaylist,
 	resetPlaylist,
-	setPlaylistTracks,
+	setPlaylistDetail,
 	appendPlaylistTracks,
 } = playlistSlice.actions
 export default playlistSlice.reducer

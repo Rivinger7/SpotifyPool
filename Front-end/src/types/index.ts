@@ -43,10 +43,22 @@ export interface User {
 export interface TrackPlaylist {
 	id: string
 	name: string
+	description: string
 	duration: number
 	durationFormated: string
 	previewURL: string
 	addedTime: string
 	images: Images[]
 	artists: Artists[]
+}
+
+export interface PlaylistDetail {
+	id: string
+	title: string
+	images: Images[]
+	userId: string
+	displayName: string
+	avatar: Avatar
+	totalTracks: number
+	tracks: TrackPlaylist[]
 }

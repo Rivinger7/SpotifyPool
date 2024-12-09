@@ -1,10 +1,16 @@
-import { createSlice } from "@reduxjs/toolkit"
-import { Track } from "@/types"
+import { Track, TrackPlaylist } from "@/types"
+import { createSlice, PayloadAction } from "@reduxjs/toolkit"
+
+// Define interface for the payload
+interface PlayPlaylistPayload {
+	tracks: TrackPlaylist[]
+	startIndex?: number // Optional with default 0
+}
 
 interface PlayerStore {
 	currentTrack: Track | null
 	isPlaying: boolean
-	queue: Track[]
+	queue: Track[] | TrackPlaylist[]
 	currentIndex: number
 }
 
@@ -20,10 +26,10 @@ const PlayerSlice = createSlice({
 	initialState,
 	reducers: {
 		initializeQueue: (state, action) => {
-			const songs: Track[] = action.payload
+			const tracks: Track[] = action.payload
 
-			state.queue = songs
-			state.currentTrack = state.currentTrack || songs[0]
+			state.queue = tracks
+			state.currentTrack = state.currentTrack || tracks[0]
 			state.currentIndex = state.currentIndex === -1 ? 0 : state.currentIndex
 		},
 		setCurrentTrack: (state, action) => {
@@ -58,9 +64,27 @@ const PlayerSlice = createSlice({
 				state.currentTrack = state.queue[state.currentIndex]
 			}
 		},
+		playPlaylist: (state, action: PayloadAction<PlayPlaylistPayload>) => {
+			if (!action.payload.tracks || action.payload.tracks.length === 0) return
+
+			const { tracks, startIndex } = action.payload
+
+			const track = tracks[startIndex || 0]
+
+			state.queue = tracks
+			state.currentTrack = track
+			state.currentIndex = startIndex || 0
+			state.isPlaying = true
+		},
 	},
 })
 
-export const { initializeQueue, setCurrentTrack, togglePlay, playNext, playPrevious } =
-	PlayerSlice.actions
+export const {
+	initializeQueue,
+	setCurrentTrack,
+	togglePlay,
+	playNext,
+	playPrevious,
+	playPlaylist,
+} = PlayerSlice.actions
 export default PlayerSlice.reducer
