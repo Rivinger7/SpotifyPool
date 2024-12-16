@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
 {
@@ -14,9 +15,17 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
         public async Task UpdateStreamCountAsync(string trackId)
         {
             // Lấy thông tin user từ Context
-            string? userId = "6736c563216626b7bf5f1441";
+            string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-			string? topTrackId = await _unitOfWork.GetCollection<TopTrack>()
+            // Nếu không có thông tin user thì không thực hiện gì cả
+            if (userId is null)
+            {
+                // Nên thông báo lỗi ở đây
+                await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to create playlist!");
+                return;
+            }
+
+            string? topTrackId = await _unitOfWork.GetCollection<TopTrack>()
                                                  .Find(topTrack => topTrack.UserId == userId) //&& topTrack.TrackInfo.Any(track => track.TrackId == trackId))
 	                                             .Project(topTrack => topTrack.TopTrackId)
 	                                             .FirstOrDefaultAsync();
@@ -71,11 +80,6 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
             var updateOptions = new UpdateOptions { IsUpsert = false };
 
             UpdateResult trackUpdateResult = await _unitOfWork.GetCollection<TopTrack>().UpdateOneAsync(filter, updateDefinition, updateOptions);
-        }
-
-        private static bool IsValidateData(string? userId = "xxx", string? trackId = "xxx")
-        {
-            return !string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(trackId);
         }
     }
 }
