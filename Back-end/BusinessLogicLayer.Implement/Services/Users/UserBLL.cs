@@ -133,21 +133,16 @@ namespace BusinessLogicLayer.Implement.Services.Users
                                          .FirstOrDefaultAsync()
                         ?? throw new DataNotFoundCustomException("Not found any user");
 
-            // nếu không điền dữ liệu mới thì lấy lại cái cũ
-            requestModel.DisplayName ??= user.DisplayName;
-            requestModel.PhoneNumber ??= user.PhoneNumber;
-            requestModel.Birthdate ??= user.Birthdate;
-            requestModel.Gender ??= user.Gender.ToString();
+            // nếu không điền dữ liệu mới thì báo lỗi
+            //string displayName = requestModel.DisplayName ?? throw new BadRequestCustomException("Display name is required!");
+
 
             //map từ model qua user
-            _mapper.Map<EditProfileRequestModel, User>(requestModel, user);
+            //_mapper.Map<EditProfileRequestModel, User>(requestModel, user);
 
             // Cập nhật các field sẵn có
             UpdateDefinition<User> updateDefinition = Builders<User>.Update.Set(user => user.DisplayName, requestModel.DisplayName)
-                    .Set(user => user.PhoneNumber, requestModel.PhoneNumber)
-                    .Set(user => user.Birthdate, requestModel.Birthdate)
-                    .Set(user => user.Gender, Enum.Parse<UserGender>(requestModel.Gender))
-                    .Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time());
+                                                                           .Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time());
 
 			// Cập nhật Image Field nếu có
 			if (requestModel.Image is not null)
