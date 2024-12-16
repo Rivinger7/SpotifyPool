@@ -6,11 +6,29 @@ import {
 } from "@/components/ui/dropdown-menu"
 import CustomTooltip from "@/components/CustomTooltip"
 
-import { Copy, Ellipsis, Pen } from "lucide-react"
+import { User } from "@/types"
 import toast from "react-hot-toast"
-import ProfileModal from "./components/Modal/ProfileModal"
+import { Copy, Ellipsis, Pen } from "lucide-react"
 
-const ProfileBulk = () => {
+import useGetUserId from "./hooks/useGetUserId"
+import { useGetUserProfileQuery } from "@/services/apiUser"
+
+interface ProfileBulkProps {
+	setOpen: (open: boolean) => void
+}
+
+const ProfileBulk = ({ setOpen }: ProfileBulkProps) => {
+	const userId = useGetUserId()
+
+	const { data: user, isLoading } = useGetUserProfileQuery(userId) as {
+		data: User
+		isLoading: boolean
+	}
+
+	if (isLoading) {
+		return null
+	}
+
 	const handleCopy = () => {
 		navigator.clipboard.writeText(window.location.href)
 
@@ -24,23 +42,20 @@ const ProfileBulk = () => {
 			{/* // TODO: Change the name of user here */}
 			<DropdownMenu>
 				<DropdownMenuTrigger>
-					<CustomTooltip label={`More options for {username}`} side="right">
+					<CustomTooltip label={`More options for ${user.name}`} side="right">
 						<Ellipsis className="size-6 text-[#b3b3b3] hover:text-white cursor-pointer" />
 					</CustomTooltip>
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent align="start" className="border-none bg-[#282828] min-w-40">
 					<DropdownMenuItem
+						onClick={() => setOpen(true)}
 						className={
 							"flex items-center justify-start gap-2 p-3 cursor-default h-10 text-[#b3b3b3] hover:text-white transition-all hover:bg-[hsla(0,0%,100%,0.1)] text-lg"
 						}
 					>
-						<ProfileModal>
-							<>
-								<Pen className="size-5" />
-								Edit profile
-							</>
-						</ProfileModal>
+						<Pen className="size-5" />
+						Edit profile
 					</DropdownMenuItem>
 
 					<DropdownMenuItem

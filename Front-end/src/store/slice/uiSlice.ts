@@ -9,8 +9,11 @@ const uiSlice = createSlice({
 		toggleCollapse: (state) => {
 			state.isCollapsed = !state.isCollapsed
 		},
+		resetCollapse: (state) => {
+			state.isCollapsed = false
+		},
 	},
 })
 
-export const { toggleCollapse } = uiSlice.actions
+export const { toggleCollapse, resetCollapse } = uiSlice.actions
 export default uiSlice.reducer

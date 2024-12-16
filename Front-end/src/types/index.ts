@@ -19,7 +19,7 @@ export interface Track {
 	duration: number
 	durationFormated: string
 	images: Images[]
-	artists: Artists[]
+	artists?: Artists[]
 }
 
 export interface Playlist {
@@ -61,4 +61,18 @@ export interface PlaylistDetail {
 	avatar: Avatar
 	totalTracks: number
 	tracks: TrackPlaylist[]
+}
+
+export interface TopTracksDetail {
+	trackId: string
+	streamCount: number
+	firstAccessTime: Date
+	track: Track
+	artists: string[]
+}
+
+export interface TopTracks {
+	topTrackId: string
+	userId: string
+	trackInfo: TopTracksDetail[]
 }

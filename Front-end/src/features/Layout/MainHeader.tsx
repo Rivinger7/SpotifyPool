@@ -15,6 +15,7 @@ import { House, Package, Search, User, LogOut, Settings2 } from "lucide-react"
 
 import { RootState } from "@/store/store"
 import { logout } from "@/store/slice/authSlice"
+import { resetCollapse } from "@/store/slice/uiSlice"
 import { useDispatch, useSelector } from "react-redux"
 import { resetPlaylist } from "@/store/slice/playlistSlice.ts"
 import { Link, useLocation, useNavigate } from "react-router-dom"
@@ -33,7 +34,9 @@ const MainHeader = () => {
 	}
 
 	const handleLogout = () => {
+		dispatch(resetCollapse())
 		dispatch(resetPlaylist())
+		navigate("/")
 		dispatch(logout())
 		toast.success("Logout successful")
 	}
