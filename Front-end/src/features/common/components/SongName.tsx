@@ -202,7 +202,7 @@ const SongName = () => {
 						{Array.isArray(currentTrack?.artists) ? (
 							<ScrollContainer>
 								<ScrollingText>
-									{currentTrack.artists.map((artist, index) => (
+									{currentTrack?.artists.map((artist, index) => (
 										<Link
 											key={artist.name || index}
 											to={"/"}
@@ -210,7 +210,7 @@ const SongName = () => {
 										>
 											<span className="truncate">
 												{artist.name}
-												{index < currentTrack.artists.length - 1 && ", "}
+												{index < (currentTrack?.artists?.length ?? 0) - 1 && ", "}
 											</span>
 										</Link>
 									))}

@@ -9,7 +9,7 @@ import store from "./store/store.ts"
 import { Provider } from "react-redux"
 
 import { GoogleOAuthProvider } from "@react-oauth/google"
-import {HelmetProvider} from "react-helmet-async";
+import { HelmetProvider } from "react-helmet-async"
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>

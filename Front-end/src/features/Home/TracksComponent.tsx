@@ -56,7 +56,7 @@ const TracksComponent = ({ isAvatar, track }: TrackComponentProps) => {
 						{track.name}
 					</Link>
 					<div className="text-[#b3b3b3] line-clamp-2">
-						{track.artists.length > 1
+						{track.artists && track.artists.length > 1
 							? track.artists.length > 3
 								? `With ${track.artists
 										.slice(0, 3)

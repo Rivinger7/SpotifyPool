@@ -5,7 +5,6 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,28 +15,24 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Input } from "@/components/ui/input"
 import { useRef } from "react"
+import { Pen } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 interface ProfileModalProps {
-	children: React.ReactNode
+	open: boolean
+	setOpen: (open: boolean) => void
 }
-
-const EditIcon = (
-	<svg viewBox="0 0 24 24" className="w-12 h-12" fill="currentcolor">
-		<path d="M17.318 1.975a3.329 3.329 0 1 1 4.707 4.707L8.451 20.256c-.49.49-1.082.867-1.735 1.103L2.34 22.94a1 1 0 0 1-1.28-1.28l1.581-4.376a4.726 4.726 0 0 1 1.103-1.735L17.318 1.975zm3.293 1.414a1.329 1.329 0 0 0-1.88 0L5.159 16.963c-.283.283-.5.624-.636 1l-.857 2.372 2.371-.857a2.726 2.726 0 0 0 1.001-.636L20.611 5.268a1.329 1.329 0 0 0 0-1.879z" />
-	</svg>
-)
 
 const formSchema = z.object({
 	// username: z.string(),
 	imageFile: z.instanceof(File).optional(),
 })
 
-function ProfileModal({ children }: ProfileModalProps) {
+function ProfileModal({ open, setOpen }: ProfileModalProps) {
 	const fileInputRef = useRef<HTMLInputElement | null>(null)
 
 	const handleClick = () => {
@@ -89,8 +84,7 @@ function ProfileModal({ children }: ProfileModalProps) {
 	}
 
 	return (
-		<Dialog>
-			<DialogTrigger asChild>{children}</DialogTrigger>
+		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogContent className="sm:max-w-[524px] border-none bg-[#282828]">
 				<DialogHeader>
 					<DialogTitle className="text-2xl font-bold tracking-wide">Profile details</DialogTitle>
@@ -109,7 +103,7 @@ function ProfileModal({ children }: ProfileModalProps) {
 									/>
 								</div>
 								<div className="absolute top-0 bottom-0 left-0 right-0 z-10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 group-hover:bg-[rgba(0,0,0,.7)] group-hover:rounded-full transition-all duration-300 ">
-									{EditIcon}
+									<Pen className="size-12 stroke-white" />
 									<span className="mt-2 text-base font-semibold">Choose photo</span>
 								</div>
 							</div>
@@ -169,7 +163,7 @@ function ProfileModal({ children }: ProfileModalProps) {
 				</Form>
 				<DialogFooter>
 					<p className="text-xs">
-						By proceeding, you agree to give Spotify access to the image you choose to upload.
+						By proceeding, you agree to give SpotifyPool access to the image you choose to upload.
 						Please make sure you have the right to upload the image.
 					</p>
 				</DialogFooter>
