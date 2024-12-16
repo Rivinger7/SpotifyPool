@@ -14,6 +14,7 @@ using CloudinaryDotNet.Actions;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using Utility.Coding;
+using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
@@ -102,53 +103,28 @@ namespace BusinessLogicLayer.Implement.Services.Users
         }
 
 
-        public async Task<UserResponseModel> GetUserByIDAsync(string id, bool isCache = false)
+        public async Task<UserProfileResponseModel> GetUserByIDAsync(string id)
         {
-            //ObjectId objectId = ObjectId.Parse(id);
+            // Projection
+            ProjectionDefinition<User> userProjection = Builders<User>.Projection
+                .Include(user => user.Id)
+                .Include(user => user.DisplayName)
+                .Include(user => user.Images);
 
-            UserResponseModel user;
+            // Lấy thông tin người dùng theo ID
+            User user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == id)
+                .Project<User>(userProjection)
+                .FirstOrDefaultAsync();
 
-            if (isCache)
-            {
-                user = await _cache.GetOrSetAsync(id.ToString(), () => _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
-                {
-                    UserId = user.Id.ToString(),
-                    Role = user.Role.ToString(),
-                    Email = user.Email,
-                    DisplayName = user.DisplayName,
-                    Gender = user.Gender.ToString(),
-                    Birthdate = user.Birthdate,
-                    //ImageResponseModel = user.Images,
-                    IsLinkedWithGoogle = user.IsLinkedWithGoogle,
-                    Status = user.Status.ToString(),
-                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
-                }).FirstOrDefaultAsync());
-            }
-            else
-            {
-                user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == id).Project(user => new UserResponseModel
-                {
-                    UserId = user.Id.ToString(),
-                    Role = user.Role.ToString(),
-                    Email = user.Email,
-                    DisplayName = user.DisplayName,
-                    Gender = user.Gender.ToString(),
-                    Birthdate = user.Birthdate,
-                    //ImageResponseModel = user.ImageResponseModel,
-                    IsLinkedWithGoogle = user.IsLinkedWithGoogle,
-                    Status = user.Status.ToString(),
-                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd"),
-                }).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException($"Not found User with ID {id}");
-            }
+            // Mapping từ User sang UserResponseModel
+            UserProfileResponseModel userResponseModel = _mapper.Map<UserProfileResponseModel>(user);
 
-            //UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(user);
-
-            return user;
+            return userResponseModel;
         }
 
         public async Task EditProfileAsync(EditProfileRequestModel requestModel)
         {
-            string userId = _httpContextAccessor.HttpContext.Session.GetString("UserID");
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             User user = await _unitOfWork.GetCollection<User>()
                                          .Find(user => user.Id == userId)
@@ -166,21 +142,21 @@ namespace BusinessLogicLayer.Implement.Services.Users
             //map từ model qua user
             _mapper.Map<EditProfileRequestModel, User>(requestModel, user);
 
-            // Cập nhật Image Field nếu có
-            UpdateDefinition<User>? updateDefinition = null;
-            if (requestModel.Image is not null)
-            {
-                ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image, ImageTag.Users_Profile);
-                updateDefinition = Builders<User>.Update.Set(user => user.Images.First().URL, result.SecureUrl.ToString());
-            }
-
-            // Cập nhật các fields khác
-            updateDefinition.Set(user => user.DisplayName, requestModel.DisplayName)
+            // Cập nhật các field sẵn có
+            UpdateDefinition<User> updateDefinition = Builders<User>.Update.Set(user => user.DisplayName, requestModel.DisplayName)
                     .Set(user => user.PhoneNumber, requestModel.PhoneNumber)
                     .Set(user => user.Birthdate, requestModel.Birthdate)
                     .Set(user => user.Gender, Enum.Parse<UserGender>(requestModel.Gender))
                     .Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time());
-            UpdateResult updateResult = await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == user.Id, updateDefinition);
+
+			// Cập nhật Image Field nếu có
+			if (requestModel.Image is not null)
+            {
+                ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image, ImageTag.Users_Profile);
+                updateDefinition = updateDefinition.Set(user => user.Images.First().URL, result.SecureUrl.ToString());
+            }
+
+            await _unitOfWork.GetRepository<User>().UpdateAsync(user.Id, updateDefinition);
         }
 
         //test method
@@ -202,7 +178,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             ////*** nếu muốn có sort thì thêm SortDefinition, như lày
             // SortDefinition<User> sort = Builders<User>.Sort.Descending(user => user.FullName);
 
-            var result = await _unitOfWork.GetRepository<User>().Paging(offset, limit);
+            IEnumerable<User> result = await _unitOfWork.GetRepository<User>().Paging(offset, limit);
             return _mapper.Map<IReadOnlyCollection<UserResponseModel>>(result);
         }
     }

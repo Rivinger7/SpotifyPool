@@ -9,13 +9,15 @@ import {
 
 import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
-import { House, Package, Search } from "lucide-react"
 import CustomTooltip from "@/components/CustomTooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { House, Package, Search, User, LogOut, Settings2 } from "lucide-react"
 
 import { RootState } from "@/store/store"
 import { logout } from "@/store/slice/authSlice"
+import { resetCollapse } from "@/store/slice/uiSlice"
 import { useDispatch, useSelector } from "react-redux"
+import { resetPlaylist } from "@/store/slice/playlistSlice.ts"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 
 const MainHeader = () => {
@@ -27,7 +29,14 @@ const MainHeader = () => {
 
 	const { userData, isAuthenticated } = useSelector((state: RootState) => state.auth)
 
+	const handleNavigate = (url: string) => {
+		navigate(url)
+	}
+
 	const handleLogout = () => {
+		dispatch(resetCollapse())
+		dispatch(resetPlaylist())
+		navigate("/")
 		dispatch(logout())
 		toast.success("Logout successful")
 	}
@@ -38,7 +47,7 @@ const MainHeader = () => {
 				{/* LOGO */}
 				<div className="pointer-events-auto z-20">
 					<Link to={"/"}>
-						<CustomTooltip label="Spotify" side="bottom" align="center">
+						<CustomTooltip label="SpotifyPool" side="bottom" align="center">
 							<img
 								src="Spotify_Icon_RGB_White.png"
 								alt="Spotify Logo white RGB"
@@ -141,25 +150,28 @@ const MainHeader = () => {
 								<DropdownMenuSeparator />
 
 								{/* PROFILE BUTTON */}
-								<DropdownMenuItem className="p-3 pr-2">
-									<Link to={"/user"} className="w-full text-lg">
-										Profile
-									</Link>
+								<DropdownMenuItem
+									onSelect={() => handleNavigate(`/user/${userData?.userId}`)}
+									className="p-3 pr-2 text-lg cursor-pointer"
+								>
+									<User />
+									<span>Profile</span>
 								</DropdownMenuItem>
 
-								<DropdownMenuItem className="p-3 pr-2">
-									<Link to={"/settings"} className="w-full text-lg">
-										Settings
-									</Link>
+								<DropdownMenuItem
+									onSelect={() => handleNavigate("/")}
+									className="p-3 pr-2 text-lg cursor-pointer"
+								>
+									<Settings2 />
+									<span>Settings</span>
 								</DropdownMenuItem>
 
 								<DropdownMenuSeparator />
 
 								{/* LOGOUT BUTTON */}
-								<DropdownMenuItem className="p-3 pr-2">
-									<div onClick={handleLogout} className="w-full text-lg">
-										Logout
-									</div>
+								<DropdownMenuItem className="p-3 pr-2 text-lg" onSelect={handleLogout}>
+									<LogOut />
+									<span>Logout</span>
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>

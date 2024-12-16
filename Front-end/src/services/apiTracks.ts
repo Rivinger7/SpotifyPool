@@ -3,30 +3,44 @@ import { apiSlice } from "../apis/apiSlice"
 export const trackApi = apiSlice.injectEndpoints({
 	endpoints: (build) => ({
 		getTracks: build.query({
-			query: () => ({
+			query: (params) => ({
 				url: "/tracks",
+				method: "GET",
+				params,
+			}),
+			transformResponse: (response) => response,
+			providesTags: ["Track"],
+		}),
+		getTracksById: build.query({
+			query: () => ({
+				url: "/tracks/:trackId",
 				method: "GET",
 			}),
 			transformResponse: (response) => response,
-			providesTags: ["Media"],
+			providesTags: ["Track"],
 		}),
-		uploadImage: build.mutation({
-			query: (data) => ({
-				url: "/media/upload-image",
-				method: "POST",
-				body: data,
+		searchTracks: build.query({
+			query: () => ({
+				url: "/tracks/search",
+				method: "GET",
 			}),
-			invalidatesTags: ["Media"],
+			transformResponse: (response) => response,
+			providesTags: ["Track"],
 		}),
-		uploadTrack: build.mutation({
-			query: (data) => ({
-				url: "/media/upload-track",
-				method: "POST",
-				body: data,
+		getTopTracks: build.query({
+			query: () => ({
+				url: "/tracks/top-track",
+				method: "GET",
 			}),
-			invalidatesTags: ["Media"],
+			transformResponse: (response) => response,
+			providesTags: ["Track"],
 		}),
 	}),
 })
 
-export const { useGetTracksQuery, useUploadImageMutation, useUploadTrackMutation } = trackApi
+export const {
+	useGetTracksQuery,
+	useGetTracksByIdQuery,
+	useSearchTracksQuery,
+	useGetTopTracksQuery,
+} = trackApi

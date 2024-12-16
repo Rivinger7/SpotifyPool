@@ -7,6 +7,11 @@ namespace SetupLayer.Enum.Microservices.Cloudinary
         [EnumMember(Value = "Users_Profile")]
         Users_Profile,
         [EnumMember(Value = "Test")]
-        Test
-    }
+        Test,
+        [EnumMember(Value = "Playlist")]
+		Playlist
+
+
+
+	}
 }

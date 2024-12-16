@@ -1,11 +1,16 @@
 import { configureStore } from "@reduxjs/toolkit"
-import authReducer from "./slice/authSlice"
+
+import uiReducer from "./slice/uiSlice"
 import { apiSlice } from "@/apis/apiSlice"
+import authReducer from "./slice/authSlice"
 import playerReducer from "./slice/playerSlice"
+import playlistReducer from "./slice/playlistSlice"
 
 const rootReducer = {
+	ui: uiReducer,
 	auth: authReducer,
 	play: playerReducer,
+	playlist: playlistReducer,
 }
 
 const store = configureStore({

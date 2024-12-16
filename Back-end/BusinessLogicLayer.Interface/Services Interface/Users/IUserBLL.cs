@@ -8,11 +8,8 @@ namespace Business_Logic_Layer.Services_Interface.Users
     {
         // Get User List
         Task<IEnumerable<UserResponseModel>> GetAllUsersAsync(string? fullname, UserGender? gender, string? email, bool isCache = false);
-        // Get user by ID
-        Task<UserResponseModel> GetUserByIDAsync(string id, bool isCache = false);
-
+        Task<UserProfileResponseModel> GetUserByIDAsync(string id);
         Task EditProfileAsync(EditProfileRequestModel requestModel);
-
 		Task<IEnumerable<UserResponseModel>> TestPaging(int offset, int limit);
-    }
+	}
 }

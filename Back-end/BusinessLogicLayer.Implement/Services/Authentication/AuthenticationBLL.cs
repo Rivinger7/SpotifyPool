@@ -54,15 +54,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             // Sau khi tạo xong thì mã hóa nó nếu chưa mã hóa sau đó tạo link như dưới
             // Dùng mã hóa cho email khi tạo link
-            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
+            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"));
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";
 
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
-
-            // User's avatar (Temp)
-            string avatarURL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730097883/60d5dc467b950c5ccc8ced95_spotify-for-artists_on4me9.jpg";
 
             User newUser = new()
             {
@@ -83,9 +80,9 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 [
                     new()
                     {
-                        URL = avatarURL,
-                        Height = 500,
-                        Width = 313,
+                        URL = null,
+                        Height = 0,
+                        Width = 0,
                     },
                 ]
             };
@@ -167,7 +164,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             // Xóa session khi người dùng resend email confirm
             // Session này phục vụ cho hàm ReActiveAccountByToken khi chưa active account
-            _httpContextAccessor.HttpContext.Session.Remove("UserNameTemp");
+            _httpContextAccessor.HttpContext?.Session.Remove("UserNameTemp");
 
             return;
         }
@@ -216,7 +213,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == email).FirstOrDefaultAsync();
 
             // Lấy thông tin ảnh từ URL
-            //(int imageHeight, int imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
+            (int? imageHeight, int? imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
 
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
@@ -237,8 +234,8 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                         new()
                         {
                             URL = avatar,
-                            Height = 96,
-                            Width = 96,
+                            Height = imageHeight ?? 96,
+                            Width = imageWidth ?? 96,
                         },
                     ],
                     Role = UserRole.Customer,
@@ -277,6 +274,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
             IEnumerable<Claim> claimsList =
             [
+                new Claim(JwtRegisteredClaimNames.NameId, retrieveUser.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, payload.Email),
                 new Claim(JwtRegisteredClaimNames.GivenName, payload.GivenName),
                 new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName),
@@ -367,7 +365,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             switch (retrieveUser.Status)
             {
                 case UserStatus.Inactive:
-                    _httpContextAccessor.HttpContext.Session.SetString("UserNameTemp", retrieveUser.UserName);
+                    _httpContextAccessor.HttpContext?.Session.SetString("UserNameTemp", retrieveUser.UserName);
                     throw new UnAuthorizedCustomException("Not active");
                 case UserStatus.Banned: throw new UnAuthorizedCustomException("Banned");
             }
@@ -402,8 +400,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> lastLoginTimeUpdate = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, lastLoginTimeUpdate);
 
-            _httpContextAccessor.HttpContext.Session.SetString("UserID", retrieveUser.Id);
-
             return authenticationModel;
         }
 
@@ -416,7 +412,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
             string email = retrieveUser.Email;
 
-            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"));
+            string encryptedToken = DataEncryptionExtensions.HmacSHA256(email, Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"));
 
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";

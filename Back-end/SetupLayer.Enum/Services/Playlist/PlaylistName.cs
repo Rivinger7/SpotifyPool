@@ -7,6 +7,9 @@ namespace SetupLayer.Enum.Services.Playlist
         [EnumMember(Value = "Favorite Songs")]
         FavoriteSong,
         [EnumMember(Value = "Weekly Songs")]
-        WeeklySong
-    }
+        WeeklySong,
+		[EnumMember(Value = "New Playlist")]
+		NewPlaylist
+
+	}
 }

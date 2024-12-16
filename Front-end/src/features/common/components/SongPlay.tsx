@@ -8,6 +8,8 @@ import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import CustomTooltip from "@/components/CustomTooltip"
 
+import { HttpTransportType, HubConnectionBuilder } from "@microsoft/signalr"
+
 import { RootState } from "@/store/store"
 import { playNext, playPrevious, togglePlay } from "@/store/slice/playerSlice"
 
@@ -20,11 +22,16 @@ const formatTime = (seconds: number) => {
 const SongPlay = () => {
 	const dispatch = useDispatch()
 
-	const { currentSong, isPlaying } = useSelector((state: RootState) => state.play)
+	const { currentTrack, isPlaying } = useSelector((state: RootState) => state.play)
 
-	const [volume, setVolume] = useState(30)
+	const [volume, setVolume] = useState(1)
 	const [duration, setDuration] = useState(0)
 	const [currentTime, setCurrentTime] = useState(0)
+
+	// CHECKPOINT: TIMER LOGIC SIGNALR
+	const [playTime, setPlayTime] = useState(0)
+	const [hasTriggeredStream, setHasTriggeredStream] = useState(false)
+	const timerRef = useRef<NodeJS.Timeout | null>(null)
 
 	const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -51,7 +58,56 @@ const SongPlay = () => {
 			audio.removeEventListener("loadedmetadata", updateDuration)
 			audio.removeEventListener("ended", handleEnded)
 		}
-	}, [currentSong, dispatch])
+	}, [currentTrack, dispatch])
+
+	// Effect for tracking play time
+	useEffect(() => {
+		if (isPlaying && !hasTriggeredStream) {
+			timerRef.current = setInterval(() => {
+				setPlayTime((prev) => prev + 1)
+			}, 1000)
+		}
+
+		return () => {
+			if (timerRef.current) {
+				clearInterval(timerRef.current)
+			}
+		}
+	}, [isPlaying, hasTriggeredStream])
+
+	// Effect for SignalR connection after 10 seconds
+	useEffect(() => {
+		if (playTime >= 10 && !hasTriggeredStream) {
+			const connection = new HubConnectionBuilder()
+				.withUrl(import.meta.env.VITE_SPOTIFYPOOL_HUB_COUNT_STREAM_URL, {
+					// skipNegotiation: true,
+					transport: HttpTransportType.WebSockets, // INFO: set this to websockets to use skipNegotiation
+					// transport: HttpTransportType.LongPolling,
+				})
+				.withAutomaticReconnect()
+				.build()
+
+			connection
+				.start()
+				.then(() => {
+					console.log("Connected to the hub")
+					connection.invoke("UpdateStreamCountAsync", currentTrack?.id)
+					setHasTriggeredStream(true) // Prevent multiple triggers
+				})
+				.catch((err) => console.error(err))
+
+			// Clear timer after triggering
+			if (timerRef.current) {
+				clearInterval(timerRef.current)
+			}
+		}
+	}, [playTime, currentTrack?.id, hasTriggeredStream])
+
+	// Reset states when song changes
+	useEffect(() => {
+		setPlayTime(0)
+		setHasTriggeredStream(false)
+	}, [currentTrack?.id])
 
 	const handleSeek = (value: number[]) => {
 		if (audioRef.current) {
@@ -74,7 +130,7 @@ const SongPlay = () => {
 						/>
 					</CustomTooltip>
 
-					<CustomTooltip label="Play">
+					<CustomTooltip label={`${isPlaying ? "Pause" : "Play"}`}>
 						<Button
 							className="group"
 							variant={"play"}

@@ -1,13 +1,13 @@
 /* The loader container */
-.loader {
+/* .loader {
 	width: 100%;
 	height: 100%;
 	perspective: 200px;
 	backdrop-filter: blur(10px);
-}
+} */
 
 /* The dot */
-.dot {
+/* .dot {
 	position: absolute;
 	top: 50%;
 	left: 50%;
@@ -103,5 +103,20 @@
 		border-color: #6bb2cd;
 		box-shadow: inset 0 0 15px 0 rgba(0, 0, 0, 0.1);
 		transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+	}
+} */
+
+/* HTML: <div class="loader"></div> */
+.loader {
+	width: 20px;
+	aspect-ratio: 1;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 0 0 0 #fff4;
+	animation: l1 1s infinite;
+}
+@keyframes l1 {
+	100% {
+		box-shadow: 0 0 0 30px #fff0;
 	}
 }

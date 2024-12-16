@@ -41,8 +41,6 @@ using SetupLayer.Setting.Database;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.Implement.Services.Tracks;
 using System.Security.Claims;
-using BusinessLogicLayer.Interface.Services_Interface.Playlists.Favorites;
-using BusinessLogicLayer.Implement.Services.Playlists.Favorites;
 using MongoDB.Bson.Serialization;
 using SetupLayer.Enum.Services.Playlist;
 using SetupLayer.Enum.Services.User;
@@ -61,6 +59,9 @@ using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
 using BusinessLogicLayer.Implement.Services.Recommendation;
 using DataAccessLayer.Implement.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.Generic_Repository;
+using BusinessLogicLayer.Implement.Services.Playlists.Custom;
+using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
+using BusinessLogicLayer.DataAnalytics;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -96,7 +97,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Database
             stopwatch.Restart();
-            services.AddDatabase(configuration);
+            services.AddDatabase();
             stopwatch.Stop();
             Console.WriteLine($"AddDatabase took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -113,12 +114,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             Console.WriteLine($"AddServices took {stopwatch.ElapsedMilliseconds} ms");
 
             stopwatch.Restart();
-            services.AddEmailSender(configuration);
+            services.AddEmailSender();
             stopwatch.Stop();
             Console.WriteLine($"AddEmailSender took {stopwatch.ElapsedMilliseconds} ms");
 
             stopwatch.Restart();
-            services.AddJWT(configuration);
+            services.AddJWT();
             stopwatch.Stop();
             Console.WriteLine($"AddJWT took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -128,14 +129,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
 
             stopwatch.Restart();
-            services.AddJiraClient(configuration);
+            services.AddJiraClient();
             stopwatch.Stop();
             Console.WriteLine($"AddJiraClient took {stopwatch.ElapsedMilliseconds} ms");
-
-            stopwatch.Restart();
-            //services.AddIdentity(configuration);
-            stopwatch.Stop();
-            Console.WriteLine($"AddIdentity took {stopwatch.ElapsedMilliseconds} ms");
 
             // Cloudinary
             stopwatch.Restart();
@@ -145,13 +141,13 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Spotify
             stopwatch.Restart();
-            services.AddSpotify(configuration);
+            services.AddSpotify();
             stopwatch.Stop();
             Console.WriteLine($"AddSpotify took {stopwatch.ElapsedMilliseconds} ms");
 
             // Geolocation
             stopwatch.Restart();
-            services.AddGeolocation(configuration);
+            services.AddGeolocation();
             stopwatch.Stop();
             Console.WriteLine($"AddGeolocation took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -159,6 +155,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             stopwatch.Restart();
             services.AddGenius();
             stopwatch.Stop();
+
+            // Hub (SignalR)
+            stopwatch.Restart();
+            services.AddSignalR();
+            stopwatch.Stop();
+            Console.WriteLine($"AddSignalR took {stopwatch.ElapsedMilliseconds} ms");
 
             // Caching (In-memory cache)
             stopwatch.Restart();
@@ -189,6 +191,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             {
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
+                options.Cookie.SameSite = SameSiteMode.None; // Cần thiết cho cross-origin
+                options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Hoặc Always nếu dùng HTTPS
                 options.IdleTimeout = TimeSpan.FromDays(7);
                 //options.IdleTimeout = TimeSpan.FromMinutes(30);
             });
@@ -196,12 +200,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
 
             stopwatch.Restart();
-            services.AddAuthentication(configuration);
+            services.AddAuthentication();
             stopwatch.Stop();
             Console.WriteLine($"AddAuthentication took {stopwatch.ElapsedMilliseconds} ms");
 
             stopwatch.Restart();
-            services.AddAuthorization(configuration);
+            services.AddAuthorization();
             stopwatch.Stop();
             Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -458,6 +462,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         {
             // Test
             services.AddScoped<TestBLL>();
+            services.AddScoped<IDataPrediction, DataPrediction>();
 
             // Register BLL services
 
@@ -470,8 +475,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Track
             services.AddScoped<ITrack, TrackBLL>();
 
-            // Playlist
-            services.AddScoped<IFavoritesPlaylist, FavoritesPlaylistBLL>();
+            // Favourite Playlist
+            services.AddScoped<IPlaylist, PlaylistBLL>();
 
             // Data Reccomendation
             services.AddScoped<IRecommendation, RecommendationBLL>();
@@ -482,7 +487,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         //    services.AddScoped<IUnitOfWork, UnitOfWork>();
         //}
 
-        public static void AddEmailSender(this IServiceCollection services, IConfiguration configuration)
+        public static void AddEmailSender(this IServiceCollection services)
         {
             SmtpSettings smtpSettings = new()
             {
@@ -521,12 +526,29 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddHostedService<BackgroundEmailSender>();
         }
 
-        public static void AddJWT(this IServiceCollection services, IConfiguration configuration)
+        public static void AddJWT(this IServiceCollection services)
         {
             // Config JWT
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Spotify Pool", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Spotify Pool",
+                    Version = "v1",
+                    Description = "Spotify Pool is a music service that gives you access to millions of songs and other content from artists around the world. This is just a beta version. The project will be released soon in 2025",
+                    TermsOfService = new Uri("https://myfrontend.com/terms"),
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Support Team",
+                        Email = "support@example.com",
+                        Url = new Uri("https://myfrontend.com/support")
+                    },
+                    License = new OpenApiLicense
+                    {
+                        Name = "MIT",
+                        Url = new Uri("https://opensource.org/licenses/MIT")
+                    },
+                });
 
                 // Include the XML comments (path to the XML file)
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -543,7 +565,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     c.IncludeXmlComments(controllerXmlFile);
                 }
 
-                // Add JWT Authentication
+                #region Add JWT Authentication
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -567,8 +589,45 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                         Array.Empty<string>()
                     }
                 });
+                #endregion
 
+                #region Add OAuth2 Authentication
+                //c.AddSecurityDefinition("OAuth2", new OpenApiSecurityScheme
+                //{
+                //    Type = SecuritySchemeType.OAuth2,
+                //    Description = "OAuth2 Authorization Code Flow",
+                //    Flows = new OpenApiOAuthFlows
+                //    {
+                //        AuthorizationCode = new OpenApiOAuthFlow
+                //        {
+                //            AuthorizationUrl = new Uri("https://accounts.spotify.com/authorize"), // URL ủy quyền của Spotify
+                //            TokenUrl = new Uri("https://accounts.spotify.com/api/token"),       // URL token của Spotify
+                //            Scopes = new Dictionary<string, string>
+                //            {
+                //                { "user-top-read", "Read user's top artists and tracks" },
+                //                { "playlist-read-private", "Read private playlists" },
+                //                { "playlist-modify-public", "Modify public playlists" },
+                //                { "user-library-read", "Read user's library" }
+                //            }
+                //        }
+                //    }
+                //});
 
+                //c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                //{
+                //    {
+                //        new OpenApiSecurityScheme
+                //        {
+                //            Reference = new OpenApiReference
+                //            {
+                //                Type = ReferenceType.SecurityScheme,
+                //                Id = "OAuth2"
+                //            }
+                //        },
+                //        new List<string> { "user-top-read", "playlist-read-private" } // Các scope mặc định
+                //    }
+                //});
+                #endregion
             });
 
             services.AddTransient<IJwtBLL, JwtBLL>();
@@ -583,7 +642,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             });
         }
 
-        public static void AddAuthentication(this IServiceCollection services, IConfiguration configuration)
+        public static void AddAuthentication(this IServiceCollection services)
         {
             // Config the Google Identity
             services.AddAuthentication(options =>
@@ -604,14 +663,62 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     ValidateAudience = false,
                     ValidateLifetime = true,
 
+                    // Các issuer và audience hợp lệ
+                    ValidIssuers = [Environment.GetEnvironmentVariable("JWT_ISSUER_PRODUCTION"), "https://localhost:7018"],
+                    ValidAudiences = [Environment.GetEnvironmentVariable("JWT_AUDIENCE_PRODUCTION"), Environment.GetEnvironmentVariable("JWT_AUDIENCE_PRODUCTION_BE"), "https://localhost:7018"],
+
                     //ký vào token
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Key property is not set in environment or not found"))),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"))),
 
                     ClockSkew = TimeSpan.Zero,
 
                     // Đặt RoleClaimType
                     RoleClaimType = ClaimTypes.Role
+                };
+
+                // Cấu hình SignalR để đọc token
+                opt.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        // Lấy origin từ request
+                        string? origin = context.Request.Headers.Origin;
+
+                        // Các origin được phép truy cập
+                        IEnumerable<string?> securedOrigins = new[]
+                        {
+                            Environment.GetEnvironmentVariable("SPOTIFY_HUB_CORS_ORIGIN_FE_PRODUCTION"),
+                            Environment.GetEnvironmentVariable("SPOTIFY_HUB_CORS_ORIGIN_FE_01_DEVELOPMENT"),
+                        }.Where(origin => !string.IsNullOrWhiteSpace(origin));
+
+                        // Kiểm tra xem origin có trong danh sách được phép không
+                        if (string.IsNullOrWhiteSpace(origin) || !securedOrigins.Any(securedOrigin => securedOrigin is not null && securedOrigin.Equals(origin, StringComparison.Ordinal)))
+                        {
+                            return Task.CompletedTask;
+                        }
+
+                        // Query chứa token, sử dụng nó
+                        string? accessToken = context.Request.Query["access_token"];
+                        PathString path = context.HttpContext.Request.Path;
+
+                        // Các segment được bảo mật
+                        IEnumerable<string?> securedSegments = new[]
+                        {
+                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL"),
+                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_TO_PLAYLIST_URL"),
+
+                        }.Where(segment => !string.IsNullOrWhiteSpace(segment)); // Lọc ra các segment không rỗng
+
+                        // Kiểm tra xem path có chứa segment cần xác thực không
+                        if (!string.IsNullOrWhiteSpace(accessToken) && securedSegments.Any(segment => path.StartsWithSegments($"/{segment}", StringComparison.Ordinal)))
+                        {
+                            //context.Token = accessToken["Bearer ".Length..].Trim(); // SubString()
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
 
                 // Remove "Bearer " prefix
@@ -635,19 +742,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             });
         }
 
-        //public static void AddIdentity(this IServiceCollection services, IConfiguration configuration)
-        //{
-        //    // Add Identity
-        //    services.AddIdentity<User, Roles>()
-        //        .AddMongoDbStores<User, Roles, ObjectId>
-        //        (
-        //            Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING"),
-        //            Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME")
-        //        )
-        //        .AddDefaultTokenProviders();
-        //}
-
-        public static void AddJiraClient(this IServiceCollection services, IConfiguration configuration)
+        public static void AddJiraClient(this IServiceCollection services)
         {
             // Config the Jira Client (REST API)
             var jiraSetting = new JiraSetting()
@@ -686,12 +781,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<CloudinaryService>();
         }
 
-        public static void AddGeolocation(this IServiceCollection services, IConfiguration configuration)
+        public static void AddGeolocation(this IServiceCollection services)
         {
             string? geolocationApiKey = Environment.GetEnvironmentVariable("IPGEOLOCATION_API_KEY");
             if (string.IsNullOrEmpty(geolocationApiKey))
             {
-                throw new DataNotFoundCustomException("Geolocation API Key is not set in the environment variables");
+                throw new DataNotFoundCustomException("Geolocation API Mode is not set in the environment variables");
             }
 
             // Initialize Cloudinary instance
@@ -708,7 +803,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
         }
 
-        public static void AddSpotify(this IServiceCollection services, IConfiguration configuration)
+        public static void AddSpotify(this IServiceCollection services)
         {
             string clientId = Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_ID") ?? throw new DataNotFoundCustomException("Spotify Client ID property is not set in environment or not found");
             string clientSecret = Environment.GetEnvironmentVariable("SPOTIFY_CLIENT_SECRET") ?? throw new DataNotFoundCustomException("Spotify Client Secret property is not set in environment or not found");
@@ -752,7 +847,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         }
 
         // Config the database
-        public static void AddDatabase(this IServiceCollection services, IConfiguration configuration)
+        public static void AddDatabase(this IServiceCollection services)
         {
             // Load MongoDB settings from environment variables
             string connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")

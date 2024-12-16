@@ -4,7 +4,7 @@ import { RootState } from "@/store/store"
 import { useNavigate } from "react-router-dom"
 import LoginForm from "@/features/Auth/LoginForm"
 
-const LoginSceen = () => {
+const LoginScreen = () => {
 	const navigate = useNavigate()
 	const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated)
 
@@ -17,4 +17,4 @@ const LoginSceen = () => {
 	return <LoginForm />
 }
 
-export default LoginSceen
+export default LoginScreen

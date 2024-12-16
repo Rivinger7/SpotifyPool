@@ -7,6 +7,7 @@ using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
+using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
@@ -20,7 +21,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image", int? height = null, int? width = null)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID") ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
             if (imageFile is null || imageFile.Length == 0)
             {
@@ -97,7 +98,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         public VideoUploadResult UploadTrack(IFormFile trackFile, AudioTagParent audioTagParent, AudioTagChild audioTagChild, string rootFolder = "Audio")
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string userID = _httpContextAccessor.HttpContext?.Session.GetString("UserID") ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
             if (trackFile is null || trackFile.Length == 0)
             {

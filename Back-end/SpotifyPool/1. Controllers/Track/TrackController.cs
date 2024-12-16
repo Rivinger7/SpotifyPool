@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Track
 {
@@ -29,9 +30,9 @@ namespace SpotifyPool._1._Controllers.Track
         /// </summary>
         /// <returns></returns>
         [AllowAnonymous, HttpGet()]
-        public async Task<IActionResult> GetAllTracksAsync()
+        public async Task<IActionResult> GetAllTracksAsync([FromQuery]int offset = 1, [FromQuery]int limit = 10)
         {
-            var result = await _trackService.GetAllTracksAsync();
+            var result = await _trackService.GetAllTracksAsync(offset, limit);
             return Ok(result);
         }
 
@@ -46,5 +47,12 @@ namespace SpotifyPool._1._Controllers.Track
             var result = await _trackService.SearchTracksAsync(searchTerm);
             return Ok(result);
         }
-    }
+
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("top-track")]
+		public async Task<IActionResult> GetTopTracksAsync()
+		{
+			var result = await _trackService.GetTopTracksAsync();
+			return Ok(result);
+		}
+	}
 }

@@ -45,6 +45,7 @@ const LoginForm = () => {
 		setVisible((visible) => !visible)
 	}
 
+	// NOTE: google login button width change based on window size
 	// Inside component:
 	// const [buttonWidth, setButtonWidth] = useState(200)
 
@@ -105,11 +106,11 @@ const LoginForm = () => {
 				<div className="bg-[#121212] p-8 md:py-10 md:px-14 rounded-md">
 					<Helmet>
 						<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Black.png" />
-						<title>Login - Spotify</title>
+						<title>Login - SpotifyPool</title>
 					</Helmet>
 
 					<header className="flex flex-col items-center justify-center mb-3">
-						<CustomTooltip label="Back to homepage" side="top">
+						<CustomTooltip label="Back to SpotifyPool" side="top">
 							<Link to={"/"}>
 								<img
 									src="/Spotify_Icon_RGB_White.png"

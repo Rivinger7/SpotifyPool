@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using BusinessLogicLayer.Implement.CustomExceptions;
+using Microsoft.AspNetCore.Identity;
 
 namespace SpotifyPool.Infrastructure
 {
@@ -39,28 +40,20 @@ namespace SpotifyPool.Infrastructure
             {
                 otp.TokenLifespan = TimeSpan.FromMinutes(3);
             });
-
-            services.Configure<IdentityOptions>(options =>
-            {
-                options.Password.RequireDigit = false;
-                options.Password.RequiredLength = 6;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-                options.Password.RequireLowercase = false;
-                options.Password.RequiredUniqueChars = 1;
-            });
         }
         public static void AddCors(this IServiceCollection services)
         {
+            string clientUrl = Environment.GetEnvironmentVariable("SPOTIFYPOOL_CLIENT_URL") ?? throw new InvalidDataCustomException("SPOTIFYPOOL_CLIENT_URL is not set");
+
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowSpecificOrigin",
-
                     builder => builder
-                        .WithOrigins("http://localhost:5173") // Or using AllowAnyOrigin() for all
-                        .WithOrigins("https://spotifypoolmusic.vercel.app")
+                        .WithOrigins("http://localhost:5173")
+                        .WithOrigins(clientUrl)
                         .AllowAnyHeader()
-                        .AllowAnyMethod());
+                        .AllowAnyMethod()
+                        .AllowCredentials());
             });
         }
     }

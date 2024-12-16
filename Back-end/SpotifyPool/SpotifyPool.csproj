@@ -29,10 +29,11 @@
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="7.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\BusinessLogicLayer.DataAnalytics\BusinessLogicLayer.DataAnalytics.csproj" />
 		<ProjectReference Include="..\BusinessLogicLayer.DependencyInjection\BusinessLogicLayer.DependencyInjection.csproj" />
 	</ItemGroup>
 
@@ -43,10 +44,6 @@
 	  <None Update="Dockerfile">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="wwwroot\" />
 	</ItemGroup>
 
 </Project>

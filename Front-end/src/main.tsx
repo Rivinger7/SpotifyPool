@@ -9,14 +9,17 @@ import store from "./store/store.ts"
 import { Provider } from "react-redux"
 
 import { GoogleOAuthProvider } from "@react-oauth/google"
+import { HelmetProvider } from "react-helmet-async"
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
-		<GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-			<Provider store={store}>
-				<Toaster />
-				<App />
-			</Provider>
-		</GoogleOAuthProvider>
+		<HelmetProvider>
+			<GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+				<Provider store={store}>
+					<Toaster />
+					<App />
+				</Provider>
+			</GoogleOAuthProvider>
+		</HelmetProvider>
 	</StrictMode>
 )
