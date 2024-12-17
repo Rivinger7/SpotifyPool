@@ -15,7 +15,7 @@ namespace SpotifyPool._1._Controllers.Recommendation
         private readonly IRecommendation _recommendationService = recommendationService;
 
         /// <summary>
-        /// Sử dụng thuật toán Euclidean Distance với trọng số để tìm ra bài hát gợi ý
+        /// Sử dụng thuật toán Weighted Euclidean Distance
         /// </summary>
         /// <param name="trackId"></param>
         /// <returns></returns>
@@ -27,7 +27,7 @@ namespace SpotifyPool._1._Controllers.Recommendation
         }
 
         /// <summary>
-        /// Sử dụng thuật toán Cosine Similarity (Không có trọng số) để tìm ra bài hát gợi ý
+        /// Sử dụng thuật toán Cosine Similarity
         /// </summary>
         /// <param name="trackId"></param>
         /// <returns></returns>

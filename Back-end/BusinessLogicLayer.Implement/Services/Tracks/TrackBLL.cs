@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack;
 using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
@@ -10,7 +12,6 @@ using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using System.Collections.Generic;
 using System.Security.Claims;
 using Utility.Coding;
 
@@ -24,51 +25,148 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit)
         {
-            // Lấy tất cả các track với artist
-            IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetAllTracksWithArtistAsync(offset, limit);
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.PreviewURL,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        GenreIds = artist.GenreIds,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
 
-            // Map the aggregate result to TrackResponseModel
-            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            return responseModel;
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Skip((offset - 1) * limit)
+                .Limit(limit)
+                .Lookup<Track, Artist, ASTrack>(
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists)
+                .Project(trackWithArtistProjection)
+                .ToListAsync();
+
+            return tracksResponseModel;
         }
 
 
 
-		public async Task<TrackResponseModel> GetTrackAsync(string id)
+        public async Task<TrackResponseModel> GetTrackAsync(string id)
         {
-            // Lấy track với artist
-            ASTrack track = await _unitOfWork.GetRepository<ASTrack>().GetTrackWithArtistAsync(id);
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.PreviewURL,
+                    Duration = track.Duration,
+                    // Lý do không dùng được vì Expression không hỗ trợ các hàm extension
+                    // DurationFormated = Util.FormatTimeFromMilliseconds(track.Duration),
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        GenreIds = artist.GenreIds,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
 
-            // Map the aggregate result to TrackResponseModel
-            TrackResponseModel responseModel = _mapper.Map<TrackResponseModel>(track);
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            return responseModel;
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            TrackResponseModel trackResponseModel = await aggregateFluent
+                .Lookup<Track, Artist, ASTrack>(
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists)
+                .Project(trackWithArtistProjection)
+                .FirstOrDefaultAsync();
+
+            return trackResponseModel;
         }
 
-		public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
+        public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
         {
-            // Nếu không có searchTerm thì trả về mảng rỗng  
-            if (string.IsNullOrWhiteSpace(searchTerm))
-            {
-                return [];
-            }
-
             // Xử lý các ký tự đặc biệt
             string searchTermEscaped = Util.EscapeSpecialCharacters(searchTerm);
 
             // Empty Pipeline
             IAggregateFluent<Track> pipeline = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Chỉ lấy những field cần thiết  
-            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
-                .Include(track => track.Id)
-                .Include(track => track.Name)
-                .Include(track => track.Description)
-                .Include(track => track.PreviewURL)
-                .Include(track => track.Duration)
-                .Include(track => track.Images)
-                .Include(track => track.Artists);
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.PreviewURL,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        GenreIds = artist.GenreIds,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
 
             // Tạo bộ lọc cho ASTrack riêng biệt sau khi Lookup  
             FilterDefinition<ASTrack> artistFilter = Builders<ASTrack>.Filter.Or(
@@ -77,30 +175,29 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 Builders<ASTrack>.Filter.ElemMatch(track => track.Artists, artist => artist.Name.Contains(searchTermEscaped, StringComparison.CurrentCultureIgnoreCase))
             );
 
-            // Lookup from Artist collection to Track collection  
-            IAggregateFluent<ASTrack> trackPipelines = pipeline.Lookup<Track, Artist, ASTrack> // Stage 1  
-                (_unitOfWork.GetCollection<Artist>(),
-                track => track.ArtistIds,
-                artist => artist.Id,
-                result => result.Artists)
-                .Match(artistFilter)  // Tìm kiếm theo Artist hoặc TrackName // Stage 2  
-                .Project(projectionDefinition)
-                .As<ASTrack>();
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // To list  
-            IEnumerable<Track> tracks = await trackPipelines.ToListAsync();
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Lookup<Track, Artist, ASTrack>(
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists)
+                .Match(artistFilter)
+                .Project(trackWithArtistProjection)
+                .ToListAsync();
 
-            // Mapping to response model  
-            IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
+            return tracksResponseModel;
+        }
 
-            return responseModels;
-        }		
-        
         public async Task<TopTrackResponseModel?> GetTopTracksAsync()
-		{
+        {
             string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                                                 ?? throw new DataNotFoundCustomException("Your session is limit. Please login again.");
-            
+
 
             //join TopTrack với Track, aggregate lại dạng list ASTopTrack để tí sửa trong list này, ko để IEnumerable
             List<ASTopTrack> topTracksWithTracks = await _unitOfWork.GetRepository<TopTrack>().Collection
@@ -114,12 +211,12 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 )
             .ToListAsync();
 
-        
+
 
             // gộp thông tin từ list trên vào ASTopTrack mới
             TopTrackResponseModel? enrichedResult = topTracksWithTracks
             .Select(topTrack => new TopTrackResponseModel
-            { 
+            {
                 TopTrackId = topTrack.TopTrackId,
                 UserId = topTrack.UserId,
                 TrackInfo = topTrack.TrackInfo.Select(info => new TracksInfoResponse
@@ -130,7 +227,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     FirstAccessTime = info.FirstAccessTime,
                     Track = _mapper.Map<TrackInTopTrackResponseModel>(topTrack.Tracks.FirstOrDefault(t => t.Id == info.TrackId)),
                     Artists = topTrack.Tracks.Where(t => t.Id == info.TrackId) //lấy track từ topTrack.Tracks có Id trùng với info.TrackId
-                                    //lấy artist từ các track trong TrackInfo và duy nhất
+                                                                               //lấy artist từ các track trong TrackInfo và duy nhất
                                     .SelectMany(track => track.ArtistIds)
                                     .Distinct()
                                     // lấy artist có artistId tương ứng đã select ở bên trên
@@ -138,12 +235,12 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                                         .Find(artist => artist.Id == artistId)
                                         .Project(artist => artist.Name)
                                         .FirstOrDefault()
-                                    ) 
-                                    .ToList() 
-                }).OrderByDescending(info => info.StreamCount).Skip((1-1)*50).Take(50).ToList()
+                                    )
+                                    .ToList()
+                }).OrderByDescending(info => info.StreamCount).Skip((1 - 1) * 50).Take(50).ToList()
             }).FirstOrDefault();
 
             return enrichedResult;
-		}
+        }
     }
 }

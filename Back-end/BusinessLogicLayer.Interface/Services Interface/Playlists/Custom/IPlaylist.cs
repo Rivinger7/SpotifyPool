@@ -8,7 +8,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom
         Task<IEnumerable<PlaylistsResponseModel>> GetAllPlaylistsAsync();
         Task CreatePlaylistAsync(string playlistName);
         Task AddToPlaylistAsync(string trackId, string playlistId);
-        Task<IEnumerable<TrackPlaylistResponseModel>> GetTracksInPlaylistAsync(string playlistId);
         Task RemoveFromPlaylistAsync(string trackId, string playlistId);
         Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId);
     }

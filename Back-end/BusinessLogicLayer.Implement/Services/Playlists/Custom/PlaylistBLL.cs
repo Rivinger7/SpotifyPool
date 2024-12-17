@@ -9,6 +9,7 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Security.Claims;
 using Utility.Coding;
@@ -221,7 +222,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                             Height = image.Height,
                             Width = image.Width
                         })
-                    }).ToList()
+                    })
                 });
 
             // Empty Pipeline
@@ -243,7 +244,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             foreach (TrackResponseModel track in tracks)
             {
                 track.AddedTime = trackIdAddedTimeMap[track.Id].ToString("yyyy-MM-dd");
-                track.DurationFormated = Util.FormatTimeFromMilliseconds(track.Duration);
             }
 
             // Lý do không dùng AutoMapper vì Model này cần tới nhiều thông tin từ nhiều collection khác nhau
@@ -261,60 +261,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             };
 
             return playlistReponseModel;
-        }
-
-        [Obsolete("Dùng GetPlaylistAsync thay cho hàm GetTracksInPlaylistAsync")]
-        public async Task<IEnumerable<TrackPlaylistResponseModel>> GetTracksInPlaylistAsync(string playlistId)
-        {
-            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userID))
-            {
-                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
-            }
-
-            // Chỉ lấy những fields cần thiết từ Playlist
-            ProjectionDefinition<Playlist> playlistProjection = Builders<Playlist>.Projection
-                .Include(playlist => playlist.TrackIds);
-
-            // Lấy thông tin Playlist
-            Playlist playlist = await _unitOfWork.GetCollection<Playlist>()
-                .Find(playlist => playlist.Id == playlistId)
-                .Project<Playlist>(playlistProjection)
-                .FirstOrDefaultAsync()
-                ?? throw new DataNotFoundCustomException($"Not found any playlist with User {userID}");
-
-            // Chỉ lấy những thông tin cần thiết từ ASTrack : Track
-            ProjectionDefinition<ASTrack> astrackProjection = Builders<ASTrack>.Projection  // Project  
-                .Include(ast => ast.Id)
-                .Include(ast => ast.Name)
-                .Include(ast => ast.Description)
-                .Include(ast => ast.PreviewURL)
-                .Include(ast => ast.Duration)
-                .Include(ast => ast.Images)
-                .Include(ast => ast.Artists);
-
-            // Map track IDs and their added time
-            Dictionary<string, DateTime> trackIdAddedTimeMap = playlist.TrackIds.ToDictionary(pti => pti.TrackId, pti => pti.AddedTime);
-            HashSet<string> trackIdsSet = [.. trackIdAddedTimeMap.Keys]; // .ToHashSet()
-
-            // Filter
-            FilterDefinition<Track> trackFilter = Builders<Track>.Filter.In(track => track.Id, trackIdsSet);
-
-            // Lấy thông tin Tracks với Artist
-            IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetServeralTracksWithArtistAsync(trackFilter);
-
-            // Mapping tracks with artists to TrackResponseModel
-            // Thêm thông tin AddedTime vào TrackResponseModel
-            IEnumerable<TrackPlaylistResponseModel> tracksResponse = tracks.Select(track =>
-            {
-                TrackPlaylistResponseModel trackResponse = _mapper.Map<TrackPlaylistResponseModel>(track);
-                trackResponse.AddedTime = trackIdAddedTimeMap[track.Id].ToString("yyyy-MM-dd");
-                return trackResponse;
-            }).ToList();
-
-            return tracksResponse;
         }
 
         public async Task RemoveFromPlaylistAsync(string trackId, string playlistId)

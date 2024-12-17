@@ -17,27 +17,6 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         Task DeleteAsync(string id);
 
         /// <summary>
-        /// Lấy tất cả các track bao gồm thông tin về artist
-        /// </summary>
-        /// <returns></returns>
-        Task<IEnumerable<ASTrack>> GetAllTracksWithArtistAsync(int offset, int limit);
-
-        /// <summary>
-        /// Lấy track bao gồm thông tin về artist theo trackId
-        /// </summary>
-        /// <param name="trackId"></param>
-        /// <param name="preFilterDefinition"></param>
-        /// <returns></returns>
-        Task<ASTrack> GetTrackWithArtistAsync(string trackId, FilterDefinition<Track>? preFilterDefinition = null);
-
-        /// <summary>
-        /// Lấy nhiều track bao gồm thông tin về artist theo trackId
-        /// </summary>
-        /// <param name="filterDefinition"></param>
-        /// <returns></returns>
-        Task<IEnumerable<ASTrack>> GetServeralTracksWithArtistAsync(FilterDefinition<Track>? preFilterDefinition = null, FilterDefinition<ASTrack>? filterDefinition = null);
-
-        /// <summary>
         /// 
         /// </summary>
         /// <typeparam name="TDocument"></typeparam>
@@ -48,13 +27,5 @@ namespace DataAccessLayer.Interface.MongoDB.Generic_Repository
         /// <param name="limit">Số lượng elements muốn có trong 1 trang</param>
         /// <returns></returns>
         Task<IEnumerable<TDocument>> Paging(int offset, int limit, FilterDefinition<TDocument>? filter = null, SortDefinition<TDocument>? sort = null);
-
-		Task<IEnumerable<TResult>> GetAllDocumentsWithLookupAsync<TForeignDocument, TResult>(
-            Expression<Func<TDocument, IEnumerable<object>>> localField,
-            Expression<Func<TForeignDocument, object>> foreignField,
-            Expression<Func<TResult, IEnumerable<TForeignDocument>>> resultField);
-
-        Task<IEnumerable<ASTopTrack>> GetTopTrackstAsync(string userId, int offset, int limit);
-
 	}
 }

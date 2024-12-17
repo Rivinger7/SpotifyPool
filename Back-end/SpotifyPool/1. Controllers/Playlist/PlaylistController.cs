@@ -33,19 +33,6 @@ namespace SpotifyPool._1._Controllers.Playlist
         }
 
         /// <summary>
-        /// Lấy danh sách track trong playlist
-        /// </summary>
-        /// <param name="id">Playlist Id</param>
-        /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}/tracks")]
-        [Obsolete("Hãy sử dụng GetPlaylistAsync")]
-        public async Task<IActionResult> GetTrackPlaylistAsync(string id)
-        {
-            var result = await playlistService.GetTracksInPlaylistAsync(id);
-            return Ok(result);
-        }
-
-        /// <summary>
         /// Tạo playlist mới
         /// </summary>
         /// <param name="playlistName"></param>
