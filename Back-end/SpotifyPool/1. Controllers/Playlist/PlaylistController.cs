@@ -1,4 +1,5 @@
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,12 +36,12 @@ namespace SpotifyPool._1._Controllers.Playlist
         /// <summary>
         /// Tạo playlist mới
         /// </summary>
-        /// <param name="playlistName"></param>
+        /// <param name="playlistRequestModel"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("{playlistName}")]
-        public async Task<IActionResult> CreatePlaylistAsync(string playlistName)
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost]
+        public async Task<IActionResult> CreatePlaylistAsync([FromForm] PlaylistRequestModel playlistRequestModel)
         {
-            await playlistService.CreatePlaylistAsync(playlistName);
+            await playlistService.CreatePlaylistAsync(playlistRequestModel);
             return Ok(new { Message = "Create Playlist Successfully" });
         }
 

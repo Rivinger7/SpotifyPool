@@ -75,8 +75,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return tracksResponseModel;
         }
 
-
-
         public async Task<TrackResponseModel> GetTrackAsync(string id)
         {
             // Projection

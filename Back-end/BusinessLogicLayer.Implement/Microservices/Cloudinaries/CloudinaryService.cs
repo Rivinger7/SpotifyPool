@@ -11,12 +11,11 @@ using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
-    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache, IHttpContextAccessor httpContextAccessor)
     {
         private readonly Cloudinary _cloudinary = cloudinary;
         private readonly ICacheCustom _cache = cache;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image", int? height = null, int? width = null)
         {

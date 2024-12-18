@@ -1,26 +1,30 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
-using MongoDB.Bson;
 using MongoDB.Driver;
+using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
 {
-    public class PlaylistBLL(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IMapper mapper) : IPlaylist
+    public class PlaylistBLL(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IMapper mapper, CloudinaryService cloudinaryService) : IPlaylist
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IMapper _mapper = mapper;
+        private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
         public async Task<IEnumerable<PlaylistsResponseModel>> GetAllPlaylistsAsync()
         {
@@ -51,8 +55,13 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             return playlistsResponse;
         }
 
-        public async Task CreatePlaylistAsync(string playlistName)
+        public async Task CreatePlaylistAsync(PlaylistRequestModel playlistRequestModel)
         {
+            if (string.IsNullOrWhiteSpace(playlistRequestModel.PlaylistName))
+            {
+                throw new InvalidDataCustomException("Playlist name is required");
+            }
+
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userID))
@@ -62,7 +71,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
 
             // Kiểm tra xem playlist đã tồn tại chưa
             if (await _unitOfWork.GetCollection<Playlist>()
-                .Find(playlist => playlist.UserID == userID && playlist.Name == playlistName)
+                .Find(playlist => playlist.UserID == userID && playlist.Name == playlistRequestModel.PlaylistName)
                 .Project(playlist => playlist.Id)
                 .AnyAsync())
             {
@@ -72,23 +81,48 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Tạo hình ảnh cho playlist
             List<Image> images = [];
 
+            // Nếu có file hình ảnh thì upload lên Cloudinary
+            // Gọi 3 lần để tạo 3 kích thước ảnh khác nhau
+            if (playlistRequestModel.ImageFile != null)
+            {
+                // Kết quả upload hình ảnh
+                ImageUploadResult uploadResult;
+                // Kích thước ảnh
+                IEnumerable<int> sizes =  [640, 300, 64];
+                // Kích thước ảnh cố định
+                int fixedSize = 300;
+
+                // Upload hình ảnh lên Cloudinary
+                uploadResult = _cloudinaryService.UploadImage(playlistRequestModel.ImageFile, ImageTag.Playlist, rootFolder: "Image", fixedSize, fixedSize);
+
+                // Tạo 3 kích thước ảnh khác nhau nhưng cùng một URL với kích thước cố định
+                foreach (int size in sizes)
+                {
+                    images.Add(new()
+                    {
+                        URL = uploadResult.SecureUrl.AbsoluteUri,
+                        Height = size,
+                        Width = size
+                    });
+                }
+            }
             // Nếu playlist là Favorite Songs thì sử dụng hình ảnh mặc định
-            if (playlistName.Equals("Favorite Songs", StringComparison.OrdinalIgnoreCase))
+            else
             {
                 images =
                 [
                     new() {
-                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-640_xnff8r.png",
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
                         Height = 640,
                         Width = 640
                     },
                     new() {
-                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-300_vitqvn.png",
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
                         Height = 300,
                         Width = 300
                     },
                     new() {
-                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-64_izigfw.png",
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
                         Height = 64,
                         Width = 64
                     }
@@ -98,7 +132,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Tạo mới playlist
             Playlist playlist = new()
             {
-                Name = playlistName,
+                Name = playlistRequestModel.PlaylistName,
                 UserID = userID,
                 CreatedTime = Util.GetUtcPlus7Time(),
                 TrackIds = [],
