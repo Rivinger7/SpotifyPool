@@ -183,6 +183,82 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             return;
         }
 
+        public async Task<IEnumerable<TrackResponseModel>> GetRecommendationPlaylist(int offset, int limit)
+        {
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.PreviewURL,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        GenreIds = artist.GenreIds,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
+
+            // Sắp xếp theo Popularity của Track
+            SortDefinition<Track> sortDefinition = Builders<Track>.Sort.Descending(track => track.Popularity);
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lấy thông tin Tracks với Artist
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Skip((offset - 1) * limit)
+                .Limit(limit)
+                .Sort(sortDefinition)
+                .Lookup<Track, Artist, ASTrack>
+                (
+                    _unitOfWork.GetCollection<Artist>(), // The foreign collection
+                    track => track.ArtistIds, // The field in Track that are joining on
+                    artist => artist.Id, // The field in Artist that are matching against
+                    result => result.Artists // The field in ASTrack to hold the matched artists
+                )
+                .Project(trackWithArtistProjection)
+                .ToListAsync();
+
+            return tracksResponseModel;
+        }
+
+        public async Task<PlaylistReponseModel> GetWeeklyPlaylist()
+        {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
+            // Lấy danh sách top track của user
+            IEnumerable<string> trackIds = await _unitOfWork.GetCollection<TopTrack>()
+                .Find(topTrack => topTrack.UserId == userId)
+                .Project(topTrack => topTrack.TrackInfo.Select(trackInfo => trackInfo.TrackId))
+                .FirstOrDefaultAsync();
+
+            return null;
+        }
+
         public async Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE

@@ -46,6 +46,19 @@ namespace SpotifyPool._1._Controllers.Playlist
         }
 
         /// <summary>
+        /// Lấy danh sách track được đề xuất
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        [AllowAnonymous, HttpGet("recommendation/tracks")]
+        public async Task<IActionResult> GetRecommendationPlaylist([FromQuery] int offset = 1, [FromQuery] int limit = 20)
+        {
+            var result = await playlistService.GetRecommendationPlaylist(offset, limit);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Thêm track vào playlist
         /// </summary>
         /// <param name="trackID"></param>

@@ -2,12 +2,10 @@
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using System.Net.Http.Headers;
-using System.Net.Http;
 using System.Text.Json;
 using HtmlAgilityPack;
 using MongoDB.Driver;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
-using MongoDB.Bson;
+using Spectrogram;
 
 namespace BusinessLogicLayer.Implement.Services.Tests
 {
@@ -17,13 +15,56 @@ namespace BusinessLogicLayer.Implement.Services.Tests
         private readonly IMapper _mapper = mapper;
         private readonly HttpClient _httpClient = httpClient;
 
+        //private (double[] audio, int sampleRate) ReadMono(string filename)
+        //{
+        //    using var reader = new NAudio.Wave.AudioFileReader(filename);
+        //    var audio = new double[reader.Length / 2];
+        //    reader.Read(audio, 0, audio.Length);
+        //    return (audio, reader.WaveFormat.SampleRate);
+        //}
+
+        private static (double[] audio, int sampleRate) ReadMono(string filePath, double multiplier = 16_000)
+        {
+            using var afr = new NAudio.Wave.AudioFileReader(filePath);
+            int sampleRate = afr.WaveFormat.SampleRate;
+            int bytesPerSample = afr.WaveFormat.BitsPerSample / 8;
+            int sampleCount = (int)(afr.Length / bytesPerSample);
+            int channelCount = afr.WaveFormat.Channels;
+            var audio = new List<double>(sampleCount);
+            var buffer = new float[sampleRate * channelCount];
+            int samplesRead = 0;
+            while ((samplesRead = afr.Read(buffer, 0, buffer.Length)) > 0)
+                audio.AddRange(buffer.Take(samplesRead).Select(x => x * multiplier));
+            return (audio.ToArray(), sampleRate);
+        }
+
+        public async Task TestSpectrogram()
+        {
+            const string FILE_PATH = "C:/Users/Admins/Videos/12.mp3";
+            const string FILE_URL_PATH = "https://p.scdn.co/mp3-preview/0f85ec265818a5cafa3318032fbdab036802feea?cid=a010b5500f8b45baa15ba73cf293d766";
+            const string FILE_YT_PATH = "https://www.youtube.com/watch?v=kVXFwXekPfs";
+            const string FILE_SAVE_PATH = "C:/Users/Admins/Pictures/firstspectrogram.png";
+            const string FILE_SAVE_PATH_2 = "C:/Users/Admins/Pictures/secondspectrogram.png";
+            const string FILE_SAVE_PATH_3 = "C:/Users/Admins/Pictures/thirdspectrogram.png";
+
+            (double[] audio, int sampleRate) = ReadMono(FILE_URL_PATH);
+
+            int fftSize = 16384;
+            int targetWidthPx = 3000;
+            int stepSize = audio.Length / targetWidthPx;
+
+            var sg = new SpectrogramGenerator(sampleRate, fftSize, stepSize, maxFreq: 2200);
+            sg.Add(audio);
+            sg.SaveImage(FILE_SAVE_PATH_3, intensity: 5, dB: true);
+        }
+
         public async Task TestTopTrack(string trackId){
             // Lấy thông tin user từ Context
             string? userId = "6736c563216626b7bf5f1441";
 
 			string? topItemId = await _unitOfWork.GetCollection<TopTrack>()
                                                  .Find(topItem => topItem.UserId == userId) //&& topItem.TrackInfo.Any(track => track.TrackId == trackId))
-	                                             .Project(topItem => topItem.TopTrackId)
+	                                             .Project(topItem => topItem.Id)
 	                                             .FirstOrDefaultAsync();
 
 			if (topItemId is null)
@@ -35,7 +76,7 @@ namespace BusinessLogicLayer.Implement.Services.Tests
 					UserId = userId,
 					TrackInfo =
 					[
-						new TopTracksInfo
+						new TopTrackInfo
 						{
 							TrackId = trackId,
 							StreamCount = 1
@@ -47,16 +88,16 @@ namespace BusinessLogicLayer.Implement.Services.Tests
 			}
 
 
-            TopTracksInfo? trackInfo = await _unitOfWork.GetCollection<TopTrack>()
-                                             .Find(topItem => topItem.TopTrackId == topItemId && topItem.TrackInfo.Any(track => track.TrackId == trackId))
+            TopTrackInfo? trackInfo = await _unitOfWork.GetCollection<TopTrack>()
+                                             .Find(topItem => topItem.Id == topItemId && topItem.TrackInfo.Any(track => track.TrackId == trackId))
                                              .Project(topItem => topItem.TrackInfo.FirstOrDefault(track => track.TrackId == trackId))
                                              .FirstOrDefaultAsync();
 
             if (trackInfo is null){
                 // add new track
-                FilterDefinition<TopTrack> addTrackInfofilter = Builders<TopTrack>.Filter.Eq(topItem => topItem.TopTrackId, topItemId);
+                FilterDefinition<TopTrack> addTrackInfofilter = Builders<TopTrack>.Filter.Eq(topItem => topItem.Id, topItemId);
 
-                UpdateDefinition<TopTrack> addTrackInfoUpdateDefinition = Builders<TopTrack>.Update.Push(topItem => topItem.TrackInfo, new TopTracksInfo
+                UpdateDefinition<TopTrack> addTrackInfoUpdateDefinition = Builders<TopTrack>.Update.Push(topItem => topItem.TrackInfo, new TopTrackInfo
                 {
                     TrackId = trackId,
                     StreamCount = 1
@@ -68,7 +109,7 @@ namespace BusinessLogicLayer.Implement.Services.Tests
             }
 
             var filter = Builders<TopTrack>.Filter.And(
-                Builders<TopTrack>.Filter.Eq(topItem => topItem.TopTrackId, topItemId),
+                Builders<TopTrack>.Filter.Eq(topItem => topItem.Id, topItemId),
                 Builders<TopTrack>.Filter.ElemMatch(topItem => topItem.TrackInfo, track => track.TrackId == trackId)
             );
 

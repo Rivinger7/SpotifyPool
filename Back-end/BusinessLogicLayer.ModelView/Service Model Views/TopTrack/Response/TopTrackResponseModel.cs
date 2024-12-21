@@ -1,26 +1,15 @@
-using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack
 {
     public class TopTrackResponseModel
     {
-        public string TopTrackId { get; set; } = null!;
+        public required string Id { get; set; }
 
-        public string UserId { get; set; } = null!;
+        // Total Tracks
+        public required int TotalTracks { get; set; }
 
-        public List<TracksInfoResponse> TrackInfo { get; set; } = [];
-    }
-
-    public class TracksInfoResponse
-    {
-        public string TrackId { get; set; } = null!;
-
-        public int StreamCount { get; set; }
-
-        public DateTime FirstAccessTime { get; set; } = Utility.Coding.Util.GetUtcPlus7Time();
-
-        public TrackInTopTrackResponseModel? Track { get; set; }
-
-        public List<string>? Artists { get; set; }
+        // Top Track Item
+        public required IEnumerable<TrackResponseModel> Tracks { get; set; }
     }
 }
