@@ -62,6 +62,7 @@ using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 using BusinessLogicLayer.DataAnalytics;
+using BusinessLogicLayer.Implement.Microservices.NAudio;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -480,6 +481,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Data Reccomendation
             services.AddScoped<IRecommendation, RecommendationBLL>();
+
+            //services.AddScoped<NAudioService>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)

@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.Tracks;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -48,11 +49,23 @@ namespace SpotifyPool._1._Controllers.Track
             return Ok(result);
         }
 
+        /// <summary>
+        /// Lấy top tracks theo user
+        /// </summary>
+        /// <returns></returns>
         [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("top-track")]
 		public async Task<IActionResult> GetTopTracksAsync()
 		{
 			var result = await _trackService.GetTopTracksAsync();
 			return Ok(result);
 		}
+
+
+        [Authorize(Roles = nameof(UserRole.Artist)), HttpPost("upload")]
+        public async Task<IActionResult> UploadTrackAsync([FromForm] UploadTrackRequestModel request)
+        {
+            await _trackService.UploadTrackAsync(request);
+            return Ok("Upload successfully!");
+        }
 	}
 }

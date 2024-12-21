@@ -23,6 +23,12 @@
 		<!-- Docker Linux OS -->
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="wwwroot\uploads\**" />
+	  <Content Remove="wwwroot\uploads\**" />
+	  <EmbeddedResource Remove="wwwroot\uploads\**" />
+	  <None Remove="wwwroot\uploads\**" />
+	</ItemGroup>
 	
 	<ItemGroup>
 		<PackageReference Include="dotenv.net" Version="3.2.1" />

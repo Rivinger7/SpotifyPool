@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Repository.Aggregate_Storage;
 
@@ -10,5 +11,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Tracks
         Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm);
         Task<TrackResponseModel> GetTrackAsync(string id);
         Task<TopTrackResponseModel?> GetTopTracksAsync();
+        Task UploadTrackAsync(UploadTrackRequestModel request);
     }
 }
