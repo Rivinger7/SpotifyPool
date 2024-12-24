@@ -144,7 +144,7 @@ const PlayerSlice = createSlice({
 			localStorage.setItem("spotifypool-current-time", "0")
 			state.currentTime = 0
 		},
-		updateCurrentTime: (state, action: PayloadAction<number>) => {
+		updateCurrentTime: (_state, action: PayloadAction<number>) => {
 			// state.currentTime = action.payload
 			localStorage.setItem("spotifypool-current-time", Math.round(action.payload).toString())
 		},
