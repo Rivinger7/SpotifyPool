@@ -19,7 +19,7 @@ namespace DataAccessLayer.Repository.Entities
         [BsonRepresentation(BsonType.ObjectId)]
         public List<string> ArtistIds { get; set; } = [];
 
-        public int? Popularity { get; set; }
+        public int? Popularity { get; set; } = 0;
         public required string PreviewURL { get; set; }
         public required int Duration { get; set; }
         public List<Image> Images { get; set; } = [];
@@ -37,6 +37,6 @@ namespace DataAccessLayer.Repository.Entities
         public long FavoriteCount { get; set; }
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public required string AudioFeaturesId { get; set; }
+        public string? AudioFeaturesId { get; set; }
     }
 }

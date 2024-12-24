@@ -1,4 +1,4 @@
-﻿#region Dependencies
+#region Dependencies
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
@@ -65,6 +65,7 @@ using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 using BusinessLogicLayer.DataAnalytics;
 using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
 using BusinessLogicLayer.Implement.Services.TopTracks;
+using BusinessLogicLayer.Implement.Microservices.NAudio;
 #endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
@@ -487,6 +488,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Data Reccomendation
             services.AddScoped<IRecommendation, RecommendationBLL>();
+
+            //services.AddScoped<NAudioService>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)

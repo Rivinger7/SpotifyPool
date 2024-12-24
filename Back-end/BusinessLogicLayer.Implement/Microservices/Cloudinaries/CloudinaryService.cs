@@ -262,5 +262,17 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             return deletionResult;
         }
+
+        //public async Task<string> UploadMp3Async(string filePath)
+        //{
+        //    var uploadParams = new VideoUploadParams
+        //    {
+        //        File = new FileDescription(filePath),
+        //        ResourceType = ResourceType.Video
+        //    };
+
+        //    var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+        //    return uploadResult.SecureUrl.ToString(); // Trả về URL của file đã upload
+        //}
     }
 }
