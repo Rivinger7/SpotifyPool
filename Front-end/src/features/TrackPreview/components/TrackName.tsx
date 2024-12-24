@@ -40,7 +40,7 @@ const ScrollingText = styled.div`
 	}
 `
 
-const SongName = () => {
+const TrackName = () => {
 	const dispatch = useDispatch()
 
 	const { userToken } = useSelector((state: RootState) => state.auth)
@@ -113,7 +113,7 @@ const SongName = () => {
 				// 	Authorization: `ROCEEaMgL6TEDqZlwxvm3ELwCBTc8MVC`,
 				// },
 			})
-			.configureLogging(LogLevel.Debug) // INFO: set log level ở đây để tắt log -- khôngg cho phép log ra client
+			.configureLogging(LogLevel.None) // INFO: set log level ở đây để tắt log -- khôngg cho phép log ra client
 			.build()
 
 		connection
@@ -243,4 +243,4 @@ const SongName = () => {
 	)
 }
 
-export default SongName
+export default TrackName

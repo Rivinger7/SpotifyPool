@@ -109,6 +109,7 @@ const LoginForm = () => {
 						<title>Login - SpotifyPool</title>
 					</Helmet>
 
+					{/* ==== Header ==== */}
 					<header className="flex flex-col items-center justify-center mb-3">
 						<CustomTooltip label="Back to SpotifyPool" side="top">
 							<Link to={"/"}>
@@ -124,6 +125,7 @@ const LoginForm = () => {
 						</h1>
 					</header>
 
+					{/* ==== Login form ==== */}
 					<Form {...form}>
 						<form
 							noValidate
@@ -210,18 +212,21 @@ const LoginForm = () => {
 						</form>
 					</Form>
 
+					{/* ==== Forgot password ==== */}
 					<div className="mt-3 text-center">
 						<Link to={"/"} className="underline hover:text-[#1ed760] transition-all duration-300">
 							Forgot your password?
 						</Link>
 					</div>
 
+					{/* ==== Divider ==== */}
 					<div className="flex justify-center items-center mt-3 relative before:absolute before:left-0 before:right-0 before:block before:top-1/2 before:h-[1px] before:content-[''] before:w-full before:border-[1px] before:border-solid before:border-[#727272]">
 						<span className="relative bg-[#121212] pl-3 pr-3 text-sm leading-5 text-[rgb(107 114 128 / 1)]">
 							or
 						</span>
 					</div>
 
+					{/* ==== Google login button ==== */}
 					<div
 						className="mt-3"
 						// className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-3 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
@@ -260,6 +265,7 @@ const LoginForm = () => {
 						/>
 					</div>
 
+					{/* ==== Sign up ==== */}
 					<div className="text-center mt-3 w-full text-[#a7a7a7]">
 						Don't have an account?{" "}
 						<Link

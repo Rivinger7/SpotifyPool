@@ -1,5 +1,5 @@
-import { useEffect } from "react"
-import { useDispatch } from "react-redux"
+// import { useEffect } from "react"
+// import { useDispatch } from "react-redux"
 import { Helmet } from "react-helmet-async"
 
 import Loader from "@/components/ui/Loader"
@@ -8,10 +8,10 @@ import TracksComponent from "@/features/Home/TracksComponent.tsx"
 
 import { Track } from "@/types"
 import { useGetTracksQuery } from "@/services/apiTracks"
-import { initializeQueue } from "@/store/slice/playerSlice"
+// import { initializeQueue } from "@/store/slice/playerSlice"
 
 function Home() {
-	const dispatch = useDispatch()
+	// const dispatch = useDispatch()
 
 	// NOTE: Hiện tại chỉ lấy 6 bài hát đầu tiên
 	const { data: tracksData = [], isLoading } = useGetTracksQuery({ limit: 30 }) as {
@@ -19,11 +19,11 @@ function Home() {
 		isLoading: boolean
 	}
 
-	useEffect(() => {
-		if (tracksData.length > 0) {
-			dispatch(initializeQueue(tracksData))
-		}
-	}, [dispatch, tracksData])
+	// useEffect(() => {
+	// 	if (tracksData.length > 0) {
+	// 		dispatch(initializeQueue(tracksData))
+	// 	}
+	// }, [dispatch, tracksData])
 
 	if (isLoading) return <Loader />
 
@@ -41,7 +41,7 @@ function Home() {
 							<TracksHeader>Popular tracks</TracksHeader>
 							<div className="grid grid-cols-5">
 								{tracksData?.map((track) => (
-									<TracksComponent key={track.id} track={track} />
+									<TracksComponent key={track.id} track={track} tracks={tracksData} />
 								))}
 							</div>
 						</section>

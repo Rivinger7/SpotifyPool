@@ -99,6 +99,7 @@ const SignupForm = () => {
 					<title>Sign up - SpotifyPool</title>
 				</Helmet>
 
+				{/* ==== Header ==== */}
 				<header className="flex flex-col items-center justify-center mb-8">
 					<CustomTooltip label="Back to SpotifyPool" side="top">
 						<Link to={"/"}>
@@ -114,6 +115,7 @@ const SignupForm = () => {
 					</h1>
 				</header>
 
+				{/* ==== Signup Form ==== */}
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 						{/* EMAIL */}
@@ -267,6 +269,7 @@ const SignupForm = () => {
 					</form>
 				</Form>
 
+				{/* ==== Divider ==== */}
 				<div className="flex justify-center items-center mt-8 relative before:absolute before:left-0 before:right-0 before:block before:top-1/2 before:h-[1px] before:content-[''] before:w-full before:border-[1px] before:border-solid before:border-[#727272]">
 					<span className="relative bg-[#121212] pl-3 pr-3 text-sm leading-5 text-[rgb(107 114 128 / 1)]">
 						or
@@ -281,6 +284,7 @@ const SignupForm = () => {
 					Sign up with Google
 				</Button> */}
 
+				{/* ==== Google login button ==== */}
 				<div className="mt-8">
 					<GoogleLogin
 						shape="pill"
@@ -303,6 +307,7 @@ const SignupForm = () => {
 					/>
 				</div>
 
+				{/* ==== Login link ==== */}
 				<div className="text-center mt-4 w-full text-[#a7a7a7]">
 					Already have an account?{" "}
 					<Link
