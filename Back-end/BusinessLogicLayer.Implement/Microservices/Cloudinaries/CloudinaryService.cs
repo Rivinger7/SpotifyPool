@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using Utility.Coding;
 using Business_Logic_Layer.Services_Interface.InMemoryCache;
-using DataAccessLayer.Interface.MongoDB.UOW;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;

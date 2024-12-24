@@ -12,10 +12,10 @@ namespace SpotifyPool._1._Controllers.Tests
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class TestController(TestBLL testBLL) : ControllerBase
     {
-        [AllowAnonymous, HttpGet("Testing-Spectrogram")]
-        public async Task<IActionResult> TestingSpectrogram()
+        [AllowAnonymous, HttpPost("Testing-Spectrogram")]
+        public async Task<IActionResult> TestingSpectrogram(IFormFile audioFile)
         {
-            await testBLL.TestSpectrogram();
+            await testBLL.TestSpectrogram(audioFile);
             return Ok();
         }
 

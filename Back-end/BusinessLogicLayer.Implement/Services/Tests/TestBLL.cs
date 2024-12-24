@@ -6,6 +6,7 @@ using System.Text.Json;
 using HtmlAgilityPack;
 using MongoDB.Driver;
 using Spectrogram;
+using Microsoft.AspNetCore.Http;
 
 namespace BusinessLogicLayer.Implement.Services.Tests
 {
@@ -38,24 +39,60 @@ namespace BusinessLogicLayer.Implement.Services.Tests
             return (audio.ToArray(), sampleRate);
         }
 
-        public async Task TestSpectrogram()
+        public async Task TestSpectrogram(IFormFile audioFile)
         {
-            const string FILE_PATH = "C:/Users/Admins/Videos/12.mp3";
-            const string FILE_URL_PATH = "https://p.scdn.co/mp3-preview/0f85ec265818a5cafa3318032fbdab036802feea?cid=a010b5500f8b45baa15ba73cf293d766";
-            const string FILE_YT_PATH = "https://www.youtube.com/watch?v=kVXFwXekPfs";
-            const string FILE_SAVE_PATH = "C:/Users/Admins/Pictures/firstspectrogram.png";
-            const string FILE_SAVE_PATH_2 = "C:/Users/Admins/Pictures/secondspectrogram.png";
-            const string FILE_SAVE_PATH_3 = "C:/Users/Admins/Pictures/thirdspectrogram.png";
+            if (audioFile == null)
+                return;
 
-            (double[] audio, int sampleRate) = ReadMono(FILE_URL_PATH);
+            // Đường dẫn thư mục bạn muốn sử dụng để lưu file (thư mục "Uploads" trong ổ C)
+            string uploadDirectory = @"Z:\SpotifyPool Project\Images\Audio";
 
-            int fftSize = 16384;
-            int targetWidthPx = 3000;
-            int stepSize = audio.Length / targetWidthPx;
+            // Kiểm tra xem thư mục có tồn tại không, nếu không thì tạo mới
+            if (!Directory.Exists(uploadDirectory))
+            {
+                Directory.CreateDirectory(uploadDirectory);
+            }
 
-            var sg = new SpectrogramGenerator(sampleRate, fftSize, stepSize, maxFreq: 2200);
-            sg.Add(audio);
-            sg.SaveImage(FILE_SAVE_PATH_3, intensity: 5, dB: true);
+            // Đường dẫn lưu file tạm thời trên máy chủ
+            string tempFilePath = Path.Combine(uploadDirectory, Guid.NewGuid() + Path.GetExtension(audioFile.FileName));
+
+            // Lưu file vào đường dẫn
+            using (var stream = new FileStream(tempFilePath, FileMode.Create))
+            {
+                await audioFile.CopyToAsync(stream);
+            }
+
+            // Đường dẫn lưu file Spectrogram
+            const string FILE_SAVE_PATH = @"Z:\SpotifyPool Project\Images\Results";
+            string fileName = Path.GetFileNameWithoutExtension(audioFile.FileName);
+
+            try
+            {
+                // Thực hiện các xử lý sau khi đã có đường dẫn file
+                (double[] audio, int sampleRate) = ReadMono(tempFilePath);
+
+                int fftSize = 16384;
+                int targetWidthPx = 3000;
+                int stepSize = audio.Length / targetWidthPx;
+
+                var sg = new SpectrogramGenerator(sampleRate, fftSize, stepSize, maxFreq: 2200);
+                sg.Add(audio);
+
+                // Đường dẫn lưu kết quả
+                string resultFilePath = Path.Combine(FILE_SAVE_PATH, fileName + ".png");
+                sg.SaveImage(resultFilePath, intensity: 5, dB: true);
+
+                // Log hoặc xử lý kết quả lưu
+                //Console.WriteLine($"Spectrogram saved at {resultFilePath}");
+            }
+            finally
+            {
+                // Xóa file tạm sau khi xử lý xong để giải phóng bộ nhớ
+                if (File.Exists(tempFilePath))
+                {
+                    File.Delete(tempFilePath);
+                }
+            }
         }
 
         public async Task TestTopTrack(string trackId){
