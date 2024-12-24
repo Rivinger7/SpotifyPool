@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+#region Dependencies
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using BusinessLogicLayer.Implement.CustomExceptions;
@@ -62,7 +63,10 @@ using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 using BusinessLogicLayer.DataAnalytics;
+using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
+using BusinessLogicLayer.Implement.Services.TopTracks;
 using BusinessLogicLayer.Implement.Microservices.NAudio;
+#endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -472,6 +476,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // User
             services.AddScoped<IUserBLL, UserBLL>();
+
+            // Top Track
+            services.AddScoped<ITopTrack, TopTrackBLL>();
 
             // Track
             services.AddScoped<ITrack, TrackBLL>();

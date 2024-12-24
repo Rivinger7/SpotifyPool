@@ -10,7 +10,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Tracks
         Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit);
         Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm);
         Task<TrackResponseModel> GetTrackAsync(string id);
-        Task<TopTrackResponseModel?> GetTopTracksAsync();
         Task UploadTrackAsync(UploadTrackRequestModel request);
     }
 }

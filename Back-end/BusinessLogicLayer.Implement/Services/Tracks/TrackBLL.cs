@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+using AutoMapper;
+using BusinessLogicLayer.Interface.Services_Interface.Tracks;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.NAudio;
@@ -173,7 +175,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 });
 
             // Tạo bộ lọc cho ASTrack riêng biệt sau khi Lookup  
-            FilterDefinition<ASTrack> artistFilter = Builders<ASTrack>.Filter.Or(
+            FilterDefinition<ASTrack> trackWithArtistFilter = Builders<ASTrack>.Filter.Or(
                 Builders<ASTrack>.Filter.Regex(astrack => astrack.Name, new BsonRegularExpression(searchTermEscaped, "i")),
                 Builders<ASTrack>.Filter.Regex(astrack => astrack.Description, new BsonRegularExpression(searchTermEscaped, "i")),
                 Builders<ASTrack>.Filter.ElemMatch(track => track.Artists, artist => artist.Name.Contains(searchTermEscaped, StringComparison.CurrentCultureIgnoreCase))
@@ -190,7 +192,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     track => track.ArtistIds,
                     artist => artist.Id,
                     result => result.Artists)
-                .Match(artistFilter)
+                .Match(trackWithArtistFilter)
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
 

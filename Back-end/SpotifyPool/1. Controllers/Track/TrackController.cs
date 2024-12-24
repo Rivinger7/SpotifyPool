@@ -49,18 +49,6 @@ namespace SpotifyPool._1._Controllers.Track
             return Ok(result);
         }
 
-        /// <summary>
-        /// Lấy top tracks theo user
-        /// </summary>
-        /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("top-track")]
-		public async Task<IActionResult> GetTopTracksAsync()
-		{
-			var result = await _trackService.GetTopTracksAsync();
-			return Ok(result);
-		}
-
-
         [Authorize(Roles = nameof(UserRole.Artist)), HttpPost("upload")]
         public async Task<IActionResult> UploadTrackAsync([FromForm] UploadTrackRequestModel request)
         {
