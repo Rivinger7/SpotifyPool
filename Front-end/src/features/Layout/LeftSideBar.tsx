@@ -1,5 +1,5 @@
-import { useEffect } from "react"
-import { RootState } from "@/store/store.ts"
+import { useEffect, useState } from "react"
+import { RootState } from "@/store/store"
 import { useDispatch, useSelector } from "react-redux"
 import { toggleCollapse } from "@/store/slice/uiSlice"
 
@@ -15,10 +15,11 @@ import {
 import CustomTooltip from "@/components/CustomTooltip"
 
 import { Playlist } from "@/types"
-import { setPlaylist } from "@/store/slice/playlistSlice.ts"
-import SidebarFooter from "@/features/Layout/SidebarFooter.tsx"
-import { useGetAllPlaylistsQuery } from "@/services/apiPlaylist.ts"
-import PlayListsSidebar from "@/features/Playlist/PlayListsSidebar.tsx"
+import { setPlaylist } from "@/store/slice/playlistSlice"
+import SidebarFooter from "@/features/Layout/SidebarFooter"
+import AddPlaylistModal from "./components/Modal/AddPlaylistModal"
+import { useGetAllPlaylistsQuery } from "@/services/apiPlaylist"
+import PlayListsSidebar from "@/features/Playlist/PlayListsSidebar"
 
 const LeftSideBar = () => {
 	const navigate = useNavigate()
@@ -26,6 +27,8 @@ const LeftSideBar = () => {
 	const { playlists } = useSelector((state: RootState) => state.playlist)
 	const { isAuthenticated } = useSelector((state: RootState) => state.auth)
 	const { isCollapsed } = useSelector((state: RootState) => state.ui)
+
+	const [openAddPlaylistModal, setOpenAddPlaylistModal] = useState(false)
 
 	const handleCollapse = () => {
 		if (isAuthenticated) {
@@ -101,15 +104,7 @@ const LeftSideBar = () => {
 												align={`${isCollapsed ? "start" : "end"}`}
 												className="border-none bg-[#282828]"
 											>
-												{/*<div*/}
-												{/*	className={*/}
-												{/*		"flex items-center justify-between p-3 cursor-default min-w-[190px] h-10 text-[#b3b3b3] hover:text-white transition-all hover:bg-[hsla(0,0%,100%,0.1)]"*/}
-												{/*	}*/}
-												{/*>*/}
-												{/*	<Music4 className="size-4" />*/}
-												{/*	<span>Create a new playlist</span>*/}
-												{/*</div>*/}
-												<DropdownMenuItem>
+												<DropdownMenuItem onClick={() => setOpenAddPlaylistModal(true)}>
 													<Music4 className="size-4" />
 													<span>Create a new playlist</span>
 												</DropdownMenuItem>
@@ -178,6 +173,8 @@ const LeftSideBar = () => {
 					{!isAuthenticated && <SidebarFooter />}
 				</div>
 			</nav>
+
+			<AddPlaylistModal open={openAddPlaylistModal} setOpen={setOpenAddPlaylistModal} />
 		</div>
 	)
 }

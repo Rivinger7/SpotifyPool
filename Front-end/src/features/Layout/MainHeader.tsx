@@ -24,7 +24,6 @@ const MainHeader = () => {
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
 	const location = useLocation()
-
 	const pathname = location.pathname
 
 	const { userData, isAuthenticated } = useSelector((state: RootState) => state.auth)
@@ -44,12 +43,12 @@ const MainHeader = () => {
 	return (
 		<header className="w-full flex items-center relative bg-[rgba(0,0,0,.5)] p-2 -m-2 h-16">
 			<div className="w-full flex items-center justify-between pl-6 h-12">
-				{/* LOGO */}
+				{/* ==== LOGO ==== */}
 				<div className="pointer-events-auto z-20">
 					<Link to={"/"}>
 						<CustomTooltip label="SpotifyPool" side="bottom" align="center">
 							<img
-								src="Spotify_Icon_RGB_White.png"
+								src="/Spotify_Icon_RGB_White.png"
 								alt="Spotify Logo white RGB"
 								className="size-8"
 							/>
@@ -57,9 +56,7 @@ const MainHeader = () => {
 					</Link>
 				</div>
 
-				{/* <div className="flex-grow" /> */}
-
-				{/* HOME AND SEARCH */}
+				{/* ==== HOME AND SEARCH ==== */}
 				<div className="absolute flex items-center z-10 justify-center left-0 right-0 w-full pointer-events-auto">
 					<div className="flex items-center gap-2 min-w-[350px] max-w-[546px] w-1/2">
 						<div className="shrink-0">
@@ -103,9 +100,7 @@ const MainHeader = () => {
 					</div>
 				</div>
 
-				{/* <div className="flex-grow" /> */}
-
-				{/* AVATAR OR AUTH ACTION */}
+				{/* ==== AVATAR OR AUTH ACTION ==== */}
 				{!isAuthenticated ? (
 					<div className="pointer-events-auto z-20">
 						<Link to={"/signup"}>
@@ -152,7 +147,7 @@ const MainHeader = () => {
 								{/* PROFILE BUTTON */}
 								<DropdownMenuItem
 									onSelect={() => handleNavigate(`/user/${userData?.userId}`)}
-									className="p-3 pr-2 text-lg cursor-pointer"
+									className="text-lg cursor-pointer"
 								>
 									<User />
 									<span>Profile</span>
@@ -160,7 +155,7 @@ const MainHeader = () => {
 
 								<DropdownMenuItem
 									onSelect={() => handleNavigate("/")}
-									className="p-3 pr-2 text-lg cursor-pointer"
+									className="text-lg cursor-pointer"
 								>
 									<Settings2 />
 									<span>Settings</span>
@@ -169,7 +164,7 @@ const MainHeader = () => {
 								<DropdownMenuSeparator />
 
 								{/* LOGOUT BUTTON */}
-								<DropdownMenuItem className="p-3 pr-2 text-lg" onSelect={handleLogout}>
+								<DropdownMenuItem className="text-lg" onSelect={handleLogout}>
 									<LogOut />
 									<span>Logout</span>
 								</DropdownMenuItem>

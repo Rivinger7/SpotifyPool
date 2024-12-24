@@ -8,7 +8,7 @@ const PlayListsSidebar = () => {
 	return (
 		<>
 			{playlists?.map((playlist) => (
-				<PlayListsItem key={playlist.id} playlist={playlist} />
+				<PlayListsItem key={playlist.id} playlist={playlist} playlistIdSpecific={playlist.id} />
 			))}
 		</>
 	)

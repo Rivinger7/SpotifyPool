@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux"
 
 import { Pause, Play, Repeat2, Shuffle, SkipBack, SkipForward } from "lucide-react"
 
-import SongOptions from "./SongOptions"
+import SongOptions from "./TrackOptions"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import CustomTooltip from "@/components/CustomTooltip"
@@ -11,7 +11,7 @@ import CustomTooltip from "@/components/CustomTooltip"
 import { HttpTransportType, HubConnectionBuilder } from "@microsoft/signalr"
 
 import { RootState } from "@/store/store"
-import { playNext, playPrevious, togglePlay } from "@/store/slice/playerSlice"
+import { playNext, playPrevious, togglePlay, updateCurrentTime } from "@/store/slice/playerSlice"
 
 const formatTime = (seconds: number) => {
 	const minutes = Math.floor(seconds / 60)
@@ -19,21 +19,27 @@ const formatTime = (seconds: number) => {
 	return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
 }
 
-const SongPlay = () => {
+const TrackPlay = () => {
 	const dispatch = useDispatch()
 
-	const { currentTrack, isPlaying } = useSelector((state: RootState) => state.play)
+	const {
+		currentTrack,
+		isPlaying,
+		currentTime: savedCurrentTime,
+	} = useSelector((state: RootState) => state.play)
 
 	const [volume, setVolume] = useState(1)
 	const [duration, setDuration] = useState(0)
-	const [currentTime, setCurrentTime] = useState(0)
+	const [currentTime, setCurrentTime] = useState(savedCurrentTime)
 
 	// CHECKPOINT: TIMER LOGIC SIGNALR
 	const [playTime, setPlayTime] = useState(0)
+	const [playCurrentTime, setPlayCurrentTime] = useState(savedCurrentTime || 0)
 	const [hasTriggeredStream, setHasTriggeredStream] = useState(false)
-	const timerRef = useRef<NodeJS.Timeout | null>(null)
 
+	const timerRef = useRef<NodeJS.Timeout | null>(null)
 	const audioRef = useRef<HTMLAudioElement | null>(null)
+	const timerCurrentTrackRef = useRef<NodeJS.Timeout | null>(null)
 
 	useEffect(() => {
 		audioRef.current = document.querySelector("audio")
@@ -41,7 +47,10 @@ const SongPlay = () => {
 		const audio = audioRef.current
 		if (!audio) return
 
+		audio.currentTime = savedCurrentTime
+
 		const updateTime = () => setCurrentTime(audio.currentTime)
+
 		const updateDuration = () => setDuration(audio.duration)
 
 		audio.addEventListener("timeupdate", updateTime)
@@ -58,7 +67,29 @@ const SongPlay = () => {
 			audio.removeEventListener("loadedmetadata", updateDuration)
 			audio.removeEventListener("ended", handleEnded)
 		}
-	}, [currentTrack, dispatch])
+	}, [currentTrack, dispatch, savedCurrentTime])
+
+	// Effect for setting currentTime
+	// useEffect(() => {
+	// 	if (audioRef.current && audioRef.current.currentTime !== savedCurrentTime) {
+	// 		audioRef.current.currentTime = savedCurrentTime
+	// 	}
+	// }, [savedCurrentTime])
+
+	useEffect(() => {
+		if (isPlaying) {
+			timerCurrentTrackRef.current = setInterval(() => {
+				setPlayCurrentTime((prev) => prev + 1)
+			}, 1000)
+			dispatch(updateCurrentTime(playCurrentTime))
+		}
+
+		return () => {
+			if (timerCurrentTrackRef.current) {
+				clearInterval(timerCurrentTrackRef.current)
+			}
+		}
+	}, [dispatch, playCurrentTime, isPlaying])
 
 	// Effect for tracking play time
 	useEffect(() => {
@@ -106,12 +137,16 @@ const SongPlay = () => {
 	// Reset states when song changes
 	useEffect(() => {
 		setPlayTime(0)
+		setPlayCurrentTime(0)
 		setHasTriggeredStream(false)
-	}, [currentTrack?.id])
+		dispatch(updateCurrentTime(0))
+	}, [currentTrack?.id, dispatch])
 
 	const handleSeek = (value: number[]) => {
 		if (audioRef.current) {
 			audioRef.current.currentTime = value[0]
+			setCurrentTime(value[0])
+			dispatch(updateCurrentTime(value[0]))
 		}
 	}
 
@@ -177,4 +212,4 @@ const SongPlay = () => {
 	)
 }
 
-export default SongPlay
+export default TrackPlay
