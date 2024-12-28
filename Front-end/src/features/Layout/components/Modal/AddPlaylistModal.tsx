@@ -53,7 +53,7 @@ const AddPlaylistModal = ({ open, setOpen }: AddPlaylistModalProps) => {
 	const onSubmit = (values: z.infer<typeof formSchema>) => {
 		try {
 			const connection = new HubConnectionBuilder()
-				.withUrl(import.meta.env.VITE_SPOTIFYPOOL_HUB_ADD_TO_PLAYLIST_URL, {
+				.withUrl(import.meta.env.VITE_SPOTIFYPOOL_HUB_PLAYLIST_URL, {
 					transport: HttpTransportType.WebSockets, // INFO: set transport ở đây thànhh websockets để sử dụng skipNegotiation
 					accessTokenFactory: () => `${userToken?.accessToken}`,
 				})
