@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+﻿//using MongoDB.Driver;
 using Spectrogram;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
@@ -85,6 +85,8 @@ namespace BusinessLogicLayer.DataAnalytics.Spectrogram
 
             // Đường dẫn đến file spectrogram
             string tempFilePath = spectrogramFolder + '/' + fileName;
+
+            Console.WriteLine(tempFilePath);
 
             // Khởi tạo tensor
             Tensor<float> inputTensor;

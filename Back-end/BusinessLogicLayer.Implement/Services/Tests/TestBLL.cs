@@ -203,7 +203,7 @@ namespace BusinessLogicLayer.Implement.Services.Tests
         public string[] GetFilePath()
         {
             string currentDirectory = Directory.GetCurrentDirectory();
-            string path = Path.Combine(Directory.GetCurrentDirectory(), "SpectrogramTempData", "test.txt");
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "SpectrogramTempData", $"{Guid.NewGuid}.txt");
 
             string[] paths = [currentDirectory, path];
 

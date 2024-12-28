@@ -17,8 +17,4 @@
     <PackageReference Include="Spectrogram" Version="1.6.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\BusinessLogicLayer.Implement\BusinessLogicLayer.Implement.csproj" />
-  </ItemGroup>
-
 </Project>

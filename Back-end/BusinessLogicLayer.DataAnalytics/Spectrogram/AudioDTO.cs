@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BusinessLogicLayer.DataAnalytics.Spectrogram
+﻿namespace BusinessLogicLayer.DataAnalytics.Spectrogram
 {
     public class AudioDTO
     {

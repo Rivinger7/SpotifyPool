@@ -16,6 +16,7 @@ using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;
 using Utility.Coding;
+using BusinessLogicLayer.DataAnalytics.Spectrogram;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
@@ -194,12 +195,16 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return tracksResponseModel;
         }
 
+
+
+
         public async Task UploadTrackAsync(UploadTrackRequestModel request)
         {
             string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
             //map request sang Track
             Track newTrack = _mapper.Map<Track>(request);
+            AudioFeatures audioFeature;
 
             //thêm các thông tin cần thiết cho Track
             newTrack.IsExplicit = false;
@@ -207,43 +212,84 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             newTrack.UploadBy = userID;
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
 
+            string fileNameUnique = $"{Path.GetFileNameWithoutExtension(request.File.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}{Path.GetExtension(request.File.FileName)}";
+
+            Console.WriteLine(fileNameUnique);
 
             //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads trong wwwroot
-            string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "temp_uploads", "input", request.File.FileName);
+            string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", request.File.FileName);
 
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "temp_uploads", "output", request.File.FileName);
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
 
-            // lưu tạm thời file upload vào thư mục input
-            using (var stream = new FileStream(inputPath, FileMode.Create))
+            try
             {
-                await request.File.CopyToAsync(stream);
-            }
-
-            //cắt vid từ giây 0:00 đến giây thứ 30
-            NAudioService.TrimAudioFile(out int duration, inputPath, outputPath, TimeSpan.FromSeconds(30));
-
-            newTrack.Duration = duration;
-
-            //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-            using (var outputStream = new FileStream(outputPath, FileMode.Open))
-            {
-                IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
+                // lưu tạm thời file upload vào thư mục input
+                using (var stream = new FileStream(inputPath, FileMode.Create))
                 {
-                    Headers = new HeaderDictionary(),
-                    ContentType = "audio/wav"
-                };
+                    await request.File.CopyToAsync(stream);
+                }
 
-                // upload lên cloudinary
-                VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
-                newTrack.PreviewURL = result.SecureUrl.AbsoluteUri;
+                //cắt vid từ giây 0:00 đến giây thứ 30
+                NAudioService.TrimAudioFile(out int duration, inputPath, outputPath, TimeSpan.FromSeconds(30));
+
+                newTrack.Duration = duration;
+
+                //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
+                using (var outputStream = new FileStream(outputPath, FileMode.Open))
+                {
+                    IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
+                    {
+                        Headers = new HeaderDictionary(),
+                        ContentType = "audio/wav"
+                    };
+
+                    // upload lên cloudinary
+                    VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
+                    newTrack.PreviewURL = result.SecureUrl.AbsoluteUri;
+
+                    //chuyển file audio thành spectrogram và dự đoán audio features
+                    var spectrogram = SpectrogramAudio.ConvertToSpectrogram(newTrack.PreviewURL);
+
+                    float[] spectroPredict = SpectrogramAudio.Predict(spectrogram);
+
+                    //tạo mới audio features từ spectroPredict 
+                    audioFeature = new()
+                    {
+                        Duration = (int)Math.Round(spectroPredict[0], 2),
+                        Key = (int)Math.Round(spectroPredict[1], 2),
+                        TimeSignature = (int)Math.Round(spectroPredict[2], 2),
+                        Mode = (int)Math.Round(spectroPredict[3], 2),
+                        Acousticness = spectroPredict[4],
+                        Danceability = spectroPredict[5],
+                        Energy = spectroPredict[6],
+                        Instrumentalness = spectroPredict[7],
+                        Liveness = spectroPredict[8],
+                        Loudness = spectroPredict[9],
+                        Speechiness = spectroPredict[10],
+                        Tempo = spectroPredict[11],
+                        Valence = spectroPredict[12]
+                    };
+                    await _unitOfWork.GetCollection<AudioFeatures>().InsertOneAsync(audioFeature);
+
+                    newTrack.AudioFeaturesId = audioFeature.Id;
+
+                    //lưu track và audio features vào database
+                    await _unitOfWork.GetCollection<Track>().InsertOneAsync(newTrack);
+
+                }
+                return;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Upload failed: " + ex.Message);
             }
 
-            //xóa các file tạm không cần nữa trong wwwroot
-            File.Delete(inputPath);
-            File.Delete(outputPath);
-            
-            await _unitOfWork.GetCollection<Track>().InsertOneAsync(newTrack);
-            return;
+            finally
+            {
+                //xóa các file tạm không cần nữa trong wwwroot
+                File.Delete(inputPath);
+                File.Delete(outputPath);
+            }
         }
     }
 }

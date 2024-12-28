@@ -8,7 +8,7 @@ namespace BusinessLogicLayer.Implement.Microservices.NAudio
         public static void TrimAudioFile(out int duration, string inputPath, string outputPath, TimeSpan endTime)
         {
             // mở file mp3 lưu ở wwwroot/input để đọc
-            using (Mp3FileReader reader = new Mp3FileReader(inputPath))
+            using (var reader = new AudioFileReader(inputPath))
             {
                 // lấy tổng thời gian nhạc trên file mp3
                 duration = (int)reader.TotalTime.TotalSeconds * 1000;
@@ -28,7 +28,7 @@ namespace BusinessLogicLayer.Implement.Microservices.NAudio
             }
         }
 
-        private static void TrimAudioFile(Mp3FileReader reader, LameMP3FileWriter writer, int endBytes)
+        private static void TrimAudioFile(AudioFileReader reader, LameMP3FileWriter writer, int endBytes)
         {
             byte[] buffer = new byte[1024];
 
@@ -48,45 +48,5 @@ namespace BusinessLogicLayer.Implement.Microservices.NAudio
                 }
             }
         }
-
-        //public void TrimWavFile(string inPath, string outPath, TimeSpan cutFromStart, TimeSpan cutFromEnd)
-        //{
-        //    using (Mp3FileReader reader = new Mp3FileReader(inPath))
-        //    {
-        //        using (LameMP3FileWriter writer = new LameMP3FileWriter(outPath, reader.WaveFormat, LAMEPreset.STANDARD))
-        //        {
-        //            int bytesPerMillisecond = reader.WaveFormat.AverageBytesPerSecond / 1000;
-
-        //            int startPos = (int)cutFromStart.TotalMilliseconds * bytesPerMillisecond;
-        //            startPos = startPos - startPos % reader.WaveFormat.BlockAlign;
-
-        //            int endBytes = (int)cutFromEnd.TotalMilliseconds * bytesPerMillisecond;
-        //            endBytes = endBytes - endBytes % reader.WaveFormat.BlockAlign;
-        //            int endPos = (int)reader.Length - endBytes;
-
-        //            TrimWavFile(reader, writer, startPos, endPos);
-        //        }
-        //    }
-        //}
-
-        //private void TrimWavFile(Mp3FileReader reader, LameMP3FileWriter writer, int startPos, int endPos)
-        //{
-        //    reader.Position = startPos;
-        //    byte[] buffer = new byte[1024];
-        //    while (reader.Position < endPos)
-        //    {
-        //        int bytesRequired = (int)(endPos - reader.Position);
-        //        if (bytesRequired > 0)
-        //        {
-        //            int bytesToRead = Math.Min(bytesRequired, buffer.Length);
-        //            int bytesRead = reader.Read(buffer, 0, bytesToRead);
-        //            if (bytesRead > 0)
-        //            {
-        //                writer.Write(buffer, 0, bytesRead);
-        //            }
-        //        }
-        //    }
-        //}
-
     }
 }

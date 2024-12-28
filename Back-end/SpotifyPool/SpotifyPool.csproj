@@ -53,6 +53,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="AudioTemp\input\" />
+	  <Folder Include="AudioTemp\output\" />
 	  <Folder Include="SpectrogramTempData\" />
 	</ItemGroup>
 
