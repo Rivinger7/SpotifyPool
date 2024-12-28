@@ -23,7 +23,10 @@ function AppLayout() {
 			<MainHeader />
 			<MainContent mainHeight={mainHeight}>
 				<LeftSideBar />
-				<div className="bg-[var(--background-base)] rounded-lg w-full max-h-full overflow-y-auto">
+				<div
+					id="main-content"
+					className="bg-[var(--background-base)] rounded-lg w-full max-h-full overflow-y-auto"
+				>
 					{/* ==== AUDIO ==== */}
 					<AudioPlayer />
 

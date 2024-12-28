@@ -29,7 +29,7 @@ const TracksComponent = ({ isAvatar, track, tracks, setOpen }: TrackComponentPro
 			dispatch(togglePlay())
 			return
 		}
-		dispatch(setCurrentTrack({ track, tracks }))
+		dispatch(setCurrentTrack({ track, tracks: tracks || [] }))
 	}
 
 	return (

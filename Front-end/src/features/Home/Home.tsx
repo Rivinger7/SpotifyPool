@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 
 import Loader from "@/components/ui/Loader"
@@ -8,15 +8,44 @@ import TracksComponent from "@/features/Home/TracksComponent.tsx"
 import { Track } from "@/types"
 import { useGetTracksQuery } from "@/services/apiTracks"
 import AlertTrackModal from "./components/Modal/AlertTrackModal"
+import { Loader2 } from "lucide-react"
 
 function Home() {
 	const [open, setOpen] = useState(false)
+	const [offset, setOffset] = useState(1)
+	const [loadingData, setLoadingData] = useState(false)
 
-	// NOTE: Hiện tại chỉ lấy 30 bài hát đầu tiên
-	const { data: tracksData = [], isLoading } = useGetTracksQuery({ offset: 1, limit: 20 }) as {
+	// NOTE: Hiện tại chỉ lấy 20 bài hát đầu tiên -- chỉ cần scroll xuống dưới sẽ tự động để load thêm bài hát
+	const { data = [], isLoading } = useGetTracksQuery({ offset, limit: 20 }) as {
 		data: Track[]
 		isLoading: boolean
 	}
+
+	const [tracksData, setTracksData] = useState<Track[]>([])
+
+	useEffect(() => {
+		if (data.length > 0) {
+			setTracksData((prev) => [...prev, ...data])
+		}
+		setLoadingData(false)
+	}, [data])
+
+	const handleScroll = useCallback(() => {
+		const { scrollTop, clientHeight, scrollHeight } = document.getElementById(
+			"main-content"
+		) as HTMLElement
+
+		if (scrollTop + clientHeight + 1 >= scrollHeight) {
+			setLoadingData(true)
+			setOffset((prev) => prev + 1)
+		}
+	}, [])
+
+	useEffect(() => {
+		const test = document.getElementById("main-content") as HTMLElement
+		test.addEventListener("scroll", handleScroll)
+		return () => test.removeEventListener("scroll", handleScroll)
+	}, [handleScroll])
 
 	// useEffect(() => {
 	// 	if (tracksData.length > 0) {
@@ -48,6 +77,11 @@ function Home() {
 									/>
 								))}
 							</div>
+							{loadingData && (
+								<div className="w-full flex justify-center mt-4">
+									<Loader2 className="size-14 animate-spin" />
+								</div>
+							)}
 						</section>
 					</div>
 				</section>
