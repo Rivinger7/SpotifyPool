@@ -12,11 +12,19 @@ namespace SpotifyPool._1._Controllers.Tests
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class TestController(TestBLL testBLL) : ControllerBase
     {
-        [AllowAnonymous, HttpPost("Testing-Spectrogram")]
-        public async Task<IActionResult> TestingSpectrogram(IFormFile audioFile)
+        [AllowAnonymous, HttpGet("Testing-Pallete")]
+        public async Task<IActionResult> TestingPallete()
         {
-            await testBLL.TestSpectrogram(audioFile);
-            return Ok();
+            IEnumerable<string> colors = await TestBLL.TestImgx();
+
+            return Ok(colors);
+        }
+
+        [AllowAnonymous, HttpGet("Testing-file-path")]
+        public IActionResult TestingFilePath()
+        {
+            string[] filePaths = testBLL.GetFilePath();
+            return Ok(filePaths);
         }
 
         [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("Testing-Date")]
