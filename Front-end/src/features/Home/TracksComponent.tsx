@@ -4,18 +4,27 @@ import { RootState } from "@/store/store"
 import { Pause, Play } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { setCurrentTrack, togglePlay } from "@/store/slice/playerSlice"
+import { setTrack } from "@/store/slice/trackSlice"
 
 interface TrackComponentProps {
 	isAvatar?: boolean
 	track: Track
 	tracks?: Track[]
+	setOpen: (value: boolean) => void
 }
 
-const TracksComponent = ({ isAvatar, track, tracks }: TrackComponentProps) => {
+const TracksComponent = ({ isAvatar, track, tracks, setOpen }: TrackComponentProps) => {
 	const dispatch = useDispatch()
+	const { isAuthenticated } = useSelector((state: RootState) => state.auth)
 	const { currentTrack, isPlaying, playlistId } = useSelector((state: RootState) => state.play)
 
 	const handleTogglePlay = (track: Track) => {
+		if (!isAuthenticated) {
+			setOpen(true)
+			dispatch(setTrack({ track }))
+			return
+		}
+
 		if (currentTrack?.id === track.id && !playlistId) {
 			dispatch(togglePlay())
 			return
