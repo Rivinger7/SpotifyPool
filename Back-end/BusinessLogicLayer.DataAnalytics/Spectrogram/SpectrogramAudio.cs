@@ -77,6 +77,12 @@ namespace BusinessLogicLayer.DataAnalytics.Spectrogram
             // Tìm thư mục SpectrogramData từ vị trí hiện tại
             string spectrogramFolder = Path.Combine(currentDirectory, "SpectrogramTempData");
 
+            // Tạo thư mục nếu chưa tồn tại
+            if (!Directory.Exists(spectrogramFolder))
+            {
+                Directory.CreateDirectory(spectrogramFolder);
+            }
+
             // Normalize đường dẫn (nếu cần thiết)
             //spectrogramFolder = Path.GetFullPath(spectrogramFolder);
 

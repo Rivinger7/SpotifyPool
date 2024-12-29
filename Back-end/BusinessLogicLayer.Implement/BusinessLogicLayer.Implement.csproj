@@ -18,6 +18,8 @@
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+    <PackageReference Include="Microsoft.ML" Version="4.0.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />
     <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="NAudio.Lame" Version="2.1.0" />
     <PackageReference Include="Spectrogram" Version="1.6.1" />
@@ -25,7 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BusinessLogicLayer.DataAnalytics\BusinessLogicLayer.DataAnalytics.csproj" />
     <ProjectReference Include="..\BusinessLogicLayer.Interface\BusinessLogicLayer.Interface.csproj" />
   </ItemGroup>
 

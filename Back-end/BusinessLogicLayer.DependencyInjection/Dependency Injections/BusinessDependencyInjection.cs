@@ -713,7 +713,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                         IEnumerable<string?> securedSegments = new[]
                         {
                             Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL"),
-                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_TO_PLAYLIST_URL"),
+                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL"),
 
                         }.Where(segment => !string.IsNullOrWhiteSpace(segment)); // Lọc ra các segment không rỗng
 

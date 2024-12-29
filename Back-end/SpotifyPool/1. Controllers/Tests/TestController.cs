@@ -1,5 +1,4 @@
-﻿using BusinessLogicLayer.DataAnalytics;
-using BusinessLogicLayer.Implement.Services.Tests;
+﻿using BusinessLogicLayer.Implement.Services.Tests;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

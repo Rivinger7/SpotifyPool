@@ -23,7 +23,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\BusinessLogicLayer.DataAnalytics\BusinessLogicLayer.DataAnalytics.csproj" />
 	  <ProjectReference Include="..\BusinessLogicLayer.Implement\BusinessLogicLayer.Implement.csproj" />
 	</ItemGroup>
 

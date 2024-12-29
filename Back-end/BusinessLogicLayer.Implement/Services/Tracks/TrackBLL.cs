@@ -16,7 +16,10 @@ using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;
 using Utility.Coding;
-using BusinessLogicLayer.DataAnalytics.Spectrogram;
+using BusinessLogicLayer.Implement.Services.DataAnalysis;
+using System.Drawing;
+using System.Drawing.Imaging;
+using Microsoft.ML.OnnxRuntime.Tensors;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
@@ -204,7 +207,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             //map request sang Track
             Track newTrack = _mapper.Map<Track>(request);
-            AudioFeatures audioFeature;
 
             //thêm các thông tin cần thiết cho Track
             newTrack.IsExplicit = false;
@@ -248,13 +250,40 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     newTrack.PreviewURL = result.SecureUrl.AbsoluteUri;
 
                     //chuyển file audio thành spectrogram và dự đoán audio features
-                    var spectrogram = SpectrogramAudio.ConvertToSpectrogram(newTrack.PreviewURL);
+                    Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(newTrack.PreviewURL);
 
-                    float[] spectroPredict = SpectrogramAudio.Predict(spectrogram);
+                    // Lưu bitmap vào MemoryStream thay vì ổ cứng
+                    using MemoryStream memoryStream = new();
+
+                    // Lưu ở định dạng PNG (hoặc định dạng khác nếu muốn)
+                    spectrogram.Save(memoryStream, ImageFormat.Png);
+
+                    // Đặt lại vị trí đầu stream để upload
+                    memoryStream.Position = 0;
+
+                    // Khởi tạo audio features id
+                    string audioFeaturesId = ObjectId.GenerateNewId().ToString();
+
+                    // Khởi tạo IFormFile từ MemoryStream
+                    IFormFile spectrogramFile = new FormFile(memoryStream, 0, memoryStream.Length, "spectrogram", $"{audioFeaturesId}.png")
+                    {
+                        Headers = new HeaderDictionary(),
+                        ContentType = "image/png"
+                    };
+
+                    //upload spectrogram lên cloudinary
+                    ImageUploadResult imageResult = _cloudinaryService.UploadImage(spectrogramFile, ImageTag.Spectrogram);
+
+                    // Chuyển spectrogram thành tensor
+                    Tensor<float> tensor = await SpectrogramProcessor.ProcessImageToTensor(imageResult.SecureUrl.AbsoluteUri);
+
+                    // Dự đoán audio features từ tensor
+                    float[] spectroPredict = SpectrogramProcessor.Predict(tensor);
 
                     //tạo mới audio features từ spectroPredict 
-                    audioFeature = new()
+                    AudioFeatures audioFeature = new()
                     {
+                        Id = audioFeaturesId,
                         Duration = (int)Math.Round(spectroPredict[0], 2),
                         Key = (int)Math.Round(spectroPredict[1], 2),
                         TimeSignature = (int)Math.Round(spectroPredict[2], 2),
