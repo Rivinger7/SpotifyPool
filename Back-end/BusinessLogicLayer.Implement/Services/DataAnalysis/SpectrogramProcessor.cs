@@ -1,13 +1,16 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using Spectrogram;
-using System.Drawing;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
+//using Spectrogram;
+using BitmapDrawing = System.Drawing.Bitmap;
+using SixLabors.ImageSharp.Processing;
 
 namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 {
     public static class SpectrogramProcessor
     {
-        public static Bitmap ConvertToSpectrogram(string previewAudio)
+        public static BitmapDrawing ConvertToSpectrogram(string previewAudio)
         {
             // Đọc audio từ URL hoặc file
             (double[] audioData, int sampleRateData) = ReadMono(previewAudio);
@@ -20,12 +23,12 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             int stepSize = audioData.Length / targetWidthPx;
 
             // Khởi tạo SpectrogramGenerator
-            SpectrogramGenerator sg = new(sampleRateData, fftSize, stepSize, maxFreq: 2200);
+            Spectrogram.SpectrogramGenerator sg = new(sampleRateData, fftSize, stepSize, maxFreq: 2200);
 
             // Thêm dữ liệu audio vào spectrogram
             sg.Add(audioData);
 
-            using var bitmap = sg.GetBitmap(intensity: 5, dB: true);
+            var bitmap = sg.GetBitmap(intensity: 5, dB: true);
 
             return bitmap;
         }
@@ -47,34 +50,28 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 
         public static async Task<Tensor<float>> ProcessImageToTensor(string imagePath, int targetWidth = 128, int targetHeight = 128)
         {
-            // Tải hình ảnh từ URL
             using HttpClient client = new();
             using Stream imageStream = await client.GetStreamAsync(imagePath);
 
-            // Load hình ảnh từ stream
-            using Bitmap bitmap = new(imageStream);
+            // Đọc ảnh WebP
+            using Image<Rgba32> image = await Image.LoadAsync<Rgba32>(imageStream);
 
-            // Thay đổi kích thước hình ảnh
-            using Bitmap resizedBitmap = new(bitmap, new Size(targetWidth, targetHeight));
+            // Resize ảnh
+            image.Mutate(x => x.Resize(targetWidth, targetHeight));
 
-            // Trích xuất pixel và chuẩn hóa chúng
+            // Trích xuất pixel
             float[] normalizedPixels = new float[targetWidth * targetHeight];
             for (int y = 0; y < targetHeight; y++)
             {
                 for (int x = 0; x < targetWidth; x++)
                 {
-                    // Lấy giá trị pixel
-                    Color pixel = resizedBitmap.GetPixel(x, y);
-
-                    // Chuyển đổi pixel thành giá trị grayscale (0-1)
+                    Rgba32 pixel = image[x, y];
                     float grayscale = (pixel.R + pixel.G + pixel.B) / 3f / 255f;
-
-                    // Lưu vào mảng
                     normalizedPixels[y * targetWidth + x] = grayscale;
                 }
             }
 
-            // Tạo tensor với định dạng [1, targetHeight, targetWidth, 1]
+            // Tạo tensor
             return new DenseTensor<float>(normalizedPixels, [1, targetHeight, targetWidth, 1]);
         }
 

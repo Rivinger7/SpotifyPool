@@ -214,9 +214,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             newTrack.UploadBy = userID;
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
 
-            string fileNameUnique = $"{Path.GetFileNameWithoutExtension(request.File.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}{Path.GetExtension(request.File.FileName)}";
-
-            Console.WriteLine(fileNameUnique);
+            //string fileNameUnique = $"{Path.GetFileNameWithoutExtension(request.File.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}{Path.GetExtension(request.File.FileName)}";
+            //Console.WriteLine(fileNameUnique);
 
             //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads trong wwwroot
             string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", request.File.FileName);
@@ -257,6 +256,9 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                     // Lưu ở định dạng PNG (hoặc định dạng khác nếu muốn)
                     spectrogram.Save(memoryStream, ImageFormat.Png);
+
+                    // Giải phóng tài nguyên từ bitmap
+                    spectrogram.Dispose();
 
                     // Đặt lại vị trí đầu stream để upload
                     memoryStream.Position = 0;
@@ -308,10 +310,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 }
                 return;
             }
-            catch (Exception ex)
-            {
-                throw new Exception("Upload failed: " + ex.Message);
-            }
+            //catch (Exception ex)
+            //{
+            //    throw new Exception("Upload failed: " + ex.Message);
+            //}
 
             finally
             {
