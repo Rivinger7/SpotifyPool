@@ -1,4 +1,5 @@
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,28 +34,28 @@ namespace SpotifyPool._1._Controllers.Playlist
         }
 
         /// <summary>
-        /// Lấy danh sách track trong playlist
+        /// Tạo playlist mới
         /// </summary>
-        /// <param name="id">Playlist Id</param>
+        /// <param name="playlistRequestModel"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}/tracks")]
-        [Obsolete("Hãy sử dụng GetPlaylistAsync")]
-        public async Task<IActionResult> GetTrackPlaylistAsync(string id)
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost]
+        public async Task<IActionResult> CreatePlaylistAsync([FromForm] PlaylistRequestModel playlistRequestModel)
         {
-            var result = await playlistService.GetTracksInPlaylistAsync(id);
-            return Ok(result);
+            await playlistService.CreatePlaylistAsync(playlistRequestModel);
+            return Ok(new { Message = "Create Playlist Successfully" });
         }
 
         /// <summary>
-        /// Tạo playlist mới
+        /// Lấy danh sách track được đề xuất
         /// </summary>
-        /// <param name="playlistName"></param>
+        /// <param name="offset"></param>
+        /// <param name="limit"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("{playlistName}")]
-        public async Task<IActionResult> CreatePlaylistAsync(string playlistName)
+        [AllowAnonymous, HttpGet("recommendation/tracks")]
+        public async Task<IActionResult> GetRecommendationPlaylist([FromQuery] int offset = 1, [FromQuery] int limit = 20)
         {
-            await playlistService.CreatePlaylistAsync(playlistName);
-            return Ok(new { Message = "Create Playlist Successfully" });
+            var result = await playlistService.GetRecommendationPlaylist(offset, limit);
+            return Ok(result);
         }
 
         /// <summary>

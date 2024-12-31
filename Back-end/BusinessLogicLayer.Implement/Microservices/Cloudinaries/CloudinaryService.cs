@@ -4,19 +4,17 @@ using Microsoft.AspNetCore.Http;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using Utility.Coding;
 using Business_Logic_Layer.Services_Interface.InMemoryCache;
-using DataAccessLayer.Interface.MongoDB.UOW;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
-    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork)
+    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache, IHttpContextAccessor httpContextAccessor)
     {
         private readonly Cloudinary _cloudinary = cloudinary;
         private readonly ICacheCustom _cache = cache;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image", int? height = null, int? width = null)
         {
@@ -264,5 +262,17 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 
             return deletionResult;
         }
+
+        //public async Task<string> UploadMp3Async(string filePath)
+        //{
+        //    var uploadParams = new VideoUploadParams
+        //    {
+        //        File = new FileDescription(filePath),
+        //        ResourceType = ResourceType.Video
+        //    };
+
+        //    var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+        //    return uploadResult.SecureUrl.ToString(); // Trả về URL của file đã upload
+        //}
     }
 }

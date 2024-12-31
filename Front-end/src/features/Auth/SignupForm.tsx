@@ -92,225 +92,232 @@ const SignupForm = () => {
 	}
 
 	return (
-		<div className="flex items-center justify-center w-2/3 lg:w-2/5 min-h-full py-10 m-0 mx-auto overflow-auto">
-			<div>
-				<Helmet>
-					<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Black.png" />
-					<title>Sign up - SpotifyPool</title>
-				</Helmet>
+		<div className="flex items-center justify-center min-h-full bg-gradient-to-b py-0 md:py-10 from-zinc-700 from-0% to-black to-100%">
+			<div className="flex items-center justify-center w-full sm:w-2/3 lg:w-1/2 h-full m-0 mx-auto">
+				<div className="bg-[#121212] p-8 md:py-10 md:px-14 rounded-md">
+					<Helmet>
+						<link rel="icon" type="image/svg+xml" href="/Spotify_Icon_RGB_Black.png" />
+						<title>Sign up - SpotifyPool</title>
+					</Helmet>
 
-				<header className="flex flex-col items-center justify-center mb-8">
-					<CustomTooltip label="Back to SpotifyPool" side="top">
-						<Link to={"/"}>
-							<img
-								src="/Spotify_Icon_RGB_White.png"
-								alt="spotify logo black"
-								className="w-10 h-10"
+					{/* ==== Header ==== */}
+					<header className="flex flex-col items-center justify-center mb-8">
+						<CustomTooltip label="Back to SpotifyPool" side="top">
+							<Link to={"/"}>
+								<img
+									src="/Spotify_Icon_RGB_White.png"
+									alt="spotify logo black"
+									className="w-10 h-10"
+								/>
+							</Link>
+						</CustomTooltip>
+						<h1 className="text-5xl leading-[62px] text-center font-bold text-white">
+							Sign up to start listening
+						</h1>
+					</header>
+
+					{/* ==== Signup Form ==== */}
+					<Form {...form}>
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+							{/* EMAIL */}
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Email address</FormLabel>
+										<FormControl>
+											<Input
+												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
+												placeholder="name@domain.com"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
 							/>
-						</Link>
-					</CustomTooltip>
-					<h1 className="text-5xl leading-[62px]  text-center font-bold text-white">
-						Sign up to start listening
-					</h1>
-				</header>
 
-				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-						{/* EMAIL */}
-						<FormField
-							control={form.control}
-							name="email"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Email address</FormLabel>
-									<FormControl>
-										<Input
-											className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-											placeholder="name@domain.com"
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						{/* USERNAME */}
-						<FormField
-							control={form.control}
-							name="userName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Username</FormLabel>
-									<FormControl>
-										<Input
-											className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-											placeholder="Username"
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						{/* DISPLAY NAME */}
-						<FormField
-							control={form.control}
-							name="displayName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>What should we call you?</FormLabel>
-									<FormControl>
-										<Input
-											className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-											placeholder="Display name"
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						{/* PHONE NUMBER */}
-						<FormField
-							control={form.control}
-							name="phoneNumber"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Phone number</FormLabel>
-									<FormControl>
-										<Input
-											className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-											placeholder="Phone number"
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						{/* PASSWORD */}
-						<FormField
-							control={form.control}
-							name="password"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Password</FormLabel>
-									<FormControl>
-										<div className="relative">
+							{/* USERNAME */}
+							<FormField
+								control={form.control}
+								name="userName"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Username</FormLabel>
+										<FormControl>
 											<Input
 												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-												placeholder="Password"
-												type={passwordVisible ? "text" : "password"}
+												placeholder="Username"
 												{...field}
 											/>
-											{passwordVisible ? (
-												<Eye
-													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
-													onClick={() => handlePasswordVisibility("password")}
-												/>
-											) : (
-												<EyeOff
-													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
-													onClick={() => handlePasswordVisibility("password")}
-												/>
-											)}
-										</div>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
 
-						{/* CONFIRM PASSWORD */}
-						<FormField
-							control={form.control}
-							name="confirmedPassword"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Confirm password</FormLabel>
-									<FormControl>
-										<div className="relative">
+							{/* DISPLAY NAME */}
+							<FormField
+								control={form.control}
+								name="displayName"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>What should we call you?</FormLabel>
+										<FormControl>
 											<Input
 												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
-												placeholder="Confirm password"
-												type={confirmPasswordVisible ? "text" : "password"}
+												placeholder="Display name"
 												{...field}
 											/>
-											{confirmPasswordVisible ? (
-												<Eye
-													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
-													onClick={() => handlePasswordVisibility("confirm")}
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							{/* PHONE NUMBER */}
+							<FormField
+								control={form.control}
+								name="phoneNumber"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Phone number</FormLabel>
+										<FormControl>
+											<Input
+												className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
+												placeholder="Phone number"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							{/* PASSWORD */}
+							<FormField
+								control={form.control}
+								name="password"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Password</FormLabel>
+										<FormControl>
+											<div className="relative">
+												<Input
+													className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
+													placeholder="Password"
+													type={passwordVisible ? "text" : "password"}
+													{...field}
 												/>
-											) : (
-												<EyeOff
-													className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
-													onClick={() => handlePasswordVisibility("confirm")}
+												{passwordVisible ? (
+													<Eye
+														className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+														onClick={() => handlePasswordVisibility("password")}
+													/>
+												) : (
+													<EyeOff
+														className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+														onClick={() => handlePasswordVisibility("password")}
+													/>
+												)}
+											</div>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							{/* CONFIRM PASSWORD */}
+							<FormField
+								control={form.control}
+								name="confirmedPassword"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Confirm password</FormLabel>
+										<FormControl>
+											<div className="relative">
+												<Input
+													className="border-[#727272] rounded-sm transition-all duration-300 hover:border-[#fff]"
+													placeholder="Confirm password"
+													type={confirmPasswordVisible ? "text" : "password"}
+													{...field}
 												/>
-											)}
-										</div>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+												{confirmPasswordVisible ? (
+													<Eye
+														className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+														onClick={() => handlePasswordVisibility("confirm")}
+													/>
+												) : (
+													<EyeOff
+														className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer size-4 text-gray-500 hover:text-white"
+														onClick={() => handlePasswordVisibility("confirm")}
+													/>
+												)}
+											</div>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
 
-						<Button
-							className="rounded-full bg-[#1ed760] w-full hover:bg-[#1fdf64] font-bold"
-							type="submit"
-						>
-							Next
-						</Button>
-					</form>
-				</Form>
+							<Button
+								className="rounded-full bg-[#1ed760] w-full hover:bg-[#1fdf64] font-bold"
+								type="submit"
+							>
+								Next
+							</Button>
+						</form>
+					</Form>
 
-				<div className="flex justify-center items-center mt-8 relative before:absolute before:left-0 before:right-0 before:block before:top-1/2 before:h-[1px] before:content-[''] before:w-full before:border-[1px] before:border-solid before:border-[#727272]">
-					<span className="relative bg-[#121212] pl-3 pr-3 text-sm leading-5 text-[rgb(107 114 128 / 1)]">
-						or
-					</span>
-				</div>
+					{/* ==== Divider ==== */}
+					<div className="flex justify-center items-center mt-8 relative before:absolute before:left-0 before:right-0 before:block before:top-1/2 before:h-[1px] before:content-[''] before:w-full before:border-[1px] before:border-solid before:border-[#727272]">
+						<span className="relative bg-[#121212] pl-3 pr-3 text-sm leading-5 text-[rgb(107 114 128 / 1)]">
+							or
+						</span>
+					</div>
 
-				{/* <Button
-					className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-8 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
-					type="submit"
-				>
-					<GoogleIcon />
-					Sign up with Google
-				</Button> */}
-
-				<div className="mt-8">
-					<GoogleLogin
-						shape="pill"
-						size="large"
-						onSuccess={(credentialResponse) => {
-							loginByGoogleMutation({ googleToken: credentialResponse.credential })
-								.unwrap()
-								.then((data) => {
-									dispatch(login({ userToken: data.token, isGoogle: true }))
-									navigate("/")
-									toast.success("Login successful")
-								})
-								.catch((error) => {
-									console.error(error)
-								})
-						}}
-						onError={() => {
-							console.error("Login Failed")
-						}}
-					/>
-				</div>
-
-				<div className="text-center mt-4 w-full text-[#a7a7a7]">
-					Already have an account?{" "}
-					<Link
-						to={"/login"}
-						className="underline hover:text-[#1ed760] transition-all duration-300"
+					{/* <Button
+						className="rounded-full bg-transparent transition-all duration-300 p-2 pl-8 pr-8 w-full mt-8 border-[1px] border-solid border-[#727272] hover:bg-transparent hover:border-[#fff] text-white font-bold"
+						type="submit"
 					>
-						Log in here
-					</Link>
+						<GoogleIcon />
+						Sign up with Google
+					</Button> */}
+
+					{/* ==== Google login button ==== */}
+					<div className="mt-8">
+						<GoogleLogin
+							shape="pill"
+							size="large"
+							onSuccess={(credentialResponse) => {
+								loginByGoogleMutation({ googleToken: credentialResponse.credential })
+									.unwrap()
+									.then((data) => {
+										dispatch(login({ userToken: data.token, isGoogle: true }))
+										navigate("/")
+										toast.success("Login successful")
+									})
+									.catch((error) => {
+										console.error(error)
+									})
+							}}
+							onError={() => {
+								console.error("Login Failed")
+							}}
+						/>
+					</div>
+
+					{/* ==== Login link ==== */}
+					<div className="text-center mt-4 w-full text-[#a7a7a7]">
+						Already have an account?{" "}
+						<Link
+							to={"/login"}
+							className="underline hover:text-[#1ed760] transition-all duration-300"
+						>
+							Log in here
+						</Link>
+					</div>
 				</div>
 			</div>
 		</div>

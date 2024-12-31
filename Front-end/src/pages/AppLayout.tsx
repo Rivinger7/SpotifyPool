@@ -2,13 +2,14 @@ import { Outlet } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { RootState } from "@/store/store"
 
-import Preview from "@/features/common/Preview"
+import { useMemo } from "react"
+
+import Preview from "@/features/TrackPreview/Preview"
 import MainHeader from "@/features/Layout/MainHeader"
+import AudioPlayer from "@/features/Audio/AudioPlayer"
 import LeftSideBar from "@/features/Layout/LeftSideBar"
 import MainContent from "@/features/Layout/MainContent"
-import MusicPreview from "@/features/common/MusicPreview"
-import { useMemo } from "react"
-import AudioPlayer from "@/features/Audio/AudioPlayer"
+import MusicPreview from "@/features/TrackPreview/MusicPreview"
 
 function AppLayout() {
 	const { isAuthenticated } = useSelector((state: RootState) => state.auth)
@@ -22,7 +23,10 @@ function AppLayout() {
 			<MainHeader />
 			<MainContent mainHeight={mainHeight}>
 				<LeftSideBar />
-				<div className="bg-[var(--background-base)] rounded-lg w-full max-h-full overflow-y-auto">
+				<div
+					id="main-content"
+					className="bg-[var(--background-base)] rounded-lg w-full max-h-full overflow-y-auto"
+				>
 					{/* ==== AUDIO ==== */}
 					<AudioPlayer />
 

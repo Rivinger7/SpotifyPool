@@ -1,25 +1,30 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
+using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
 {
-    public class PlaylistBLL(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IMapper mapper) : IPlaylist
+    public class PlaylistBLL(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IMapper mapper, CloudinaryService cloudinaryService) : IPlaylist
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IMapper _mapper = mapper;
+        private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
         public async Task<IEnumerable<PlaylistsResponseModel>> GetAllPlaylistsAsync()
         {
@@ -50,8 +55,13 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             return playlistsResponse;
         }
 
-        public async Task CreatePlaylistAsync(string playlistName)
+        public async Task CreatePlaylistAsync(PlaylistRequestModel playlistRequestModel)
         {
+            if (string.IsNullOrWhiteSpace(playlistRequestModel.PlaylistName))
+            {
+                throw new InvalidDataCustomException("Playlist name is required");
+            }
+
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userID))
@@ -61,7 +71,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
 
             // Kiểm tra xem playlist đã tồn tại chưa
             if (await _unitOfWork.GetCollection<Playlist>()
-                .Find(playlist => playlist.UserID == userID && playlist.Name == playlistName)
+                .Find(playlist => playlist.UserID == userID && playlist.Name == playlistRequestModel.PlaylistName)
                 .Project(playlist => playlist.Id)
                 .AnyAsync())
             {
@@ -71,23 +81,48 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Tạo hình ảnh cho playlist
             List<Image> images = [];
 
+            // Nếu có file hình ảnh thì upload lên Cloudinary
+            // Gọi 3 lần để tạo 3 kích thước ảnh khác nhau
+            if (playlistRequestModel.ImageFile != null)
+            {
+                // Kết quả upload hình ảnh
+                ImageUploadResult uploadResult;
+                // Kích thước ảnh
+                IEnumerable<int> sizes =  [640, 300, 64];
+                // Kích thước ảnh cố định
+                int fixedSize = 300;
+
+                // Upload hình ảnh lên Cloudinary
+                uploadResult = _cloudinaryService.UploadImage(playlistRequestModel.ImageFile, ImageTag.Playlist, rootFolder: "Image", fixedSize, fixedSize);
+
+                // Tạo 3 kích thước ảnh khác nhau nhưng cùng một URL với kích thước cố định
+                foreach (int size in sizes)
+                {
+                    images.Add(new()
+                    {
+                        URL = uploadResult.SecureUrl.AbsoluteUri,
+                        Height = size,
+                        Width = size
+                    });
+                }
+            }
             // Nếu playlist là Favorite Songs thì sử dụng hình ảnh mặc định
-            if (playlistName.Equals("Favorite Songs", StringComparison.OrdinalIgnoreCase))
+            else
             {
                 images =
                 [
                     new() {
-                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-640_xnff8r.png",
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
                         Height = 640,
                         Width = 640
                     },
                     new() {
-                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-300_vitqvn.png",
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
                         Height = 300,
                         Width = 300
                     },
                     new() {
-                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730189220/liked-songs-64_izigfw.png",
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
                         Height = 64,
                         Width = 64
                     }
@@ -97,7 +132,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Tạo mới playlist
             Playlist playlist = new()
             {
-                Name = playlistName,
+                Name = playlistRequestModel.PlaylistName,
                 UserID = userID,
                 CreatedTime = Util.GetUtcPlus7Time(),
                 TrackIds = [],
@@ -146,6 +181,82 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlistId, updateDefinition);
 
             return;
+        }
+
+        public async Task<IEnumerable<TrackResponseModel>> GetRecommendationPlaylist(int offset, int limit)
+        {
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.PreviewURL,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        GenreIds = artist.GenreIds,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
+
+            // Sắp xếp theo Popularity của Track
+            SortDefinition<Track> sortDefinition = Builders<Track>.Sort.Descending(track => track.Popularity);
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lấy thông tin Tracks với Artist
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Skip((offset - 1) * limit)
+                .Limit(limit)
+                .Sort(sortDefinition)
+                .Lookup<Track, Artist, ASTrack>
+                (
+                    _unitOfWork.GetCollection<Artist>(), // The foreign collection
+                    track => track.ArtistIds, // The field in Track that are joining on
+                    artist => artist.Id, // The field in Artist that are matching against
+                    result => result.Artists // The field in ASTrack to hold the matched artists
+                )
+                .Project(trackWithArtistProjection)
+                .ToListAsync();
+
+            return tracksResponseModel;
+        }
+
+        public async Task<PlaylistReponseModel> GetWeeklyPlaylist()
+        {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
+            // Lấy danh sách top track của user
+            IEnumerable<string> trackIds = await _unitOfWork.GetCollection<TopTrack>()
+                .Find(topTrack => topTrack.UserId == userId)
+                .Project(topTrack => topTrack.TrackInfo.Select(trackInfo => trackInfo.TrackId))
+                .FirstOrDefaultAsync();
+
+            return null;
         }
 
         public async Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId)
@@ -221,7 +332,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                             Height = image.Height,
                             Width = image.Width
                         })
-                    }).ToList()
+                    })
                 });
 
             // Empty Pipeline
@@ -243,7 +354,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             foreach (TrackResponseModel track in tracks)
             {
                 track.AddedTime = trackIdAddedTimeMap[track.Id].ToString("yyyy-MM-dd");
-                track.DurationFormated = Util.FormatTimeFromMilliseconds(track.Duration);
             }
 
             // Lý do không dùng AutoMapper vì Model này cần tới nhiều thông tin từ nhiều collection khác nhau
@@ -261,60 +371,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             };
 
             return playlistReponseModel;
-        }
-
-        [Obsolete("Dùng GetPlaylistAsync thay cho hàm GetTracksInPlaylistAsync")]
-        public async Task<IEnumerable<TrackPlaylistResponseModel>> GetTracksInPlaylistAsync(string playlistId)
-        {
-            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userID))
-            {
-                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
-            }
-
-            // Chỉ lấy những fields cần thiết từ Playlist
-            ProjectionDefinition<Playlist> playlistProjection = Builders<Playlist>.Projection
-                .Include(playlist => playlist.TrackIds);
-
-            // Lấy thông tin Playlist
-            Playlist playlist = await _unitOfWork.GetCollection<Playlist>()
-                .Find(playlist => playlist.Id == playlistId)
-                .Project<Playlist>(playlistProjection)
-                .FirstOrDefaultAsync()
-                ?? throw new DataNotFoundCustomException($"Not found any playlist with User {userID}");
-
-            // Chỉ lấy những thông tin cần thiết từ ASTrack : Track
-            ProjectionDefinition<ASTrack> astrackProjection = Builders<ASTrack>.Projection  // Project  
-                .Include(ast => ast.Id)
-                .Include(ast => ast.Name)
-                .Include(ast => ast.Description)
-                .Include(ast => ast.PreviewURL)
-                .Include(ast => ast.Duration)
-                .Include(ast => ast.Images)
-                .Include(ast => ast.Artists);
-
-            // Map track IDs and their added time
-            Dictionary<string, DateTime> trackIdAddedTimeMap = playlist.TrackIds.ToDictionary(pti => pti.TrackId, pti => pti.AddedTime);
-            HashSet<string> trackIdsSet = [.. trackIdAddedTimeMap.Keys]; // .ToHashSet()
-
-            // Filter
-            FilterDefinition<Track> trackFilter = Builders<Track>.Filter.In(track => track.Id, trackIdsSet);
-
-            // Lấy thông tin Tracks với Artist
-            IEnumerable<ASTrack> tracks = await _unitOfWork.GetRepository<ASTrack>().GetServeralTracksWithArtistAsync(trackFilter);
-
-            // Mapping tracks with artists to TrackResponseModel
-            // Thêm thông tin AddedTime vào TrackResponseModel
-            IEnumerable<TrackPlaylistResponseModel> tracksResponse = tracks.Select(track =>
-            {
-                TrackPlaylistResponseModel trackResponse = _mapper.Map<TrackPlaylistResponseModel>(track);
-                trackResponse.AddedTime = trackIdAddedTimeMap[track.Id].ToString("yyyy-MM-dd");
-                return trackResponse;
-            }).ToList();
-
-            return tracksResponse;
         }
 
         public async Task RemoveFromPlaylistAsync(string trackId, string playlistId)

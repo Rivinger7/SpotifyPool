@@ -81,9 +81,21 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     new()
                     {
                         URL = null,
-                        Height = 0,
-                        Width = 0,
+                        Height = 600,
+                        Width = 600,
                     },
+                    new()
+                    {
+                        URL = null,
+                        Height = 300,
+                        Width = 300,
+                    },
+                    new()
+                    {
+                        URL = null,
+                        Height = 64,
+                        Width = 64,
+                    }
                 ]
             };
 

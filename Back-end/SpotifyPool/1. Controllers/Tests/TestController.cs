@@ -1,5 +1,4 @@
-﻿using BusinessLogicLayer.DataAnalytics;
-using BusinessLogicLayer.Implement.Services.Tests;
+﻿using BusinessLogicLayer.Implement.Services.Tests;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +11,21 @@ namespace SpotifyPool._1._Controllers.Tests
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class TestController(TestBLL testBLL) : ControllerBase
     {
+        [AllowAnonymous, HttpGet("Testing-Pallete")]
+        public async Task<IActionResult> TestingPallete()
+        {
+            IEnumerable<string> colors = await TestBLL.TestImgx();
+
+            return Ok(colors);
+        }
+
+        [AllowAnonymous, HttpGet("Testing-file-path")]
+        public IActionResult TestingFilePath()
+        {
+            string[] filePaths = testBLL.GetFilePath();
+            return Ok(filePaths);
+        }
+
         [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("Testing-Date")]
         public async Task<IActionResult> TestingDate()
         {

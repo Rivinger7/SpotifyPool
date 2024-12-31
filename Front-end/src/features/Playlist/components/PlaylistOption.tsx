@@ -21,8 +21,12 @@ const PlaylistOption = () => {
 			return
 		}
 
-		dispatch(playPlaylist({ tracks: playlistDetail.tracks, startIndex: 0 }))
+		dispatch(
+			playPlaylist({ tracks: playlistDetail.tracks, startIndex: 0, playlistId: playlistDetail.id })
+		)
 	}
+
+	if (!playlistDetail || playlistDetail.totalTracks === 0) return null
 
 	return (
 		<div className="px-6 py-4">
