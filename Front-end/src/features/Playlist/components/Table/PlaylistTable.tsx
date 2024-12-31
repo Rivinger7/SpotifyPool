@@ -1,10 +1,12 @@
 import { useState } from "react"
-import { Music, Pause, Play } from "lucide-react"
-import { useDispatch, useSelector } from "react-redux"
 import { RootState } from "@/store/store"
+import { Pause, Play } from "lucide-react"
+import { useDispatch, useSelector } from "react-redux"
+
 import PlaylistTableHeader from "./PlaylistTableHeader"
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import formatTimeMiliseconds from "@/utils/formatTimeMiliseconds"
 import { playPlaylist, togglePlay } from "@/store/slice/playerSlice"
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 
 const PlaylistTable = () => {
 	const dispatch = useDispatch()
@@ -23,8 +25,16 @@ const PlaylistTable = () => {
 			return
 		}
 
-		dispatch(playPlaylist({ tracks: playlistDetail.tracks, startIndex: index }))
+		dispatch(
+			playPlaylist({
+				tracks: playlistDetail.tracks,
+				startIndex: index,
+				playlistId: playlistDetail.id,
+			})
+		)
 	}
+
+	if (!playlistDetail || playlistDetail.totalTracks === 0) return null
 
 	return (
 		<Table>
@@ -50,7 +60,11 @@ const PlaylistTable = () => {
 											<Play className="size-4 fill-white stroke-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
 										)
 									) : isCurrentTrack && isPlaying ? (
-										<Music className="size-4 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-green-500" />
+										<img
+											src="https://open.spotifycdn.com/cdn/images/equaliser-animated-green.f5eb96f2.gif"
+											alt="music dancing"
+											className="size-4 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+										/>
 									) : (
 										index + 1
 									)}
@@ -71,7 +85,7 @@ const PlaylistTable = () => {
 								</div>
 							</TableCell>
 							<TableCell>{track.addedTime}</TableCell>
-							<TableCell className="text-right">{track.durationFormated}</TableCell>
+							<TableCell className="text-right">{formatTimeMiliseconds(track.duration)}</TableCell>
 						</TableRow>
 					</TableBody>
 				)

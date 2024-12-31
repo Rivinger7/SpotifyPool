@@ -6,6 +6,7 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using SetupLayer.Enum.Services.AudioFeature;
 
 namespace BusinessLogicLayer.Implement.Services.Recommendation
@@ -80,8 +81,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                 track => track.ArtistIds, // The field in Track that are joining on
                 artist => artist.Id, // The field in Artist that are matching against
                 result => result.Artists) // The field in ASTrack to hold the matched artists
-                .Project(projectionDefinition)
-                .As<ASTrack>();
+                .Project<ASTrack>(projectionDefinition);
 
             // To list
             IEnumerable<ASTrack> recommendedTracks = await trackPipelines.ToListAsync();
@@ -92,6 +92,89 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
 
             return responseModels;
         }
+
+        public async Task<IEnumerable<TrackResponseModel>> GetManyRecommendations(IEnumerable<string> trackIds, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 1)
+        {
+            // Stage
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lấy danh sách AudioFeatures của các track đầu vào
+            IEnumerable<AudioFeatures?> matchedAudioFeaturesList = await aggregateFluent
+                .Match(track => trackIds.Contains(track.Id))
+                .Lookup<Track, AudioFeatures, ASTrack>(
+                    _unitOfWork.GetCollection<AudioFeatures>(),
+                    track => track.AudioFeaturesId,
+                    audioFeature => audioFeature.Id,
+                    result => result.AudioFeatures)
+                .Unwind(result => result.AudioFeatures, new AggregateUnwindOptions<ASTrack>
+                {
+                    PreserveNullAndEmptyArrays = true
+                })
+                .Project(result => result.AudioFeatures)
+                .ToListAsync();
+
+            if (!matchedAudioFeaturesList.Any())
+            {
+                throw new InvalidDataCustomException("No audio features found for the provided track IDs.");
+            }
+
+            // Truy vấn tất cả AudioFeatures không trùng với các track đầu vào
+            IEnumerable<AudioFeatures> allAudioFeatures = await _unitOfWork.GetCollection<AudioFeatures>()
+                .Find(f => !matchedAudioFeaturesList.Select(m => m.Id).Contains(f.Id))
+                .ToListAsync();
+
+            IEnumerable<string> similarityResults = matchedAudioFeaturesList
+                .SelectMany(matchedAudioFeature =>
+                    allAudioFeatures.Select(audioFeature => new
+                    {
+                        MatchedFeature = matchedAudioFeature,
+                        Feature = audioFeature,
+                        Similarity = similarityScore(matchedAudioFeature ?? throw new InvalidDataCustomException("No audio features found for the provided track IDs."), audioFeature)
+                    }))
+                .Where(x => x.Similarity > 0.5) // Lọc các bài hát có độ tương đồng lớn hơn 0.5
+                .GroupBy(x => x.MatchedFeature?.Id) // Nhóm theo bài hát gốc
+                .SelectMany(group => group
+                    .OrderByDescending(x => x.Similarity) // Sắp xếp theo độ tương đồng
+                    .Take(3)) // Lấy top 3 bài hát tương tự
+                .Select(x => x.Feature.Id)
+                .Distinct() // Đảm bảo không có ID trùng lặp
+                .ToList();
+
+            #region Lấy danh sách Track tương ứng với các AudioFeatures đã lọc
+            // Projection
+            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
+                .Include(track => track.Id)
+                .Include(track => track.Name)
+                .Include(track => track.Description)
+                .Include(track => track.Lyrics)
+                .Include(track => track.PreviewURL)
+                .Include(track => track.Duration)
+                .Include(track => track.Images)
+                .Include(track => track.Artists);
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent2 = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lấy thêm thông tin về artist
+            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent2
+                .Match(track => similarityResults.Contains(track.AudioFeaturesId)) // Match the track by audioFeaturesId
+                .Lookup<Track, Artist, ASTrack>(
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists)
+                .Project<ASTrack>(projectionDefinition);
+
+            // To list
+            IEnumerable<ASTrack> recommendedTracks = await trackPipelines.ToListAsync();
+            #endregion
+
+            // Mapping các track tương tự thành TrackResponseModel
+            IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(recommendedTracks);
+
+            return responseModels;
+        }
+
 
         #region Sử dụng thuật toán Weighted Euclidean Distance
         public static double CalculateWeightedEulideanDisctance(AudioFeatures song1, AudioFeatures song2)
@@ -153,41 +236,31 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             double upperLimit = features1.Length;
 
             // Tính k
-            double k;
-            if (coefficientDescending == 1)
-            {
-                k = 1;
-            }
-            else
-            {
-                k = (1 - Math.Pow(coefficientDescending, upperLimit)) / (1 - coefficientDescending);
-            }
-
-            // Khoảng cách giữa 2 đặc trưng
-            double distanceMini = 0;
-
-            // Tính tổng bình phương khoảng cách giữa các đặc trưng
-            for (int index = 0; index < features1.Length; ++index)
-            {
-                distanceMini += Math.Pow((features1[index] * (Math.Pow(coefficientDescending, index) * k)) - (features2[index] * (Math.Pow(coefficientDescending, index) * k)), 2);
-            }
+            double k = coefficientDescending == 1
+                ? 1
+                : (1 - Math.Pow(coefficientDescending, upperLimit)) / (1 - coefficientDescending);
 
             // Tính khoảng cách Euclidean giữa hai track
-            double distance = Math.Sqrt(distanceMini);
+            double distance = Math.Sqrt(Enumerable
+                                .Range(0, features1.Length)
+                                .Sum(index => Math.Pow(
+                                    (features1[index] * (Math.Pow(coefficientDescending, index) * k))
+                                    - (features2[index] * (Math.Pow(coefficientDescending, index) * k)),
+                                 2)));
 
             // Tính toán độ tương đồng giữa hai track
-            double similarity = 1 / (1 + Math.Sqrt(distance));
+            double normalizedSimilarity = 1 / (1 + Math.Sqrt(distance));
 
             if (song1.Mode != song2.Mode)
             {
-                similarity *= -1;
+                normalizedSimilarity *= -1;
             }
 
             //Console.WriteLine("===========================");
-            //Console.WriteLine($"{similarity}");
+            //Console.WriteLine($"{normalizedSimilarity}");
             //Console.WriteLine("===========================");
 
-            return similarity;
+            return normalizedSimilarity;
         }
         #endregion
 
@@ -227,10 +300,10 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             }
 
             double dotProduct = features1.Zip(features2, (a, b) => a * b).Sum();
-            double magnitude1 = Math.Sqrt(features1.Sum(a => a * a));
-            double magnitude2 = Math.Sqrt(features2.Sum(b => b * b));
+            double magnitude1 = features1.Sum(a => a * a);
+            double magnitude2 = features2.Sum(b => b * b);
 
-            double cosineSimilarity = dotProduct / (magnitude1 * magnitude2);
+            double cosineSimilarity = dotProduct / Math.Sqrt((magnitude1 * magnitude2));
 
             #region Dùng vòng lặp
             //double dotProduct = 0, magnitude1 = 0, magnitude2 = 0;
@@ -262,11 +335,10 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
 
         private static double Standardize(double value, double min = 0, double max = 0)
         {
-            bool isValidMinMax = min <= max;
+            bool isValidMinMax = min < max;
             bool isValidMinValue = value >= min;
             bool isValidMaxValue = value <= max;
-            bool isValidMinMaxValue = (value >= 0 && value <= 1) && (min == 0 && max == 0);
-            bool isValidValue = isValidMinMax || isValidMinValue || isValidMaxValue || isValidMinMaxValue;
+            bool isValidValue = isValidMinMax && isValidMinValue && isValidMaxValue;
 
             if (!isValidValue)
             {

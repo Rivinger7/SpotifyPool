@@ -26,7 +26,7 @@ namespace SpotifyPool._1._Controllers.Users
 		/// </summary>
 		/// <param name="request"></param>
 		/// <returns></returns>
-		[Authorize(Roles = $"{nameof(UserRole.Customer)},{nameof(UserRole.Admin)}"), HttpPut("edit-profile")]
+		[Authorize(Roles = $"{nameof(UserRole.Customer)},{nameof(UserRole.Admin)}"), HttpPatch("edit-profile")]
         public async Task<IActionResult> EditProfileAsync([FromForm] EditProfileRequestModel request)
 		{
 			await _userBLL.EditProfileAsync(request);

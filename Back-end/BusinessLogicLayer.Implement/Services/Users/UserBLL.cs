@@ -102,7 +102,6 @@ namespace BusinessLogicLayer.Implement.Services.Users
             return users;
         }
 
-
         public async Task<UserProfileResponseModel> GetUserByIDAsync(string id)
         {
             // Projection
@@ -133,28 +132,38 @@ namespace BusinessLogicLayer.Implement.Services.Users
                                          .FirstOrDefaultAsync()
                         ?? throw new DataNotFoundCustomException("Not found any user");
 
-            // nếu không điền dữ liệu mới thì lấy lại cái cũ
-            requestModel.DisplayName ??= user.DisplayName;
-            requestModel.PhoneNumber ??= user.PhoneNumber;
-            requestModel.Birthdate ??= user.Birthdate;
-            requestModel.Gender ??= user.Gender.ToString();
+            // nếu không điền dữ liệu mới thì báo lỗi
+            //string displayName = requestModel.DisplayName ?? throw new BadRequestCustomException("Display name is required!");
+
 
             //map từ model qua user
-            _mapper.Map<EditProfileRequestModel, User>(requestModel, user);
+            //_mapper.Map<EditProfileRequestModel, User>(requestModel, user);
+
+            // Build update definition
+            UpdateDefinitionBuilder<User> updateBuilder = Builders<User>.Update;
 
             // Cập nhật các field sẵn có
-            UpdateDefinition<User> updateDefinition = Builders<User>.Update.Set(user => user.DisplayName, requestModel.DisplayName)
-                    .Set(user => user.PhoneNumber, requestModel.PhoneNumber)
-                    .Set(user => user.Birthdate, requestModel.Birthdate)
-                    .Set(user => user.Gender, Enum.Parse<UserGender>(requestModel.Gender))
-                    .Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time());
+            // Cập nhật các field sẵn có
+            List<UpdateDefinition<User>> updates =
+            [
+                updateBuilder.Set(user => user.DisplayName, requestModel.DisplayName),
+                updateBuilder.Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time())
+            ];
 
-			// Cập nhật Image Field nếu có
-			if (requestModel.Image is not null)
+            // Cập nhật Image Field nếu có
+            if (requestModel.Image is not null)
             {
+                // Upload ảnh lên Cloudinary
                 ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image, ImageTag.Users_Profile);
-                updateDefinition = updateDefinition.Set(user => user.Images.First().URL, result.SecureUrl.ToString());
+
+                // Cập nhật URL cho ảnh
+                for (int i = 0; i < user.Images.Count; i++)
+                {
+                    updates.Add(updateBuilder.Set(user => user.Images[i].URL, result.SecureUrl.AbsoluteUri));
+                }
             }
+
+            UpdateDefinition<User> updateDefinition = updateBuilder.Combine(updates);
 
             await _unitOfWork.GetRepository<User>().UpdateAsync(user.Id, updateDefinition);
         }

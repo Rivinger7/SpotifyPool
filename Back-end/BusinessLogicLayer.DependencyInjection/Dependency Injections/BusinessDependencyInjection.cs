@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+#region Dependencies
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using BusinessLogicLayer.Implement.CustomExceptions;
@@ -61,7 +62,9 @@ using DataAccessLayer.Implement.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
-using BusinessLogicLayer.DataAnalytics;
+using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
+using BusinessLogicLayer.Implement.Services.TopTracks;
+#endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
@@ -462,7 +465,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         {
             // Test
             services.AddScoped<TestBLL>();
-            services.AddScoped<IDataPrediction, DataPrediction>();
 
             // Register BLL services
 
@@ -472,6 +474,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // User
             services.AddScoped<IUserBLL, UserBLL>();
 
+            // Top Track
+            services.AddScoped<ITopTrack, TopTrackBLL>();
+
             // Track
             services.AddScoped<ITrack, TrackBLL>();
 
@@ -480,6 +485,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Data Reccomendation
             services.AddScoped<IRecommendation, RecommendationBLL>();
+
+            //services.AddScoped<NAudioService>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
@@ -706,7 +713,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                         IEnumerable<string?> securedSegments = new[]
                         {
                             Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL"),
-                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_ADD_TO_PLAYLIST_URL"),
+                            Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL"),
 
                         }.Where(segment => !string.IsNullOrWhiteSpace(segment)); // Lọc ra các segment không rỗng
 

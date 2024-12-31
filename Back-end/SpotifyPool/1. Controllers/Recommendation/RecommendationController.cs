@@ -15,7 +15,7 @@ namespace SpotifyPool._1._Controllers.Recommendation
         private readonly IRecommendation _recommendationService = recommendationService;
 
         /// <summary>
-        /// Sử dụng thuật toán Euclidean Distance với trọng số để tìm ra bài hát gợi ý
+        /// Sử dụng thuật toán Weighted Euclidean Distance
         /// </summary>
         /// <param name="trackId"></param>
         /// <returns></returns>
@@ -27,7 +27,7 @@ namespace SpotifyPool._1._Controllers.Recommendation
         }
 
         /// <summary>
-        /// Sử dụng thuật toán Cosine Similarity (Không có trọng số) để tìm ra bài hát gợi ý
+        /// Sử dụng thuật toán Cosine Similarity
         /// </summary>
         /// <param name="trackId"></param>
         /// <returns></returns>
@@ -35,6 +35,18 @@ namespace SpotifyPool._1._Controllers.Recommendation
         public async Task<IActionResult> GetRecommendedSongByCosineSimilarity(string trackId)
         {
             var result = await _recommendationService.GetRecommendations(trackId, RecommendationBLL.CalculateCosineSimilarity);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Sử dụng thuật toán Cosine Similarity
+        /// </summary>
+        /// <param name="trackId"></param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("tracks/Cosine-Similarity")]
+        public async Task<IActionResult> GetRecommendedSongsByCosineSimilarity([FromQuery] IEnumerable<string> trackId)
+        {
+            var result = await _recommendationService.GetManyRecommendations(trackId, RecommendationBLL.CalculateCosineSimilarity);
             return Ok(result);
         }
     }

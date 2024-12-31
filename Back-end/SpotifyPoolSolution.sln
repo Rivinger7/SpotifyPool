@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccessLayer.Implement",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogicLayer.Interface", "BusinessLogicLayer.Interface\BusinessLogicLayer.Interface.csproj", "{E9C35C23-1F7D-4D72-ADC4-B458533497B8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Commons", "Commons\Utility.csproj", "{3949C987-D42F-4F3E-AE87-0A60DAAD3EA8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utility", "Commons\Utility.csproj", "{3949C987-D42F-4F3E-AE87-0A60DAAD3EA8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1. API", "1. API", "{6CE2D6A2-4AFE-4C7B-B279-B6F3E458C63B}"
 EndProject
@@ -34,8 +34,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogicLayer.DependencyInjection", "BusinessLogicLayer.DependencyInjection\BusinessLogicLayer.DependencyInjection.csproj", "{4D8E3B3D-4FF6-4522-B36C-55F09FBBC6C0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccessLayer.Repository", "DataAccessLayer.Repository\DataAccessLayer.Repository.csproj", "{A5D58AB3-5A85-4A2F-B672-E2F8D8FBC3B7}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BusinessLogicLayer.DataAnalytics", "BusinessLogicLayer.DataAnalytics\BusinessLogicLayer.DataAnalytics.csproj", "{60A29452-034A-437B-8FE7-0D0E8030731C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,10 +89,6 @@ Global
 		{A5D58AB3-5A85-4A2F-B672-E2F8D8FBC3B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5D58AB3-5A85-4A2F-B672-E2F8D8FBC3B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5D58AB3-5A85-4A2F-B672-E2F8D8FBC3B7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{60A29452-034A-437B-8FE7-0D0E8030731C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{60A29452-034A-437B-8FE7-0D0E8030731C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{60A29452-034A-437B-8FE7-0D0E8030731C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{60A29452-034A-437B-8FE7-0D0E8030731C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,7 +106,6 @@ Global
 		{BF6432D0-13D0-4B35-B81B-4066B8D03F93} = {162D3471-7BB8-4757-AA37-8857CB2B852E}
 		{4D8E3B3D-4FF6-4522-B36C-55F09FBBC6C0} = {F1F4F4BD-7E73-41AE-BC56-ADA9F1BCE306}
 		{A5D58AB3-5A85-4A2F-B672-E2F8D8FBC3B7} = {C5DE5623-872F-407D-90A9-7C5FFAFCAF6D}
-		{60A29452-034A-437B-8FE7-0D0E8030731C} = {F1F4F4BD-7E73-41AE-BC56-ADA9F1BCE306}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9F68B3A4-E86A-4C89-9B99-937B589EC53A}

@@ -1,5 +1,5 @@
-import { useEffect } from "react"
-import { RootState } from "@/store/store.ts"
+import { useEffect, useRef, useState } from "react"
+import { RootState } from "@/store/store"
 import { useDispatch, useSelector } from "react-redux"
 import { toggleCollapse } from "@/store/slice/uiSlice"
 
@@ -15,17 +15,24 @@ import {
 import CustomTooltip from "@/components/CustomTooltip"
 
 import { Playlist } from "@/types"
-import { setPlaylist } from "@/store/slice/playlistSlice.ts"
-import SidebarFooter from "@/features/Layout/SidebarFooter.tsx"
-import { useGetAllPlaylistsQuery } from "@/services/apiPlaylist.ts"
-import PlayListsSidebar from "@/features/Playlist/PlayListsSidebar.tsx"
+import AlertCreatePlaylist from "@/features/Layout/components/Modal/AlertCreatePlaylist"
+import { setPlaylist } from "@/store/slice/playlistSlice"
+import SidebarFooter from "@/features/Layout/SidebarFooter"
+import AddPlaylistModal from "./components/Modal/AddPlaylistModal"
+import { useGetAllPlaylistsQuery } from "@/services/apiPlaylist"
+import PlayListsSidebar from "@/features/Playlist/PlayListsSidebar"
 
 const LeftSideBar = () => {
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
+
+	const { isCollapsed } = useSelector((state: RootState) => state.ui)
 	const { playlists } = useSelector((state: RootState) => state.playlist)
 	const { isAuthenticated } = useSelector((state: RootState) => state.auth)
-	const { isCollapsed } = useSelector((state: RootState) => state.ui)
+
+	const [openAddPlaylistModal, setOpenAddPlaylistModal] = useState(false)
+	const [openAlert, setOpenAlert] = useState(false)
+	const alertRef = useRef<HTMLDivElement>(null)
 
 	const handleCollapse = () => {
 		if (isAuthenticated) {
@@ -44,6 +51,18 @@ const LeftSideBar = () => {
 		isLoading: boolean
 	}
 
+	// INFO: Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (alertRef.current && !alertRef.current.contains(event.target as Node)) {
+				setOpenAlert(false)
+			}
+		}
+
+		document.addEventListener("mousedown", handleClickOutside)
+		return () => document.removeEventListener("mousedown", handleClickOutside)
+	}, [])
+
 	useEffect(() => {
 		dispatch(setPlaylist(playlistsData))
 	}, [dispatch, playlistsData])
@@ -54,7 +73,7 @@ const LeftSideBar = () => {
 	const shouldShowPlaylistsSidebar = isAuthenticated && hasPlaylists
 
 	return (
-		<div className={`${isCollapsed ? "w-[72px]" : "w-[420px]"} shrink-0 max-h-full`}>
+		<div className={`${isCollapsed ? "w-[72px]" : "w-[420px]"} shrink-0 max-h-full relative`}>
 			{/* ==== NAVBAR ==== */}
 			<nav className={"flex flex-col gap-2 h-full"}>
 				<div
@@ -101,15 +120,15 @@ const LeftSideBar = () => {
 												align={`${isCollapsed ? "start" : "end"}`}
 												className="border-none bg-[#282828]"
 											>
-												{/*<div*/}
-												{/*	className={*/}
-												{/*		"flex items-center justify-between p-3 cursor-default min-w-[190px] h-10 text-[#b3b3b3] hover:text-white transition-all hover:bg-[hsla(0,0%,100%,0.1)]"*/}
-												{/*	}*/}
-												{/*>*/}
-												{/*	<Music4 className="size-4" />*/}
-												{/*	<span>Create a new playlist</span>*/}
-												{/*</div>*/}
-												<DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() => {
+														if (!isAuthenticated) {
+															setOpenAlert(true)
+															return
+														}
+														setOpenAddPlaylistModal(true)
+													}}
+												>
 													<Music4 className="size-4" />
 													<span>Create a new playlist</span>
 												</DropdownMenuItem>
@@ -135,14 +154,19 @@ const LeftSideBar = () => {
 						{shouldShowLibraryBody && (
 							<div className={`h-full overflow-y-auto ${isCollapsed ? "hidden" : ""}`}>
 								<div className="flex flex-col max-h-full overflow-y-auto gap-2 p-2 pt-0 library-body-container">
-									{/* CREATE PLAYLIST */}
+									{/* ==== CREATE PLAYLIST ==== */}
 									<section className="flex flex-col bg-[#1f1f1f] justify-center gap-5 rounded-lg m-2 ml-0 mr-0 p-4 pl-5 pr-5">
 										<div className="flex flex-col gap-2">
 											<span className="font-bold">Create your first playlist</span>
 											<span className="text-[14px]">It's easy, we'll help you</span>
 										</div>
 										<div className="library-body-btn">
-											<button className="text-center align-middle transition-all bg-transparent border-0 rounded-full cursor-pointer touch-manipulation hover:scale-105">
+											<button
+												onClick={() => setOpenAlert(true)}
+												className={`text-center align-middle transition-all bg-transparent border-0 rounded-full cursor-pointer touch-manipulation ${
+													openAlert ? "" : "hover:scale-105"
+												}`}
+											>
 												<span className="bg-white text-black flex items-center justify-center rounded-full font-bold p-1 pl-4 pr-4 text-[14px] h-8">
 													Create playlist
 												</span>
@@ -150,7 +174,7 @@ const LeftSideBar = () => {
 										</div>
 									</section>
 
-									{/* BROWSE PODCASTS */}
+									{/* ==== BROWSE PODCASTS ==== */}
 									<section className="flex flex-col bg-[#1f1f1f] justify-center gap-5 rounded-lg m-2 ml-0 mr-0 p-4 pl-5 pr-5">
 										<div className="flex flex-col gap-2">
 											<span className="font-bold">Let's find some podcasts to follow</span>
@@ -178,6 +202,11 @@ const LeftSideBar = () => {
 					{!isAuthenticated && <SidebarFooter />}
 				</div>
 			</nav>
+
+			<AddPlaylistModal open={openAddPlaylistModal} setOpen={setOpenAddPlaylistModal} />
+
+			{/* ==== Create Playlist Alert ==== */}
+			{openAlert && <AlertCreatePlaylist ref={alertRef} setOpen={setOpenAlert} />}
 		</div>
 	)
 }

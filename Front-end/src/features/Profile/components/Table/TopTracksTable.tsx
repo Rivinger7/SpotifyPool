@@ -2,6 +2,7 @@ import { useState } from "react"
 import { TopTracks } from "@/types"
 import { Play } from "lucide-react"
 import { useGetTopTracksQuery } from "@/services/apiTracks"
+import formatTimeMiliseconds from "@/utils/formatTimeMiliseconds"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 
 const TopTracksTable = () => {
@@ -16,7 +17,7 @@ const TopTracksTable = () => {
 
 	return (
 		<Table>
-			{data.trackInfo.map((track, index) => (
+			{data?.trackInfo?.map((track, index) => (
 				<TableBody key={index}>
 					<TableRow
 						className="group"
@@ -59,7 +60,7 @@ const TopTracksTable = () => {
 							</div>
 						</TableCell>
 						<TableCell className="text-right min-w-[150px]">
-							{track.track?.durationFormated}
+							{formatTimeMiliseconds(track.track?.duration)}
 						</TableCell>
 					</TableRow>
 				</TableBody>

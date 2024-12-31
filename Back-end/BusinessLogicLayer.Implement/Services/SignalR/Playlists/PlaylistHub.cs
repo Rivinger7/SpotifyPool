@@ -1,20 +1,24 @@
 ﻿using AutoMapper;
+using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
-using DataAccessLayer.Repository.Entities.SignalR;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
+using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
 {
-    public class PlaylistHub(IUnitOfWork unitOfWork, IMapper mapper) : Hub
+    public class PlaylistHub(IUnitOfWork unitOfWork, IMapper mapper, CloudinaryService cloudinaryService) : Hub
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
+        private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
         #region SignalR Base Connection Methods
         //public override async Task OnConnectedAsync()
@@ -182,9 +186,9 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
         //}
         #endregion
 
-        public async Task CreatePlaylistAsync(string playlistName)
+        public async Task CreatePlaylistAsync(PlaylistRequestModel playlistRequestModel)
         {
-            if (string.IsNullOrWhiteSpace(playlistName))
+            if (string.IsNullOrWhiteSpace(playlistRequestModel.PlaylistName))
             {
                 await Clients.Caller.SendAsync("ReceiveException", "Playlist name is required");
                 return;
@@ -201,13 +205,11 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 return;
             }
 
-            // Lấy thông tin playlist từ database
-            Playlist playlist = await _unitOfWork.GetCollection<Playlist>().Find(x => x.UserID == userId && x.Name == playlistName)
-                .Project<Playlist>(Builders<Playlist>.Projection.Include(playlist => playlist.Name))
-                .FirstOrDefaultAsync();
-
-            // Nếu tồn tại thì thông báo lỗi
-            if (playlist is not null)
+            // Kiểm tra xem playlist đã tồn tại chưa
+            if (await _unitOfWork.GetCollection<Playlist>()
+                .Find(playlist => playlist.UserID == userId && playlist.Name == playlistRequestModel.PlaylistName)
+                .Project(playlist => playlist.Id)
+                .AnyAsync())
             {
                 await Clients.Caller.SendAsync("ReceiveException", "Playlist name already exists");
 
@@ -217,31 +219,65 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 return;
             }
 
-            // Tạo mới playlist
-            playlist = new()
+            // Tạo hình ảnh cho playlist
+            List<Image> images = [];
+
+            // Nếu có file hình ảnh thì upload lên Cloudinary
+            // Gọi 3 lần để tạo 3 kích thước ảnh khác nhau
+            if (playlistRequestModel.ImageFile != null)
             {
-                Name = playlistName,
+                // Kết quả upload hình ảnh
+                ImageUploadResult uploadResult;
+                // Kích thước ảnh
+                IEnumerable<int> sizes = [640, 300, 64];
+                // Kích thước ảnh cố định
+                int fixedSize = 300;
+
+                // Upload hình ảnh lên Cloudinary
+                uploadResult = _cloudinaryService.UploadImage(playlistRequestModel.ImageFile, ImageTag.Playlist, rootFolder: "Image", fixedSize, fixedSize);
+
+                // Tạo 3 kích thước ảnh khác nhau nhưng cùng một URL với kích thước cố định
+                foreach (int size in sizes)
+                {
+                    images.Add(new()
+                    {
+                        URL = uploadResult.SecureUrl.AbsoluteUri,
+                        Height = size,
+                        Width = size
+                    });
+                }
+            }
+            // Nếu playlist là Favorite Songs thì sử dụng hình ảnh mặc định
+            else
+            {
+                images =
+                [
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
+                        Height = 640,
+                        Width = 640
+                    },
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
+                        Height = 300,
+                        Width = 300
+                    },
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
+                        Height = 64,
+                        Width = 64
+                    }
+                ];
+            }
+
+            // Tạo mới playlist
+            Playlist playlist = new()
+            {
+                Name = playlistRequestModel.PlaylistName,
                 TrackIds = [],
                 UserID = userId,
                 CreatedTime = Util.GetUtcPlus7Time(),
-                Images =
-                        [
-                            new() {
-                            URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
-                            Height = 640,
-                            Width = 640,
-                            },
-                            new() {
-                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
-                                Height = 300,
-                                Width = 300,
-                            },
-                            new() {
-                                URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
-                                Height = 64,
-                                Width = 64,
-                            }
-                        ]
+                Images = images
             };
 
             // Lưu thông tin playlist vào database
