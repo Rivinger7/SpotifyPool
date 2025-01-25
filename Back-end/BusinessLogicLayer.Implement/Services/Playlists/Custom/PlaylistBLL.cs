@@ -12,8 +12,10 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
+using System.Collections.Generic;
 using System.Security.Claims;
 using Utility.Coding;
 
@@ -88,7 +90,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 // Kết quả upload hình ảnh
                 ImageUploadResult uploadResult;
                 // Kích thước ảnh
-                IEnumerable<int> sizes =  [640, 300, 64];
+                IEnumerable<int> sizes = [640, 300, 64];
                 // Kích thước ảnh cố định
                 int fixedSize = 300;
 
@@ -219,7 +221,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Sắp xếp theo Popularity của Track
             SortDefinition<Track> sortDefinition = Builders<Track>.Sort.Descending(track => track.Popularity);
 
-            // Empty Pipeline
+            // Empty Pipelinef
             IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
             // Lấy thông tin Tracks với Artist
@@ -240,6 +242,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             return tracksResponseModel;
         }
 
+        // Cái này chưa xong
         public async Task<PlaylistReponseModel> GetWeeklyPlaylist()
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
@@ -257,6 +260,144 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 .FirstOrDefaultAsync();
 
             return null;
+        }
+
+        public async Task CreateMoodPlaylist(string mood)
+        {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
+            // Filter
+            FilterDefinition<AudioFeatures> audioFeaturesFilter;
+            audioFeaturesFilter = mood switch
+            {
+                "Sad" => Builders<AudioFeatures>.Filter.And(
+                                      Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 0),
+                                      Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 100),
+                                      Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.4)),
+                "Neutral" => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 100) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 120),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.4) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.6)),
+                "Happy" => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 120) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 160),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.6) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.8)),
+                "Blisfull" => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 140) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 180),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.8) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 1)),
+                "Focus" => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Instrumentalness, 0.7),
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Energy, 0.5)),
+                "Random" => Builders<AudioFeatures>.Filter.Empty,
+                _ => throw new InvalidDataCustomException("The mood is not supported"),
+            };
+
+            // Mapping tracks to TrackResponseModel
+            ProjectionDefinition<ASTrack, TrackResponseModel> projectionDefinition = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    PreviewURL = track.PreviewURL,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel()
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        GenreIds = artist.GenreIds,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
+
+            // Lấy AudioFeaturesId
+            IEnumerable<string> audioFeaturesIds = await _unitOfWork.GetCollection<AudioFeatures>()
+                .Find(audioFeaturesFilter)
+                .Project(af => af.Id)
+                .ToListAsync();
+
+            // Stage
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lấy thông tin Tracks với Artist
+            IEnumerable<TrackResponseModel> tracks = await aggregateFluent
+                .Match(track => audioFeaturesIds.Contains(track.AudioFeaturesId))
+                .Sample(10)
+                .Lookup<Track, Artist, ASTrack>
+                (
+                    _unitOfWork.GetCollection<Artist>(), // The foreign collection
+                    track => track.ArtistIds, // The field in Track that are joining on
+                    artist => artist.Id, // The field in Artist that are matching against
+                    result => result.Artists // The field in ASTrack to hold the matched artists
+                )
+                .Project(projectionDefinition)
+                .ToListAsync();
+
+            // Lấy thời gian hiện tại
+            DateTime currentTime = Util.GetUtcPlus7Time();
+
+            // Playlist là Custom Songs thì sử dụng hình ảnh mặc định
+            List<Image> images = [
+                new() {
+                    URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
+                    Height = 640,
+                    Width = 640
+                },
+                new() {
+                    URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
+                    Height = 300,
+                    Width = 300
+                },
+                new() {
+                    URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
+                    Height = 64,
+                    Width = 64
+                }
+            ];
+
+            // Tạo mới playlist
+            Playlist playlist = new()
+            {
+                Name = $"{mood} Playlist {currentTime}",
+                UserID = userId,
+                CreatedTime = currentTime,
+                TrackIds = tracks.Select(track => new PlaylistTracksInfo
+                {
+                    TrackId = track.Id,
+                    AddedTime = currentTime
+                }).ToList(),
+                Images = images
+            };
+
+            // Lưu thông tin playlist vào database
+            await _unitOfWork.GetCollection<Playlist>().InsertOneAsync(playlist);
+
+            // Do là API nên không cần trả về gì cả
         }
 
         public async Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId)

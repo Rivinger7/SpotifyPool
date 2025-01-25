@@ -72,6 +72,18 @@ namespace SpotifyPool._1._Controllers.Playlist
         }
 
         /// <summary>
+        /// Tạo playlist theo mood
+        /// </summary>
+        /// <param name="mood"></param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("create-playlist-by-mood")]
+        public async Task<IActionResult> CreateMoodPlaylist([FromQuery] string mood = "Sad")
+        {
+            await playlistService.CreateMoodPlaylist(mood);
+            return Ok(new { Message = "Create Mood Playlist Successfully" });
+        }
+
+        /// <summary>
         /// Xóa track khỏi playlist
         /// </summary>
         /// <param name="trackID"></param>

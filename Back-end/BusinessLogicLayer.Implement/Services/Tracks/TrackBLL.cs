@@ -123,6 +123,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             // Lấy thông tin Tracks với Artist
             // Lookup
             TrackResponseModel trackResponseModel = await aggregateFluent
+                .Match(track => track.Id == id)
                 .Lookup<Track, Artist, ASTrack>(
                     _unitOfWork.GetCollection<Artist>(),
                     track => track.ArtistIds,
