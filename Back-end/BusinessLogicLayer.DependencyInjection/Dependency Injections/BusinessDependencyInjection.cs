@@ -9,6 +9,7 @@ using BusinessLogicLayer.Implement.Microservices.Geolocation;
 using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
 using BusinessLogicLayer.Implement.Microservices.OpenAI;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
+using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Implement.Services.InMemoryCache;
@@ -24,6 +25,7 @@ using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
@@ -476,6 +478,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // User
             services.AddScoped<IUserBLL, UserBLL>();
 
+            // Artist
+            services.AddScoped<IArtist, ArtistBLL>();
+
             // Top Track
             services.AddScoped<ITopTrack, TopTrackBLL>();
 
@@ -922,6 +927,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Track
             BsonSerializer.RegisterSerializer(typeof(PlaylistName), new EnumMemberSerializer<PlaylistName>());
             BsonSerializer.RegisterSerializer(typeof(RestrictionReason), new EnumMemberSerializer<RestrictionReason>());
+            BsonSerializer.RegisterSerializer(typeof(Mood), new EnumMemberSerializer<Mood>());
 
             // Cloudinary
             BsonSerializer.RegisterSerializer(typeof(AudioTagChild), new EnumMemberSerializer<AudioTagChild>());

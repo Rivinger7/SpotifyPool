@@ -15,16 +15,19 @@ using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using Utility.Coding;
 using System.Security.Claims;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
+using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
-    public class UserBLL(IUnitOfWork unitOfWork, IMapper mapper, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService) : IUserBLL
+    public class UserBLL(IUnitOfWork unitOfWork, IMapper mapper, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService, IJwtBLL jwtBLL) : IUserBLL
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly ICacheCustom _cache = cache;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
+        private readonly IJwtBLL _jwtBLL = jwtBLL;
 
         public async Task<IEnumerable<UserResponseModel>> GetAllUsersAsync(string? displayName, UserGender? gender, string? email, bool isCache = false)
         {
@@ -66,7 +69,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 .Project(users => new UserResponseModel
                 {
                     UserId = users.Id.ToString(),
-                    Role = users.Role.ToString(),
+                    Role = users.Roles.ToString(),
                     Email = users.Email,
                     DisplayName = users.DisplayName,
                     Gender = users.Gender.ToString(),
@@ -84,7 +87,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 .Project(users => new UserResponseModel
                 {
                     UserId = users.Id.ToString(),
-                    Role = users.Role.ToString(),
+                    Role = users.Roles.ToString(),
                     Email = users.Email,
                     DisplayName = users.DisplayName,
                     Gender = users.Gender.ToString(),
@@ -130,14 +133,14 @@ namespace BusinessLogicLayer.Implement.Services.Users
                                          .Project(Builders<User>.Projection.Include(user => user.Images))
                                          .As<User>()
                                          .FirstOrDefaultAsync()
-                        ?? throw new DataNotFoundCustomException("Not found any user");
+                        ?? throw new DataNotFoundCustomException("Not found any artist");
 
             // nếu không điền dữ liệu mới thì báo lỗi
             //string displayName = requestModel.DisplayName ?? throw new BadRequestCustomException("Display name is required!");
 
 
-            //map từ model qua user
-            //_mapper.Map<EditProfileRequestModel, User>(requestModel, user);
+            //map từ model qua artist
+            //_mapper.Map<EditProfileRequestModel, User>(requestModel, artist);
 
             // Build update definition
             UpdateDefinitionBuilder<User> updateBuilder = Builders<User>.Update;
@@ -168,6 +171,43 @@ namespace BusinessLogicLayer.Implement.Services.Users
             await _unitOfWork.GetRepository<User>().UpdateAsync(user.Id, updateDefinition);
         }
 
+        public async Task<AuthenticatedResponseModel> SwitchToArtistProfile()
+        {
+            // Lấy UserId từ phiên người dùng
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Kiểm tra UserId
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
+            // Lấy thông tin artist
+            Artist artist = await _unitOfWork.GetCollection<Artist>().Find(a => a.UserId == userID).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("You are not an artist!");
+
+            // Claim list
+            IEnumerable<Claim> claims =
+                [
+                    new Claim(ClaimTypes.NameIdentifier, artist.UserId?.ToString() ?? throw new DataNotFoundCustomException("Not found any artist")),
+                    new Claim("ArtistId", artist.Id.ToString()),
+                    new Claim(ClaimTypes.Role, UserRole.Artist.ToString()),
+                    new Claim(ClaimTypes.Name, artist.Name),
+                    new Claim("Avatar", artist.Images[0].URL ?? throw new DataNotFoundCustomException("Not found any images"))
+                ];
+
+            // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
+            _jwtBLL.GenerateAccessToken(claims, userID, out string accessToken, out string refreshToken);
+
+            // New object ModelView
+            AuthenticatedResponseModel authenticationModel = new()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+
+            return authenticationModel;
+        }
+
         //test method
         public async Task<IEnumerable<UserResponseModel>> TestPaging(int offset, int limit)
         {
@@ -181,11 +221,11 @@ namespace BusinessLogicLayer.Implement.Services.Users
 
             //FilterDefinition<User> filter = builder.Empty;
 
-            //builder.Or(builder.Eq(user => user.FullName, "DuyHoang"), builder.Eq(user => user.UserName, "phuchoa"));
+            //builder.Or(builder.Eq(artist => artist.FullName, "DuyHoang"), builder.Eq(artist => artist.UserName, "phuchoa"));
 
 
             ////*** nếu muốn có sort thì thêm SortDefinition, như lày
-            // SortDefinition<User> sort = Builders<User>.Sort.Descending(user => user.FullName);
+            // SortDefinition<User> sort = Builders<User>.Sort.Descending(artist => artist.FullName);
 
             IEnumerable<User> result = await _unitOfWork.GetRepository<User>().Paging(offset, limit);
             return _mapper.Map<IReadOnlyCollection<UserResponseModel>>(result);

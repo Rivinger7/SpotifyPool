@@ -17,72 +17,14 @@ namespace BusinessLogicLayer.Implement.Services.Tests
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly HttpClient _httpClient = httpClient;
 
-        public async Task TestOpenApi()
+        public async Task SetArtistAccount()
         {
-
-        }
-
-        public int TestSearchPredict(string text)
-        {
-            // Đường dẫn mô hình ONNX và tokenizer
-            string currentDirectory = Directory.GetCurrentDirectory();
-            string modelPath = Path.Combine(currentDirectory, "4. Application", "nlp_vietnamese_model.onnx");
-            string vocabPath = Path.Combine(currentDirectory, "4. Application", "vocab.txt");
-            // Tạo tokenizer từ vocab
-            var tokenizer = BertTokenizer.Create(vocabPath);
-
-            // Nhập câu văn bản từ người dùng
-
-            // Tokenize câu văn bản
-            var tokens = tokenizer.EncodeToIds("Cuộc sống thật chán nản, chẳng có chút động lực nào.");
-            var inputIds = tokens.ToList();
-
-            // Tạo attention mask (1 cho token thật, 0 cho padding)
-            var attentionMask = new List<long>(inputIds.Count);
-            foreach (var _ in inputIds) attentionMask.Add(1);
-
-            // Padding/truncation
-            const int maxSequenceLength = 128;
-            if (inputIds.Count > maxSequenceLength)
+            IEnumerable<Artist> artists = await _unitOfWork.GetCollection<Artist>().FindAsync(Builders<Artist>.Filter.Empty).Result.ToListAsync();
+            foreach (Artist artist in artists)
             {
-                inputIds = inputIds.Take(maxSequenceLength).ToList();
-                attentionMask = attentionMask.Take(maxSequenceLength).ToList();
+                artist.UserId = null;
+                await _unitOfWork.GetCollection<Artist>().ReplaceOneAsync(Builders<Artist>.Filter.Eq(a => a.Id, artist.Id), artist);
             }
-            else
-            {
-                while (inputIds.Count < maxSequenceLength)
-                {
-                    inputIds.Add(0); // Padding ID
-                    attentionMask.Add(0); // Padding Mask
-                }
-            }
-
-            // Chuyển dữ liệu thành DenseTensor
-            var inputIdsTensor = new DenseTensor<long>(new[] { 1, maxSequenceLength });
-            var attentionMaskTensor = new DenseTensor<long>(new[] { 1, maxSequenceLength });
-            for (int i = 0; i < maxSequenceLength; i++)
-            {
-                inputIdsTensor[0, i] = inputIds[i];
-                attentionMaskTensor[0, i] = attentionMask[i];
-            }
-
-            // Load ONNX Runtime và chạy dự đoán
-            using var session = new InferenceSession(modelPath);
-            var inputs = new List<NamedOnnxValue>
-            {
-                NamedOnnxValue.CreateFromTensor("input_ids", inputIdsTensor),
-                NamedOnnxValue.CreateFromTensor("attention_mask", attentionMaskTensor)
-            };
-            using var results = session.Run(inputs);
-
-            // Lấy kết quả output
-            var output = results.First().AsEnumerable<float>().ToArray();
-
-            // Xác định nhãn cảm xúc (Emotion Level)
-            int predictedEmotion = Array.IndexOf(output, output.Max()) + 1; // Nhãn từ 1-5
-            Console.WriteLine($"Kết quả: Mức độ cảm xúc là {predictedEmotion}");
-
-            return predictedEmotion;
         }
 
         public static async Task<IEnumerable<string>> TestImgx()
@@ -228,7 +170,6 @@ namespace BusinessLogicLayer.Implement.Services.Tests
                 return obj.Sum();
             }
         }
-
 
         public static async Task<List<Color>> ExtractPalette(string imagePath, int colorCount)
         {

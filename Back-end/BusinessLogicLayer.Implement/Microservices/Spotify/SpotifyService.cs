@@ -600,6 +600,152 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
             }
         }
 
+        //public async Task FixTracksWithArtistIsNullAsync(string accessToken)
+        //{
+        //    // Projection
+        //    ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+        //        new TrackResponseModel
+        //        {
+        //            Id = track.Id,
+        //            Name = track.Name,
+        //            Description = track.Description,
+        //            Lyrics = track.Lyrics,
+        //            PreviewURL = track.PreviewURL,
+        //            Duration = track.Duration,
+        //            Images = track.Images.Select(image => new ImageResponseModel
+        //            {
+        //                URL = image.URL,
+        //                Height = image.Height,
+        //                Width = image.Width
+        //            }),
+        //            Artists = track.Artists.Select(artist => new ArtistResponseModel
+        //            {
+        //                Id = artist.Id,
+        //                Name = artist.Name,
+        //                Followers = artist.Followers,
+        //                GenreIds = artist.GenreIds,
+        //                Images = artist.Images.Select(image => new ImageResponseModel
+        //                {
+        //                    URL = image.URL,
+        //                    Height = image.Height,
+        //                    Width = image.Width
+        //                })
+        //            })
+        //        });
+
+        //    // Empty Pipeline
+        //    IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+        //    // Lấy thông tin Tracks với Artist
+        //    // Lookup
+        //    IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+        //        //.Match(track => track.Id == "6734cb13b92ba642dd3c9059" ||
+        //        //track.Name == "Black Out")
+        //        .Lookup<Track, Artist, ASTrack>(
+        //            _unitOfWork.GetCollection<Artist>(),
+        //            track => track.ArtistIds,
+        //            artist => artist.Id,
+        //            result => result.Artists)
+        //        .Match(tracks => !tracks.Artists.Any())
+        //        .Project(trackWithArtistProjection)
+        //        .ToListAsync();
+
+        //    // Kiểm tra xem tracksResponseModel có rỗng không
+        //    if (!tracksResponseModel.Any())
+        //    {
+        //        return;
+        //    }
+
+        //    // Lấy spotifyId từ tracksResponseModel
+        //    IEnumerable<string?> trackSpotifyIds = await _unitOfWork.GetCollection<Track>()
+        //        .Find(Builders<Track>.Filter.In(track => track.Id, tracksResponseModel.Select(track => track.Id)))
+        //        .Project(track => track.SpotifyId)
+        //        .Limit(50)
+        //        .ToListAsync();
+
+        //    // Nối các phần tử trong list bằng ký tự ',' theo định dạng request URI của Spotify
+        //    string trackIds = string.Join(",", trackSpotifyIds);
+
+        //    // Gọi url Spotify API để lấy thông tin về các nghệ sĩ từ url lấy tracks
+        //    string tracksUri = $"https://api.spotify.com/v1/tracks?ids={trackIds}";
+
+        //    // Gọi API để trả về response
+        //    string trackResponseBody = await GetResponseAsync(tracksUri, accessToken);
+
+        //    // Deserialize Object theo Type là Response/Request Model
+        //    UpFetchResponseModel spotifyTracks = JsonConvert.DeserializeObject<UpFetchResponseModel>(trackResponseBody) ?? throw new DataNotFoundCustomException("Not found any tracksStorage");
+
+        //    // Vòng lặp để fetch nhiều nghệ sĩ vào từng track
+        //    foreach (ItemUpFetch item in spotifyTracks.ItemUF)
+        //    {
+        //        // Thu thập SpotifyArtistId từ Spotify response
+        //        IEnumerable<string> artistSpotifyIds = item.ArtistDetail.Select(artist => artist.ArtistSpotifyId).ToList();
+
+        //        // Lấy ra các Artist đã tồn tại trong database bằng cách duyệt qua từng phần tử trong spotifyArtistIds
+        //        IEnumerable<string> artistIds = _unitOfWork.GetCollection<Artist>()
+        //            .Find(Builders<Artist>.Filter.In(artist => artist.SpotifyId, artistSpotifyIds))
+        //            .Project(artist => artist.Id)
+        //            //.As<Artist>()
+        //            .ToList();
+
+        //        if (!artistIds.Any())
+        //        {
+        //            // Nối các phần tử trong list bằng ký tự ',' theo định dạng request URI của Spotify
+        //            string artistIdsCombined = string.Join(",", artistSpotifyIds);
+
+        //            // Gọi url Spotify API để lấy thông tin về các nghệ sĩ
+        //            string artistUri = $"https://api.spotify.com/v1/artists?ids={artistIdsCombined}";
+
+        //            // Gọi API để trả về response
+        //            string artistResponseBody = await GetResponseAsync(artistUri, accessToken);
+
+        //            // Deserialize Object theo Type là Response/Request Model
+        //            SpotifyArtist spotifyArtists = JsonConvert.DeserializeObject<SpotifyArtist>(artistResponseBody) ?? throw new DataNotFoundCustomException("Not found any artists");
+
+        //            // Khởi tạo danh sách Artist
+        //            List<Artist> artists = [];
+
+        //            // Truy cập vào từng thuộc tính của Response
+        //            foreach (ModelView.Service_Model_Views.Artists.Response.ArtistDetails artistDetails in spotifyArtists.Artists)
+        //            {
+        //                // Fetch sang Model
+        //                SpotifyArtistResponseModel artistResponseModel = new()
+        //                {
+        //                    SpotifyId = artistDetails.Id,
+        //                    Name = artistDetails.Name,
+        //                    Followers = artistDetails.Followers.Total,
+        //                    Popularity = artistDetails.Popularity,
+        //                    Images = artistDetails.Images,
+        //                    Genres = artistDetails.Genres,
+        //                };
+        //                // Sử dụng AutoMapper để ánh xạ từ SpotifyArtistResponseModel sang Artist
+        //                Artist artistEntity = _mapper.Map<Artist>(artistResponseModel);
+        //                // Do Images là thuộc tính Array of String
+        //                // Nên sẽ có tới 2 Images Object ở 2 assembly khác nhau
+        //                // Do đó sẽ cần phải map thêm 1 lần nữa với thuộc tính Images
+        //                //artistEntity.Images = _mapper.Map<List<Image>>(artistResponseModel.Images); // Có thể thay thế cách này bằng cách map trực tiếp trong Assembly chứa Mapping Class
+        //                // Thêm Artist Entity vào danh sách đã khởi tạo
+        //                artists.Add(artistEntity);
+        //            }
+
+        //            // Lưu danh sách các Artist Entity vào Database
+        //            await _unitOfWork.GetCollection<Artist>().InsertManyAsync(artists);
+
+        //            // Lấy ra ID của các nghệ sĩ
+        //            artistIds = artists.Select(artist => artist.Id).ToList();
+
+        //            // Cập nhật lại ArtistIds trong Track có Artist là null
+        //            UpdateDefinition<Track> updated = Builders<Track>.Update.Set(t => t.ArtistIds, artistIds);
+        //            await _unitOfWork.GetCollection<Track>().UpdateOneAsync(t => t.SpotifyId == item.TrackSpotifyId, updated);
+
+        //            return;
+        //        }
+
+        //        // Cập nhật lại ArtistIds trong Track có Artist là null
+        //        UpdateDefinition<Track> update = Builders<Track>.Update.Set(t => t.ArtistIds, artistIds);
+        //        await _unitOfWork.GetCollection<Track>().UpdateOneAsync(t => t.SpotifyId == item.TrackSpotifyId, update);
+        //    }
+        //}
         public async Task FetchLyricsAsync(string accessToken)
         {
             // Projection
@@ -701,3 +847,4 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         #endregion
     }
 }
+

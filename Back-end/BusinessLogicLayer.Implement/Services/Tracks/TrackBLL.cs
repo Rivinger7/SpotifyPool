@@ -1,9 +1,11 @@
 using AutoMapper;
-using BusinessLogicLayer.Interface.Services_Interface.Tracks;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.NAudio;
+using BusinessLogicLayer.Implement.Services.DataAnalysis;
+using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using CloudinaryDotNet.Actions;
@@ -11,15 +13,15 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
+using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
-using System.Security.Claims;
-using Utility.Coding;
-using BusinessLogicLayer.Implement.Services.DataAnalysis;
+using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
-using Microsoft.ML.OnnxRuntime.Tensors;
+using System.Security.Claims;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
@@ -29,6 +31,72 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         private readonly IMapper _mapper = mapper;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
+
+        #region Chỉ dùng cho mục đích test và sửa lỗi artist null
+        //public async Task<IEnumerable<TrackResponseModel>> GetTracksWithArtistIsNull()
+        //{
+        //    // Projection
+        //    ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+        //        new TrackResponseModel
+        //        {
+        //            Id = track.Id,
+        //            Name = track.Name,
+        //            Description = track.Description,
+        //            Lyrics = track.Lyrics,
+        //            PreviewURL = track.PreviewURL,
+        //            Duration = track.Duration,
+        //            Images = track.Images.Select(image => new ImageResponseModel
+        //            {
+        //                URL = image.URL,
+        //                Height = image.Height,
+        //                Width = image.Width
+        //            }),
+        //            Artists = track.Artists.Select(artist => new ArtistResponseModel
+        //            {
+        //                Id = artist.Id,
+        //                Name = artist.Name,
+        //                Followers = artist.Followers,
+        //                GenreIds = artist.GenreIds,
+        //                Images = artist.Images.Select(image => new ImageResponseModel
+        //                {
+        //                    URL = image.URL,
+        //                    Height = image.Height,
+        //                    Width = image.Width
+        //                })
+        //            })
+        //        });
+
+        //    // Empty Pipeline
+        //    IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+        //    // Lấy thông tin Tracks với Artist
+        //    // Lookup
+        //    IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+        //        //.Match(track => track.Id == "6734cb13b92ba642dd3c9059" ||
+        //        //track.Name == "Black Out")
+        //        .Lookup<Track, Artist, ASTrack>(
+        //            _unitOfWork.GetCollection<Artist>(),
+        //            track => track.ArtistIds,
+        //            artist => artist.Id,
+        //            result => result.Artists)
+        //        .Match(tracks => !tracks.Artists.Any())
+        //        .Project(trackWithArtistProjection)
+        //        .ToListAsync();
+
+        //    //if (tracksResponseModel.First().Artists.First().Name is null)
+        //    //{
+        //    //    Console.WriteLine("Nulllllllllllllllllllllllllllllllllll");
+        //    //}
+        //    //if (tracksResponseModel.First().Artists.First().Name == "")
+        //    //{
+        //    //    Console.WriteLine("Emptyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+        //    //}
+
+        //    Console.WriteLine($"Counting: {tracksResponseModel.Count()}");
+
+        //    return tracksResponseModel;
+        //}
+        #endregion
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit)
         {
@@ -199,9 +267,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return tracksResponseModel;
         }
 
-
-
-
         public async Task UploadTrackAsync(UploadTrackRequestModel request)
         {
             string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
@@ -322,6 +387,100 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 File.Delete(inputPath);
                 File.Delete(outputPath);
             }
+        }
+
+        public async Task<IEnumerable<TrackResponseModel>> GetTracksByMoodAsync(Mood mood)
+        {
+            // Filter
+            FilterDefinition<AudioFeatures> audioFeaturesFilter;
+            audioFeaturesFilter = mood switch
+            {
+                Mood.Sad => Builders<AudioFeatures>.Filter.And(
+                                      Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 0),
+                                      Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 100),
+                                      Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.4)),
+                Mood.Neutral => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 100) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 120),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.4) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.6)),
+                Mood.Happy => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 120) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 160),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.6) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.8)),
+                Mood.Blisfull => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 140) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 180),
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.8) &
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 1)),
+                Mood.Focus => Builders<AudioFeatures>.Filter.And(
+                                        Builders<AudioFeatures>.Filter.Gte(af => af.Instrumentalness, 0.7),
+                                        Builders<AudioFeatures>.Filter.Lte(af => af.Energy, 0.5)),
+                Mood.Random => Builders<AudioFeatures>.Filter.Empty,
+                _ => throw new InvalidDataCustomException("The mood is not supported"),
+            };
+
+            // Mapping tracks to TrackResponseModel
+            ProjectionDefinition<ASTrack, TrackResponseModel> projectionDefinition = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    PreviewURL = track.PreviewURL,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel()
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        GenreIds = artist.GenreIds,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
+
+            // Lấy AudioFeaturesId
+            IEnumerable<string> audioFeaturesIds = await _unitOfWork.GetCollection<AudioFeatures>()
+                .Find(audioFeaturesFilter)
+                .Project(af => af.Id)
+                .ToListAsync();
+
+            // Stage
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lookup
+            IEnumerable<TrackResponseModel> tracks = await aggregateFluent
+                .Match(track => audioFeaturesIds.Contains(track.AudioFeaturesId))
+                .Sample(7)
+                .Lookup<Track, Artist, ASTrack>
+                (
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists
+                )
+                .Project(projectionDefinition)
+                .ToListAsync();
+
+            // Lấy thời gian hiện tại
+            DateTime currentTime = Util.GetUtcPlus7Time();
+
+            return tracks;
         }
     }
 }

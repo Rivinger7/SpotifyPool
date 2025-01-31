@@ -79,7 +79,7 @@ namespace SpotifyPool._1._Controllers.Playlist
         [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("create-playlist-by-mood")]
         public async Task<IActionResult> CreateMoodPlaylist([FromQuery] string mood = "Sad")
         {
-            await playlistService.CreateMoodPlaylist(mood);
+            await playlistService.CreateMoodPlaylistAsync(mood);
             return Ok(new { Message = "Create Mood Playlist Successfully" });
         }
 

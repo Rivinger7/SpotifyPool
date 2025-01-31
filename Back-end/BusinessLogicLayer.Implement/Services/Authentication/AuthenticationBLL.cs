@@ -12,6 +12,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
+using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
@@ -69,7 +70,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Email = email,
                 PhoneNumber = registerModel.PhoneNumber,
                 Gender = UserGender.NotSpecified,
-                Role = UserRole.Customer,
+                Roles = [UserRole.Customer],
                 Product = UserProduct.Free,
                 IsLinkedWithGoogle = false,
                 CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
@@ -250,7 +251,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                             Width = imageWidth ?? 96,
                         },
                     ],
-                    Role = UserRole.Customer,
+                    Roles = [UserRole.Customer],
                     Product = UserProduct.Free,
                     CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
                     Status = UserStatus.Active,
@@ -292,11 +293,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName),
                 new Claim(JwtRegisteredClaimNames.Name, payload.Name),
                 new Claim(JwtRegisteredClaimNames.Picture, payload.Picture),
-                new Claim(ClaimTypes.Role, retrieveUser.Role.ToString())
+                new Claim(ClaimTypes.Role, retrieveUser.Roles.ToString())
             ];
 
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
-            _jwtBLL.GenerateAccessToken(claimsList, retrieveUser, out string accessToken, out string refreshToken);
+            _jwtBLL.GenerateAccessToken(claimsList, retrieveUser.Id, out string accessToken, out string refreshToken);
 
             // Đảm bảo rằng hệ thống đã tạo AccessToken thành công thì mới cập nhật field LastLoginTime
             UpdateDefinition<User> updateDefinition = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
@@ -343,13 +344,13 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             IEnumerable<Claim> claims =
                 [
                     new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
-                    new Claim(ClaimTypes.Role, retrieveUser.Role.ToString()),
+                    new Claim(ClaimTypes.Role, retrieveUser.Roles.ToString()),
                     new Claim(ClaimTypes.Name, retrieveUser.DisplayName),
                     new Claim("Avatar", retrieveUser.Images[0].URL)
                 ];
 
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
-            _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
+            _jwtBLL.GenerateAccessToken(claims, retrieveUser.Id, out string accessToken, out string refreshToken);
 
             // New object ModelView
             AuthenticatedResponseModel authenticationModel = new()
@@ -386,13 +387,13 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             IEnumerable<Claim> claims =
                 [
                     new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
-                    new Claim(ClaimTypes.Role, retrieveUser.Role.ToString()),
+                    new Claim(ClaimTypes.Role, retrieveUser.Roles[0].ToString()),
                     new Claim(ClaimTypes.Name, retrieveUser.DisplayName),
                     new Claim("Avatar", retrieveUser.Images[0].URL)
                 ];
 
             //Call method to generate access token
-            _jwtBLL.GenerateAccessToken(claims, retrieveUser, out string accessToken, out string refreshToken);
+            _jwtBLL.GenerateAccessToken(claims, retrieveUser.Id, out string accessToken, out string refreshToken);
 
             //if (accessToken is null)
             //{
@@ -411,6 +412,93 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Nếu chỗ này throw exception thì người dùng sẽ không login được
             UpdateDefinition<User> lastLoginTimeUpdate = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, lastLoginTimeUpdate);
+
+            return authenticationModel;
+        }
+
+        public async Task<AuthenticatedResponseModel> SwitchProfile()
+        {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Kiểm tra UserId
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
+            // Projection
+            ProjectionDefinition<ASUser> projectionDefinition = Builders<ASUser>.Projection
+                .Include(user => user.Id)
+                .Include(user => user.DisplayName)
+                .Include(user => user.Images)
+                .Include(user => user.Artist);
+
+            // Stage
+            IAggregateFluent<User> aggregateFluent = _unitOfWork.GetCollection<User>().Aggregate();
+
+            // Lookup
+            ASUser userArtist = await aggregateFluent
+                .Match(user => user.Id == userID)
+                .Lookup<User, Artist, ASUser>
+                (
+                    _unitOfWork.GetCollection<Artist>(),
+                    user => user.Id,
+                    artist => artist.UserId,
+                    result => result.Artist
+                )
+                .Project(Builders<ASUser>.Projection
+                .Include(user => user.Id)
+                .Include(user => user.DisplayName)
+                .Include(user => user.Images)
+                .Include(user => user.Artist.Id)
+                .Include(user => user.Artist.Name)
+                .Include(user => user.Artist.Images))
+                .As<ASUser>()
+                .FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("You do not have an artist account!");
+
+            // Lấy role hiện tại từ claims
+            string currentRole = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Role)?.Value ?? throw new DataNotFoundCustomException("Not found role");
+
+            // Parse role
+            UserRole userRole = Enum.Parse<UserRole>(currentRole);
+
+            // Khởi tạo biến displayName và avatar
+            string displayName;
+            string avatar;
+
+            // Kiểm tra role người dùng
+            if (userRole == UserRole.Customer)
+            {
+                displayName = userArtist.Artist.Name;
+                userRole = UserRole.Artist;
+                avatar = userArtist.Artist.Images[0].URL;
+            }
+            else
+            {
+                displayName = userArtist.DisplayName;
+                userRole = UserRole.Customer;
+                avatar = userArtist.Images[0].URL;
+            }
+
+            // Claim list
+            IEnumerable<Claim> claims =
+                [
+                    new Claim(ClaimTypes.NameIdentifier, userArtist.Id.ToString()),
+                    new Claim(ClaimTypes.Role, userRole.ToString()),
+                    new Claim(ClaimTypes.Name, displayName),
+                    new Claim("Avatar", avatar)
+                ];
+
+            // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
+            _jwtBLL.GenerateAccessToken(claims, userID, out string accessToken, out string refreshToken);
+
+            // New object ModelView
+            AuthenticatedResponseModel authenticationModel = new()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
 
             return authenticationModel;
         }

@@ -11,12 +11,12 @@ namespace SpotifyPool._1._Controllers.Tests
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class TestController(TestBLL testBLL) : ControllerBase
     {
-        [AllowAnonymous, HttpPost("Testing-Searching-Predict")]
-        public async Task<IActionResult> TestingSearchingPredict([FromBody] string text)
-        {
-            var result = testBLL.TestSearchPredict(text);
-            return Ok(result);
-        }
+        //[AllowAnonymous, HttpPatch("Testing-Set-Artist-Account")]
+        //public async Task<IActionResult> TestingSetArtistAccount()
+        //{
+        //    await testBLL.SetArtistAccount();
+        //    return Ok();
+        //}
 
         [AllowAnonymous, HttpGet("Testing-Pallete")]
         public async Task<IActionResult> TestingPallete()

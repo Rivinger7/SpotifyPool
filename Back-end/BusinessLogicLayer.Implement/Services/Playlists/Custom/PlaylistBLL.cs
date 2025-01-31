@@ -262,7 +262,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             return null;
         }
 
-        public async Task CreateMoodPlaylist(string mood)
+        public async Task CreateMoodPlaylistAsync(string mood)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

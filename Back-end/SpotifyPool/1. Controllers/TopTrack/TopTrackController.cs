@@ -21,7 +21,7 @@ namespace SpotifyPool._1._Controllers.TopTrack
             return Ok(new { Message = "Update Top Track Successfully" });
         }
 
-        [AllowAnonymous, HttpGet("tracks")]
+        [AllowAnonymous, HttpGet()]
         public async Task<IActionResult> GetTopTrackAsync()
         {
             var result = await _topTrackService.GetTopTrackAsync();

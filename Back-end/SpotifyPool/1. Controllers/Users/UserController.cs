@@ -33,13 +33,20 @@ namespace SpotifyPool._1._Controllers.Users
 			return Ok("Update profile successfully!");
 		}
 
-		/// <summary>
-		/// Phân trang cho Users
-		/// </summary>
-		/// <param name="offset">Trang thứ n</param>
-		/// <param name="limit">Số lượng phần tử</param>
-		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
+		[Authorize(Roles = nameof(UserRole.Customer)), HttpPost("switch-profile")]
+        public async Task<IActionResult> SwitchToArtistProfile()
+        {
+            var authenticatedResponseModel = await _userBLL.SwitchToArtistProfile();
+            return Ok(new { Message = "Switch Profile Successfully", authenticatedResponseModel });
+        }
+
+        /// <summary>
+        /// Phân trang cho Users
+        /// </summary>
+        /// <param name="offset">Trang thứ n</param>
+        /// <param name="limit">Số lượng phần tử</param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
 		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset = 1, [FromQuery] int limit = 5)
 		{
 			var users = await _userBLL.TestPaging(offset, limit);

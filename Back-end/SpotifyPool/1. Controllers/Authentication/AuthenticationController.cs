@@ -5,6 +5,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using BusinessLogicLayer.ModelView;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool.Controllers.Authentication
 {
@@ -34,6 +35,13 @@ namespace SpotifyPool.Controllers.Authentication
         {
             var authenticatedResponseModel = await authenticationBLL.Authenticate(loginModel);
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
+        }
+
+        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}"), HttpPost("switch-profile")]
+        public async Task<IActionResult> SwitchProfile()
+        {
+            var authenticatedResponseModel = await authenticationBLL.SwitchProfile();
+            return Ok(new { message = "Switch Profile Successfully", authenticatedResponseModel });
         }
 
         [AllowAnonymous, HttpPost("resend-email-comfirm")]

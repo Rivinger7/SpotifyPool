@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="Microservice Model Views\Geolocation\Request\" />
-    <Folder Include="Service Model Views\Artists\Request\" />
     <Folder Include="Service Model Views\EmailSender\Response\" />
     <Folder Include="Service Model Views\Forgot Password\Response\" />
     <Folder Include="Service Model Views\Genres\Request\" />
