@@ -10,6 +10,7 @@ import AudioPlayer from "@/features/Audio/AudioPlayer"
 import LeftSideBar from "@/features/Layout/LeftSideBar"
 import MainContent from "@/features/Layout/MainContent"
 import MusicPreview from "@/features/TrackPreview/MusicPreview"
+import NowPlayingView from "@/features/Layout/NowPlayingView"
 
 function AppLayout() {
 	const { isAuthenticated } = useSelector((state: RootState) => state.auth)
@@ -32,6 +33,7 @@ function AppLayout() {
 
 					<Outlet />
 				</div>
+				<NowPlayingView />
 			</MainContent>
 			{!isAuthenticated ? <Preview /> : <MusicPreview />}
 		</div>

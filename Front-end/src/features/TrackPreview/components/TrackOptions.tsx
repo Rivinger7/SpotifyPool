@@ -1,8 +1,11 @@
-import React from "react";
+import React from "react"
 import { Slider } from "@/components/ui/slider"
 import CustomTooltip from "@/components/CustomTooltip"
 
-import { Maximize2, SquarePlay, Volume1 } from "lucide-react"
+import { Dot, Maximize2, SquarePlay, Volume1 } from "lucide-react"
+import { useDispatch, useSelector } from "react-redux"
+import { togglePlayingView } from "@/store/slice/uiSlice"
+import { RootState } from "@/store/store"
 
 interface SongOptionsProps {
 	audioRef: React.MutableRefObject<HTMLAudioElement | null>
@@ -11,6 +14,9 @@ interface SongOptionsProps {
 }
 
 const SongOptions = ({ audioRef, volume, setVolume }: SongOptionsProps) => {
+	const dispatch = useDispatch()
+	const { isPlayingView } = useSelector((state: RootState) => state.ui)
+
 	return (
 		<div className="flex gap-x-2 items-center justify-end mr-2 min-w-[180px] w-[30%]">
 			<div className="flex items-center gap-2">
@@ -33,7 +39,17 @@ const SongOptions = ({ audioRef, volume, setVolume }: SongOptionsProps) => {
 			</div>
 
 			<CustomTooltip label="Now playing view">
-				<SquarePlay className="size-5 text-[#b3b3b3] hover:text-white cursor-pointer hover:scale-105 transition-all" />
+				<button className="relative" onClick={() => dispatch(togglePlayingView())}>
+					<SquarePlay
+						className={`size-5 ${
+							isPlayingView ? "text-[#1ed760]" : "text-[#b3b3b3] hover:text-white"
+						} cursor-pointer hover:scale-105 transition-all`}
+					/>
+
+					{isPlayingView && (
+						<Dot className="absolute -bottom-3 left-1/2 -translate-x-1/2 size-4 text-[#1ed760]" />
+					)}
+				</button>
 			</CustomTooltip>
 
 			<CustomTooltip label="Fullscreen">
