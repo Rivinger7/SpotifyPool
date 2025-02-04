@@ -19,7 +19,7 @@ export interface Track {
 	duration: number
 	durationFormated: string
 	images: Images[]
-	artists?: Artists[] | undefined
+	artists?: Artists[] | []
 }
 
 export interface Playlist {

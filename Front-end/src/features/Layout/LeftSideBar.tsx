@@ -73,7 +73,7 @@ const LeftSideBar = () => {
 	const shouldShowPlaylistsSidebar = isAuthenticated && hasPlaylists
 
 	return (
-		<div className={`${isCollapsed ? "w-[72px]" : "w-[420px]"} shrink-0 max-h-full relative`}>
+		<div className={`${isCollapsed ? "w-[72px]" : "w-[380px]"} shrink-0 max-h-full relative`}>
 			{/* ==== NAVBAR ==== */}
 			<nav className={"flex flex-col gap-2 h-full"}>
 				<div
