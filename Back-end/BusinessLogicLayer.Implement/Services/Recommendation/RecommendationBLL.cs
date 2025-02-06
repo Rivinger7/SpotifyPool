@@ -37,7 +37,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                     Similarity = similarityScore(matchedAudioFeatures, audioFeatures)
                 })
                 .OrderByDescending(x => x.Similarity)
-                .Where(x => x.Similarity > 0.5)
+                //.Where(x => x.Similarity > 0.5)
                 .Take(k)
                 .Select(x => x.Feature.Id)
                 .ToList();
