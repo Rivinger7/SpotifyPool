@@ -8,6 +8,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Recommendation
     {
         Task<IEnumerable<TrackResponseModel>> GetManyRecommendations(IEnumerable<string> trackIds, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 5);
         Task<IEnumerable<TrackResponseModel>> GetRecommendations(string trackId, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 5);
-        Task<IEnumerable<TrackResponseModel>> GetRecommendations(AudioFeaturesRequest audioFeaturesRequest, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 1);
+        Task<IEnumerable<TrackResponseModel>> GetRecommendations(AudioFeaturesRequest audioFeaturesRequest, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 7);
     }
 }
