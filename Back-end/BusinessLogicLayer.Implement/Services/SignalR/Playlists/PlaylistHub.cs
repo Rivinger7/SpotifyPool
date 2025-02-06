@@ -368,6 +368,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 // Lưu thông tin playlist vào database
                 await _unitOfWork.GetCollection<Playlist>().InsertOneAsync(playlist);
 
+                // Tăng FavoriteSongsCount lên 1
+                UpdateDefinition<Track> trackUpdateDefinition = Builders<Track>.Update.Inc(track => track.FavoriteCount, 1);
+                await _unitOfWork.GetCollection<Track>().UpdateOneAsync(track => track.Id == trackId, trackUpdateDefinition);
+
                 // Mapping thông tin playlist sang PlaylistsResponseModel
                 PlaylistsResponseModel playlistResponseModel = _mapper.Map<PlaylistsResponseModel>(playlist);
 

@@ -12,9 +12,9 @@ namespace SpotifyPool.Controllers.Authentication
     [Route("api/v1/authentication")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class AuthenticationController(IAuthenticationBLL authenticationBLL) : ControllerBase
+    public class AuthenticationController(IAuthentication authenticationBLL) : ControllerBase
     {
-        private readonly IAuthenticationBLL authenticationBLL = authenticationBLL;
+        private readonly IAuthentication authenticationBLL = authenticationBLL;
 
         [AllowAnonymous, HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)

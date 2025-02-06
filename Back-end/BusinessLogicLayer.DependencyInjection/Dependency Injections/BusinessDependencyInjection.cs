@@ -473,10 +473,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Register BLL services
 
             // Authentication
-            services.AddScoped<IAuthenticationBLL, AuthenticationBLL>();
+            services.AddScoped<IAuthentication, AuthenticationBLL>();
 
             // User
-            services.AddScoped<IUserBLL, UserBLL>();
+            services.AddScoped<IUser, UserBLL>();
 
             // Artist
             services.AddScoped<IArtist, ArtistBLL>();

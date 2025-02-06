@@ -271,13 +271,18 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         {
             string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
+            // Lấy artistId
+            string? artistId = await _unitOfWork.GetCollection<Artist>().Find(artist => artist.UserId == userID)
+                .Project(artist => artist.UserId)
+                .FirstOrDefaultAsync();
+
             //map request sang Track
             Track newTrack = _mapper.Map<Track>(request);
 
             //thêm các thông tin cần thiết cho Track
             newTrack.IsExplicit = false;
-            newTrack.ArtistIds = [userID];
-            newTrack.UploadBy = userID;
+            newTrack.ArtistIds = [artistId];
+            newTrack.UploadBy = artistId ?? throw new ArgumentNullCustomException($"{artistId}");
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
 
             //string fileNameUnique = $"{Path.GetFileNameWithoutExtension(request.File.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}{Path.GetExtension(request.File.FileName)}";
@@ -348,24 +353,44 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     // Dự đoán audio features từ tensor
                     float[] spectroPredict = SpectrogramProcessor.Predict(tensor);
 
-                    //tạo mới audio features từ spectroPredict 
+                    ////tạo mới audio features từ spectroPredict 
+                    //AudioFeatures audioFeature = new()
+                    //{
+                    //    Id = audioFeaturesId,
+                    //    Duration = (int)Math.Round(spectroPredict[0], 2),
+                    //    Key = (int)Math.Round(spectroPredict[1], 2),
+                    //    TimeSignature = (int)Math.Round(spectroPredict[2], 2),
+                    //    Mode = (int)Math.Round(spectroPredict[3], 2),
+                    //    Acousticness = spectroPredict[4],
+                    //    Danceability = spectroPredict[5],
+                    //    Energy = spectroPredict[6],
+                    //    Instrumentalness = spectroPredict[7],
+                    //    Liveness = spectroPredict[8],
+                    //    Loudness = spectroPredict[9],
+                    //    Speechiness = spectroPredict[10],
+                    //    Tempo = spectroPredict[11],
+                    //    Valence = spectroPredict[12]
+                    //};
+
+                    // Tạo mới audio features từ spectroPredict
                     AudioFeatures audioFeature = new()
                     {
                         Id = audioFeaturesId,
-                        Duration = (int)Math.Round(spectroPredict[0], 2),
-                        Key = (int)Math.Round(spectroPredict[1], 2),
-                        TimeSignature = (int)Math.Round(spectroPredict[2], 2),
-                        Mode = (int)Math.Round(spectroPredict[3], 2),
-                        Acousticness = spectroPredict[4],
-                        Danceability = spectroPredict[5],
-                        Energy = spectroPredict[6],
-                        Instrumentalness = spectroPredict[7],
-                        Liveness = spectroPredict[8],
-                        Loudness = spectroPredict[9],
-                        Speechiness = spectroPredict[10],
-                        Tempo = spectroPredict[11],
-                        Valence = spectroPredict[12]
+                        Acousticness = spectroPredict[0],
+                        Danceability = spectroPredict[1],
+                        Energy = spectroPredict[2],
+                        Instrumentalness = spectroPredict[3],
+                        Key = (int)Math.Round(spectroPredict[4], 2),
+                        Liveness = spectroPredict[5],
+                        Loudness = spectroPredict[6],
+                        Mode = (int)Math.Round(spectroPredict[7], 2),
+                        Speechiness = spectroPredict[8],
+                        Tempo = spectroPredict[9],
+                        TimeSignature = (int)Math.Round(spectroPredict[10], 2),
+                        Valence = spectroPredict[11]
                     };
+
+
                     await _unitOfWork.GetCollection<AudioFeatures>().InsertOneAsync(audioFeature);
 
                     newTrack.AudioFeaturesId = audioFeature.Id;

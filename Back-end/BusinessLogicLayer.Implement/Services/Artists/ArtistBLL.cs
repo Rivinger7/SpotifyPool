@@ -95,6 +95,7 @@ namespace BusinessLogicLayer.Implement.Services.Artists
         {
             // Lấy UserId từ phiên người dùng
             string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
             // Kiểm tra UserId
             if (string.IsNullOrEmpty(userID))
             {
@@ -116,7 +117,7 @@ namespace BusinessLogicLayer.Implement.Services.Artists
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
             _jwtBLL.GenerateAccessToken(claims, userID, out string accessToken, out string refreshToken);
 
-            // New object ModelView
+            // Tạo access token và refresh token
             AuthenticatedResponseModel authenticationModel = new()
             {
                 AccessToken = accessToken,

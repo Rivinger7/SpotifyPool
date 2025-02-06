@@ -10,9 +10,9 @@ namespace SpotifyPool._1._Controllers.Users
     [Route("api/v1/users")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class UserController(IUserBLL userBLL) : ControllerBase
+    public class UserController(IUser userBLL) : ControllerBase
     {
-        private readonly IUserBLL _userBLL = userBLL;
+        private readonly IUser _userBLL = userBLL;
 
 		[Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
 		public async Task<IActionResult> GetUserByIDAsync(string id)

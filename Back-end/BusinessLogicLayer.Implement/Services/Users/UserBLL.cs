@@ -20,7 +20,7 @@ using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
-    public class UserBLL(IUnitOfWork unitOfWork, IMapper mapper, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService, IJwtBLL jwtBLL) : IUserBLL
+    public class UserBLL(IUnitOfWork unitOfWork, IMapper mapper, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService, IJwtBLL jwtBLL) : IUser
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
@@ -198,7 +198,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
             _jwtBLL.GenerateAccessToken(claims, userID, out string accessToken, out string refreshToken);
 
-            // New object ModelView
+            // Tạo access token và refresh token
             AuthenticatedResponseModel authenticationModel = new()
             {
                 AccessToken = accessToken,

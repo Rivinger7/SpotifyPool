@@ -26,7 +26,7 @@ using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation, IBackgroundEmailSender backgroundEmailSender) : IAuthenticationBLL
+    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation, IBackgroundEmailSender backgroundEmailSender) : IAuthentication
     {
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
