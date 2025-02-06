@@ -5,7 +5,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 
 namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
 {
-    public interface IAuthenticationBLL
+    public interface IAuthentication
     {
         Task CreateAccount(RegisterRequestModel registerModel);
         Task ActivateAccountByToken(string token);
@@ -16,5 +16,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
         Task SendOTPForgotPasswordAsync(ForgotPasswordRequestModel model);
         Task ConfirmOTP(string userId, string otpCode);
         Task ResetPasswordAsync(ResetPasswordRequestModel model);
+        Task<AuthenticatedResponseModel> SwitchProfile();
     }
 }

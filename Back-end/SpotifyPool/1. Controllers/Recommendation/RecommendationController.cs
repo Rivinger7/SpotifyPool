@@ -1,5 +1,6 @@
 ﻿using BusinessLogicLayer.Implement.Services.Recommendation;
 using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
+using BusinessLogicLayer.ModelView.Service_Model_Views.AudioFeatures.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,18 @@ namespace SpotifyPool._1._Controllers.Recommendation
     public class RecommendationController(IRecommendation recommendationService) : ControllerBase
     {
         private readonly IRecommendation _recommendationService = recommendationService;
+
+        /// <summary>
+        /// Botpress sẽ gửi request lên đây để lấy bài hát được recommend
+        /// </summary>
+        /// <param name="audioFeaturesRequest"></param>
+        /// <returns></returns>
+        [AllowAnonymous, HttpPost("botpress/searching")]
+        public async Task<IActionResult> GetRecommendedSongByBotpressSearching([FromBody] AudioFeaturesRequest audioFeaturesRequest)
+        {
+            var result = await _recommendationService.GetRecommendations(audioFeaturesRequest, RecommendationBLL.CalculateWeightedEulideanDisctance);
+            return Ok(result);
+        }
 
         /// <summary>
         /// Sử dụng thuật toán Weighted Euclidean Distance

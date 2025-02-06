@@ -5,15 +5,16 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using BusinessLogicLayer.ModelView;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool.Controllers.Authentication
 {
     [Route("api/v1/authentication")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class AuthenticationController(IAuthenticationBLL authenticationBLL) : ControllerBase
+    public class AuthenticationController(IAuthentication authenticationBLL) : ControllerBase
     {
-        private readonly IAuthenticationBLL authenticationBLL = authenticationBLL;
+        private readonly IAuthentication authenticationBLL = authenticationBLL;
 
         [AllowAnonymous, HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)
@@ -34,6 +35,13 @@ namespace SpotifyPool.Controllers.Authentication
         {
             var authenticatedResponseModel = await authenticationBLL.Authenticate(loginModel);
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
+        }
+
+        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}"), HttpPost("switch-profile")]
+        public async Task<IActionResult> SwitchProfile()
+        {
+            var authenticatedResponseModel = await authenticationBLL.SwitchProfile();
+            return Ok(new { message = "Switch Profile Successfully", authenticatedResponseModel });
         }
 
         [AllowAnonymous, HttpPost("resend-email-comfirm")]

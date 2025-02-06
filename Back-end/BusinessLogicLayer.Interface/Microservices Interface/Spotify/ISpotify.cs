@@ -1,7 +1,4 @@
-﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
-using DataAccessLayer.Repository.Entities;
-
-namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
+﻿namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
 {
     public  interface ISpotify 
     {
@@ -12,5 +9,6 @@ namespace BusinessLogicLayer.Interface.Microservices_Interface.Spotify
         Task FetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", Dictionary<string, string>? oldKeyValueArtistPairs = null, int? limit = null, int offset = 0);
         Task UpdateFetchPlaylistItemsAsync(string accessToken, string playlistId = "5Ezx3uPgLsilYApOpqyujf", int? limit = null, int offset = 0);
         Task FetchLyricsAsync(string accessToken);
+        //Task FixTracksWithArtistIsNullAsync(string accessToken);
     }
 }

@@ -10,9 +10,9 @@ namespace SpotifyPool._1._Controllers.Users
     [Route("api/v1/users")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class UserController(IUserBLL userBLL) : ControllerBase
+    public class UserController(IUser userBLL) : ControllerBase
     {
-        private readonly IUserBLL _userBLL = userBLL;
+        private readonly IUser _userBLL = userBLL;
 
 		[Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
 		public async Task<IActionResult> GetUserByIDAsync(string id)
@@ -33,13 +33,20 @@ namespace SpotifyPool._1._Controllers.Users
 			return Ok("Update profile successfully!");
 		}
 
-		/// <summary>
-		/// Phân trang cho Users
-		/// </summary>
-		/// <param name="offset">Trang thứ n</param>
-		/// <param name="limit">Số lượng phần tử</param>
-		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
+		[Authorize(Roles = nameof(UserRole.Customer)), HttpPost("switch-profile")]
+        public async Task<IActionResult> SwitchToArtistProfile()
+        {
+            var authenticatedResponseModel = await _userBLL.SwitchToArtistProfile();
+            return Ok(new { Message = "Switch Profile Successfully", authenticatedResponseModel });
+        }
+
+        /// <summary>
+        /// Phân trang cho Users
+        /// </summary>
+        /// <param name="offset">Trang thứ n</param>
+        /// <param name="limit">Số lượng phần tử</param>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
 		public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset = 1, [FromQuery] int limit = 5)
 		{
 			var users = await _userBLL.TestPaging(offset, limit);

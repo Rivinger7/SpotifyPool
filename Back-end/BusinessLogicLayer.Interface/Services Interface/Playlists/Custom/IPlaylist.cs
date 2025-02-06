@@ -12,5 +12,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom
         Task RemoveFromPlaylistAsync(string trackId, string playlistId);
         Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId);
         Task<IEnumerable<TrackResponseModel>> GetRecommendationPlaylist(int offset, int limit);
+        Task CreateMoodPlaylistAsync(string mood);
     }
 }

@@ -1,10 +1,7 @@
-﻿using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack.Request;
-using DataAccessLayer.Interface.MongoDB.UOW;
+﻿using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.SignalR;
-using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
