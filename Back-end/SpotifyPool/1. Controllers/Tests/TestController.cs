@@ -1,8 +1,10 @@
 ﻿using BusinessLogicLayer.Implement.Services.Tests;
+using Flurl.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Services.User;
+using SharpCompress.Common;
 
 namespace SpotifyPool._1._Controllers.Tests
 {
@@ -63,12 +65,46 @@ namespace SpotifyPool._1._Controllers.Tests
         //     return Ok();
         // }
 
-        [AllowAnonymous,HttpGet("test-top-track")]
+        [AllowAnonymous, HttpGet("test-top-track")]
         public async Task<IActionResult> TestTopTrack(string trackId)
         {
             await testBLL.TestTopTrack(trackId);
             return Ok();
         }
 
-	}
+        [AllowAnonymous, HttpPost("test-upload-to-bunny")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
+        {
+            string ApiKey = "1f894c77-2952-4ca0-bf54938d60c8-387f-4c08";  // AccessKey password
+            string BunnyStorageUrl = "https://storage.bunnycdn.com";
+            string StorageZoneName = "spotifypool-storage";
+            string folder = "test";
+            if (file == null || file.Length == 0)
+                return BadRequest("File không hợp lệ");
+
+            try
+            {
+                var fileName = Path.GetFileName(file.FileName);
+                var url = $"{BunnyStorageUrl}/{StorageZoneName}/{folder}/{fileName}";
+
+                using (var stream = file.OpenReadStream())
+                using (var content = new StreamContent(stream)) // Chuyển Stream thành HttpContent
+                {
+                    var response = await url
+                        .WithHeader("AccessKey", ApiKey)
+                        .PutAsync(content);
+
+                    // Kiểm tra nếu status code là 2xx thì thành công
+                    if (response.StatusCode >= 200 && response.StatusCode < 300)
+                        return Ok(new { message = "Upload thành công", url });
+
+                    return StatusCode(response.StatusCode, "Upload thất bại");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi: {ex.Message}");
+            }
+        }
+    }
 }
