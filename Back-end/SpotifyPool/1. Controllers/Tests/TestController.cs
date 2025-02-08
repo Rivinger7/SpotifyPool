@@ -4,11 +4,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Services.User;
-using SharpCompress.Common;
 
 namespace SpotifyPool._1._Controllers.Tests
 {
-    [Route("api/test")]
+	[Route("api/test")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class TestController(TestBLL testBLL) : ControllerBase
@@ -75,7 +74,7 @@ namespace SpotifyPool._1._Controllers.Tests
         [AllowAnonymous, HttpPost("test-upload-to-bunny")]
         public async Task<IActionResult> UploadFile(IFormFile file)
         {
-            string ApiKey = "1f894c77-2952-4ca0-bf54938d60c8-387f-4c08";  // AccessKey password
+            string ApiKey = "1f894c77-2952-4ca0-bf54938d60c8-387f-4c08";  //AccessKey password
             string BunnyStorageUrl = "https://storage.bunnycdn.com";
             string StorageZoneName = "spotifypool-storage";
             string folder = "test";
@@ -84,13 +83,13 @@ namespace SpotifyPool._1._Controllers.Tests
 
             try
             {
-                var fileName = Path.GetFileName(file.FileName);
-                var url = $"{BunnyStorageUrl}/{StorageZoneName}/{folder}/{fileName}";
+                string fileName = Path.GetFileName(file.FileName);
+                string url = $"{BunnyStorageUrl}/{StorageZoneName}/{folder}/{fileName}";
 
-                using (var stream = file.OpenReadStream())
-                using (var content = new StreamContent(stream)) // Chuyển Stream thành HttpContent
+                using (Stream stream = file.OpenReadStream())
+                using (StreamContent content = new StreamContent(stream)) //Chuyển Stream thành HttpContent
                 {
-                    var response = await url
+					IFlurlResponse response = await url
                         .WithHeader("AccessKey", ApiKey)
                         .PutAsync(content);
 
