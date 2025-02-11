@@ -6,7 +6,8 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Admin
 {
 	public interface IAdmin
 	{
-		Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model);
+		Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model, List<string> currentUserRoles);
+
 		Task<AdminDetailResponse> GetByIdAsync(string id);
 
 		Task UpdateByIdAsync(string id, UpdateUserRequest userRequest);

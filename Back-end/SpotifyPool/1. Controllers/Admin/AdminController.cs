@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Services.User;
+using System.Security.Claims;
 
 namespace SpotifyPool._1._Controllers.Admin
 {
@@ -25,11 +26,19 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// </summary>
 		/// <param name="request">Trang thứ n và Kích cỡ trang</param>
 		/// <param name="model"></param>
-		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet()]
+		/// <returns>
+		/// Admin chỉ thấy được Customer và Artist
+		/// Super Admin thì thấy toàn bộ role (Admin, Customer, Artist)
+		/// </returns>
+		[Authorize(Roles = $"{nameof(UserRole.Admin)},{nameof(UserRole.SuperAdmin)}"), HttpGet()]
 		public async Task<IActionResult> GetAllAccount([FromQuery] PagingRequestModel request, [FromQuery] AdminFilter model)
 		{
-			var customer = await _adminBLL.GetAllAccountAsync(request, model);
+			var currentUserRoles = User.Claims
+				.Where(c => c.Type == ClaimTypes.Role)
+				.Select(c => c.Value)
+				.ToList();
+
+			var customer = await _adminBLL.GetAllAccountAsync(request, model, currentUserRoles);
 			return Ok(customer);
 		}
 
@@ -38,7 +47,7 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// </summary>
 		/// <param name="id">Id người dùng</param>
 		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("/{id}")]
+		[Authorize(Roles = $"{nameof(UserRole.Admin)},{nameof(UserRole.SuperAdmin)}"), HttpGet("{id}")]
 		public async Task<IActionResult> GetById(string id)
 		{
 			var customer = await _adminBLL.GetByIdAsync(id);
@@ -51,7 +60,7 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// <param name="id">Id người dùng</param>
 		/// <param name="userRequest">Thông tin cần chỉnh sửa</param>
 		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpPost("{id}")]
+		[Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpPut("{id}")]
 		public async Task<IActionResult> UpdateById(string id, [FromQuery] UpdateUserRequest userRequest)
 		{
 			await _adminBLL.UpdateByIdAsync(id, userRequest);

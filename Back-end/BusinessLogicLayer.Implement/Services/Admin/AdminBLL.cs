@@ -24,7 +24,7 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 		}
 
 		#region Hiển thị thông tin tất cả người dùng (GetPaging)
-		public async Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model)
+		public async Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model, List<string> currentUserRoles)
 		{
 			List<FilterDefinition<User>> filters = new List<FilterDefinition<User>>();
 
@@ -44,6 +44,16 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 			if (model.Status.HasValue)
 			{
 				filters.Add(Builders<User>.Filter.Eq(u => u.Status, model.Status.Value));
+			}
+
+			//Kiểm tra quyền của User
+			bool isSuperAdmin = currentUserRoles.Contains(nameof(UserRole.SuperAdmin));
+			bool isAdmin = currentUserRoles.Contains(nameof(UserRole.Admin));
+
+			//Nếu là Admin thì hiển thị Customer và Artists
+			if (isAdmin && !isSuperAdmin)
+			{
+				filters.Add(Builders<User>.Filter.AnyIn(u => u.Roles, new[] { UserRole.Customer, UserRole.Artist }));
 			}
 
 			//Kết hợp all filter
