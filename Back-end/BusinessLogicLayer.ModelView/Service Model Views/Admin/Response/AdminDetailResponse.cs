@@ -21,6 +21,8 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response
 
 		public string? Status { get; set; }
 
+		public string Product { get; set; } = null!;
+
 		public List<string> Roles { get; set; } = new List<string>();
 
 		public List<Image> Images { get; set; } = [];

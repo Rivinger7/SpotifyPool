@@ -26,6 +26,7 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 		#region Hiển thị thông tin tất cả người dùng (GetPaging)
 		public async Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model, List<string> currentUserRoles)
 		{
+			//Tạo danh sách các đk lọc
 			List<FilterDefinition<User>> filters = new List<FilterDefinition<User>>();
 
 			//Search theo UerName
@@ -56,7 +57,7 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				filters.Add(Builders<User>.Filter.AnyIn(u => u.Roles, new[] { UserRole.Customer, UserRole.Artist }));
 			}
 
-			//Kết hợp all filter
+			//Kết hợp all filter bằng And()
 			FilterDefinition<User> combinedFilter = filters.Count > 0
 				? Builders<User>.Filter.And(filters)
 				: Builders<User>.Filter.Empty;
