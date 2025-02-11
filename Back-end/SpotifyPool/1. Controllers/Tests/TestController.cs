@@ -1,4 +1,6 @@
-﻿using BusinessLogicLayer.Implement.Services.Tests;
+﻿using BusinessLogicLayer.Implement.Services.Files;
+using BusinessLogicLayer.Implement.Services.Tests;
+using BusinessLogicLayer.Interface.Services_Interface.Files;
 using Flurl.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -7,19 +9,20 @@ using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Tests
 {
-	[Route("api/test")]
+    [Route("api/test")]
 	[ApiController]
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
 	public class TestController(TestBLL testBLL) : ControllerBase
 	{
-		//[AllowAnonymous, HttpPatch("Testing-Set-Artist-Account")]
-		//public async Task<IActionResult> TestingSetArtistAccount()
-		//{
-		//    await testBLL.SetArtistAccount();
-		//    return Ok();
-		//}
+        private readonly IFiles _fileService = new FilesBLL();
+        //[AllowAnonymous, HttpPatch("Testing-Set-Artist-Account")]
+        //public async Task<IActionResult> TestingSetArtistAccount()
+        //{
+        //    await testBLL.SetArtistAccount();
+        //    return Ok();
+        //}
 
-		[AllowAnonymous, HttpGet("Testing-Pallete")]
+        [AllowAnonymous, HttpGet("Testing-Pallete")]
 		public async Task<IActionResult> TestingPallete()
 		{
 			IEnumerable<string> colors = await TestBLL.TestImgx();
@@ -118,5 +121,21 @@ namespace SpotifyPool._1._Controllers.Tests
 				return StatusCode(500, $"Lỗi: {ex.Message}");
 			}
 		}
-	}
+
+        [AllowAnonymous, HttpPost("test-upload-FilesBll")]
+        public async Task<IActionResult> CheckUploadFilesBll(IFormFile file)
+        {
+            string fileName = Path.GetFileName(file.FileName);
+			string folder = "test";
+            string? fileUrl = await _fileService.UploadFile(file, fileName, folder);
+            return Ok(new { message = "Upload hoàn tất", fileUrl });
+        }
+
+        [AllowAnonymous, HttpDelete("test-delete-FilesBll")]
+        public async Task<IActionResult> CheckDeleteFilesBll(string path)
+        {
+			bool isDeleted = await _fileService.DeleteFile(path);
+            return Ok(new { message = "Đã xóa: ", path });
+        }
+    }
 }

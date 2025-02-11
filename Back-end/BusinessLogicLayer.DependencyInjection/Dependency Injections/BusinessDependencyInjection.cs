@@ -13,6 +13,7 @@ using BusinessLogicLayer.Implement.Services.Admin;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.InMemoryCache;
 using BusinessLogicLayer.Implement.Services.JWTs;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
@@ -30,6 +31,7 @@ using BusinessLogicLayer.Interface.Services_Interface.Admin;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Interface.Services_Interface.Files;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
@@ -502,6 +504,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // OpenApi
             services.AddScoped<IOpenAIService, OpenAIService>();
+
+            // Files
+            services.AddScoped<IFiles, FilesBLL>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
