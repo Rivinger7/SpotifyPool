@@ -99,7 +99,6 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				.Set(u => u.Gender, userRequest.Gender)
 				.Set(u => u.PhoneNumber, userRequest.PhoneNumber)
 				.Set(u => u.Birthdate, userRequest.Birthdate)
-				.Set(u => u.Status, userRequest.Status)
 				.Set(u => u.Email, userRequest.Email)
 				.Set(u => u.Followers, userRequest.Followers)
 				.Set(u => u.Product, userRequest.Product)
@@ -130,12 +129,8 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 			User user = await _unitOfWork.GetRepository<User>()
 				.Collection
 				.Find(u => u.Id == id)
-				.FirstOrDefaultAsync();
-
-			if (user == null)
-			{
-				throw new KeyNotFoundException($"User with ID {id} does not exist");
-			}
+				.FirstOrDefaultAsync()
+				?? throw new KeyNotFoundException($"User with ID {id} does not exist");
 
 			if (user.Status == UserStatus.Banned)
 			{
@@ -148,6 +143,8 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 			await _unitOfWork.GetRepository<User>().Collection.UpdateOneAsync(filter, update);
 		}
 		#endregion
+
+
 
 	}
 }

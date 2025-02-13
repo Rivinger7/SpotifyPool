@@ -8,7 +8,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 	{
 		[Required(ErrorMessage = "Display Name cannot be left blank")]
 		[StringLength(30, ErrorMessage = "Display name cannot exceed 30 characters")]
-		[RegularExpression("^[a-zA-Z][a-zA-Z0-9]*$", ErrorMessage = "Tên hiển thị chỉ được chứa các ký tự chữ cái và số, và phải bắt đầu bằng chữ cái.")]
+		[RegularExpression("^[a-zA-Z][a-zA-Z0-9]*$", ErrorMessage = "The display name must contain only letters and numbers, and must begin with a letter..")]
 		public string DisplayName { get; set; } = null!;
 
 		[Required(ErrorMessage = "Gender cannot be left blank")]
@@ -20,9 +20,6 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 
 		[Required(ErrorMessage = "Email cannot be left blank")]
 		public string Email { get; set; } = null!;
-
-		[Required(ErrorMessage = "Status cannot be left blank")]
-		public UserStatus Status { get; set; }
 
 		public int Followers { get; set; }
 

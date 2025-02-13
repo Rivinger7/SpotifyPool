@@ -14,7 +14,15 @@ namespace BusinessLogicLayer.Mapper.Mappers.Admin
 
 			CreateMap<User, AdminDetailResponse>()
 				.ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
+				.ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime.ToString("HH:mm:ss dd/MM/yyyy")))
+				.ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.HasValue
+					? src.LastLoginTime.Value.ToString("HH:mm:ss dd/MM/yyyy")
+					:null))
+				.ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime.HasValue
+					? src.LastUpdatedTime.Value.ToString("HH:mm:ss dd/MM/yyyy")
+					: null))
 				.ReverseMap();
+
 		}
 	}
 }

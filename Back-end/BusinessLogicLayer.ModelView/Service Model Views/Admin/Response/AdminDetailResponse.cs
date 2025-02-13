@@ -27,10 +27,10 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response
 
 		public List<Image> Images { get; set; } = [];
 
-		public DateTime CreatedTime { get; set; }
+		public string CreatedTime { get; set; } = null!;
 
-		public DateTime? LastLoginTime { get; set; }
+		public string? LastLoginTime { get; set; }
 
-		public DateTime? LastUpdatedTime { get; set; }
+		public string? LastUpdatedTime { get; set; }
 	}
 }
