@@ -30,15 +30,10 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// Admin chỉ thấy được Customer và Artist
 		/// Super Admin thì thấy toàn bộ role (Admin, Customer, Artist)
 		/// </returns>
-		[Authorize(Roles = $"{nameof(UserRole.Admin)},{nameof(UserRole.SuperAdmin)}"), HttpGet()]
+		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet()]
 		public async Task<IActionResult> GetAllAccount([FromQuery] PagingRequestModel request, [FromQuery] AdminFilter model)
 		{
-			var currentUserRoles = User.Claims
-				.Where(c => c.Type == ClaimTypes.Role)
-				.Select(c => c.Value)
-				.ToList();
-
-			var customer = await _adminBLL.GetAllAccountAsync(request, model, currentUserRoles);
+			var customer = await _adminBLL.GetAllAccountAsync(request, model);
 			return Ok(customer);
 		}
 
@@ -47,11 +42,23 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// </summary>
 		/// <param name="id">Id người dùng</param>
 		/// <returns></returns>
-		[Authorize(Roles = $"{nameof(UserRole.Admin)},{nameof(UserRole.SuperAdmin)}"), HttpGet("{id}")]
+		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("{id}")]
 		public async Task<IActionResult> GetById(string id)
 		{
 			var customer = await _adminBLL.GetByIdAsync(id);
 			return Ok(customer);
+		}
+
+		/// <summary>
+		/// Tạo tài khoản người dùng
+		/// </summary>
+		/// <param name="model">Thông tin người dùng cần tạo</param>
+		/// <returns></returns>
+		[Authorize(Roles = nameof(UserRole.Admin)), HttpPost()]
+		public async Task<IActionResult> Create([FromQuery] CreateRequestModel model)
+		{
+			await _adminBLL.CreateAsync(model);
+			return Ok(new { Message = "Create Account Successfully" });
 		}
 
 		/// <summary>
@@ -60,8 +67,8 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// <param name="id">Id người dùng</param>
 		/// <param name="userRequest">Thông tin cần chỉnh sửa</param>
 		/// <returns></returns>
-		[Authorize(Roles = $"{nameof(UserRole.Admin)}, {nameof(UserRole.SuperAdmin)}"), HttpPut("{id}")]
-		public async Task<IActionResult> UpdateById(string id, [FromQuery] UpdateUserRequest userRequest)
+		[Authorize(Roles = nameof(UserRole.Admin)), HttpPut("{id}")]
+		public async Task<IActionResult> UpdateById(string id, [FromQuery] UpdateUserRequestModel userRequest)
 		{
 			await _adminBLL.UpdateByIdAsync(id, userRequest);
 			return Ok(new { Message = "Update Account Successfully" });

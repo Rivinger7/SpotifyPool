@@ -24,10 +24,13 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 		}
 
 		#region Hiển thị thông tin tất cả người dùng (GetPaging)
-		public async Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model, List<string> currentUserRoles)
+		public async Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model)
 		{
 			//Tạo danh sách các đk lọc
 			List<FilterDefinition<User>> filters = new List<FilterDefinition<User>>();
+
+			//Lọc chỉ thấy Customer và Artist
+			filters.Add(Builders<User>.Filter.AnyIn(u => u.Roles, new[] { UserRole.Customer, UserRole.Artist }));
 
 			//Search theo UerName
 			if (!string.IsNullOrWhiteSpace(model.UserName))
@@ -45,16 +48,6 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 			if (model.Status.HasValue)
 			{
 				filters.Add(Builders<User>.Filter.Eq(u => u.Status, model.Status.Value));
-			}
-
-			//Kiểm tra quyền của User
-			bool isSuperAdmin = currentUserRoles.Contains(nameof(UserRole.SuperAdmin));
-			bool isAdmin = currentUserRoles.Contains(nameof(UserRole.Admin));
-
-			//Nếu là Admin thì hiển thị Customer và Artists
-			if (isAdmin && !isSuperAdmin)
-			{
-				filters.Add(Builders<User>.Filter.AnyIn(u => u.Roles, new[] { UserRole.Customer, UserRole.Artist }));
 			}
 
 			//Kết hợp all filter bằng And()
@@ -89,8 +82,34 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 		}
 		#endregion
 
+		#region Thêm tài khoản người dùng (Create)
+		public async Task CreateAsync(CreateRequestModel userRequest)
+		{
+			//Check xác nhận mật khẩu
+			if (userRequest.Password != userRequest.ConfirmedPassword)
+			{
+				throw new ArgumentException("Confirmation password does not match.");
+			}
+
+			//Map từ CreateRequestModel sang User
+			User user = new User
+			{
+				UserName = userRequest.UserName,
+				Password = BCrypt.Net.BCrypt.HashPassword(userRequest.Password), //Mã hóa mật khẩu
+				DisplayName = userRequest.DisplayName,
+				Email = userRequest.Email,
+				PhoneNumber = userRequest.PhoneNumber,
+				Roles = userRequest.Roles,
+				Status = UserStatus.Active
+			};
+
+			//Lưu vào MongoDB
+			await _unitOfWork.GetCollection<User>().InsertOneAsync(user);
+		}
+		#endregion
+
 		#region Chỉnh sửa thông tin người dùng (Update)
-		public async Task UpdateByIdAsync(string id, UpdateUserRequest userRequest)
+		public async Task UpdateByIdAsync(string id, UpdateUserRequestModel userRequest)
 		{
 			FilterDefinition<User> filter = Builders<User>.Filter.Eq(u => u.Id, id);
 

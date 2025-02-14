@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 {
-	public class UpdateUserRequest
+	public class UpdateUserRequestModel
 	{
 		[Required(ErrorMessage = "Display Name cannot be left blank")]
 		[StringLength(30, ErrorMessage = "Display name cannot exceed 30 characters")]
@@ -16,6 +16,8 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 
 		public string? Birthdate { get; set; }
 
+		[Phone(ErrorMessage = "Invalid phone number")]
+		[RegularExpression(@"^\d{9,11}$", ErrorMessage = "Phone number must be 9 to 11 digits long")]
 		public string? PhoneNumber { get; set; }
 
 		[Required(ErrorMessage = "Email cannot be left blank")]
