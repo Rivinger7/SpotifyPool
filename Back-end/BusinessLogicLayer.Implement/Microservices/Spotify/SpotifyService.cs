@@ -514,7 +514,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 audioFeatures.Add(audioFeaturesEntity);
             }
 
-            if(audioFeatures.Count > 0)
+            if (audioFeatures.Count > 0)
             {
                 // Lưu danh sách các Audio Feature Entity vào Database
                 await _unitOfWork.GetCollection<AudioFeatures>().InsertManyAsync(audioFeatures);
@@ -598,6 +598,69 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
                 // Lưu danh sách các Artist Entity vào Database
                 await _unitOfWork.GetCollection<Artist>().InsertManyAsync(artists);
             }
+        }
+
+        public async Task<(List<Image> trackImages, Dictionary<string, string> artistDictionary, Dictionary<string, List<Image>> artistImages, Dictionary<string, int> artistPpularity, Dictionary<string, int> artistFollower)> FetchTrackAsync(string accessToken, string trackId)
+        {
+            // Gọi url Spotify API để lấy thông tin về các nghệ sĩ từ url lấy tracks
+            string tracksUri = $"https://api.spotify.com/v1/tracks/{trackId}";
+
+            // Gọi API để trả về response
+            string trackResponseBody = await GetResponseAsync(tracksUri, accessToken);
+
+            // Deserialize Object theo Type là Response/Request Model
+            SpotifyTrackMiniResponseModel spotifyTracks = JsonConvert.DeserializeObject<SpotifyTrackMiniResponseModel>(trackResponseBody) ?? throw new DataNotFoundCustomException("Not found any tracksStorage");
+
+            // In ra spotifyTracks để xem cấu trúc của nó
+            //Console.WriteLine(JsonConvert.SerializeObject(spotifyTracks, Formatting.Indented));
+
+            // Lấy danh sách ảnh của track
+            // Map spotifyTracks.ItemUF.Images (Model) sang Image (Entity) thủ công
+            //List<Image> trackImages = trackImages = _mapper.Map<List<Image>>(spotifyTracks.ItemUF.SelectMany(item => item.Images).ToList());
+            List<Image> trackImages = spotifyTracks.Album.Images
+                .Select(image => new Image
+                {
+                    URL = image.URL,
+                    Height = image.Height,
+                    Width = image.Width
+                }).ToList();
+
+            if (trackImages.Count == 0)
+            {
+                throw new DataNotFoundCustomException("Not found any images of track");
+            }
+
+            // Lấy danh sách Artist từ Spotify response
+            Dictionary<string, string> artistNameId = spotifyTracks.ArtistDetail
+                .ToDictionary(artist => artist.Name, artist => artist.ArtistSpotifyId);
+
+            // Lấy danh sách artistId để gọi API lấy thông tin chi tiết
+            string artistIds = string.Join(",", artistNameId.Values);
+            string artistsUri = $"https://api.spotify.com/v1/artists?ids={artistIds}";
+            string artistResponseBody = await GetResponseAsync(artistsUri, accessToken);
+
+            // Deserialize response của artist
+            SpotifyTrackMiniResponseModel spotifyArtists = JsonConvert.DeserializeObject<SpotifyTrackMiniResponseModel>(artistResponseBody)
+                ?? throw new DataNotFoundCustomException("Not found any artist details");
+
+            // Lấy danh sách Popularity của từng artist
+            Dictionary<string, int> artistPopularity = spotifyArtists.ArtistDetail
+                .ToDictionary(artist => artist.Name, artist => artist.Popularity);
+
+            // Lấy danh sách Followers của từng artist
+            Dictionary<string, int> artistFollower = spotifyArtists.ArtistDetail
+                .ToDictionary(artist => artist.Name, artist => artist.Followers.Total);
+
+            // Lấy danh sách ảnh của từng artist
+            Dictionary<string, List<Image>> artistImages = spotifyArtists.ArtistDetail
+                .ToDictionary(artist => artist.Name, artist => artist.Images.Select(image => new Image
+                {
+                    URL = image.URL,
+                    Height = image.Height,
+                    Width = image.Width
+                }).ToList());
+
+            return (trackImages, artistNameId, artistImages, artistPopularity, artistFollower);
         }
 
         //public async Task FixTracksWithArtistIsNullAsync(string accessToken)

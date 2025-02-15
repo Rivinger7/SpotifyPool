@@ -3,12 +3,15 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.NAudio;
 using BusinessLogicLayer.Implement.Services.DataAnalysis;
+using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using CloudinaryDotNet.Actions;
+using CsvHelper;
+using CsvHelper.Configuration;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
@@ -20,17 +23,229 @@ using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
-    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService) : ITrack
+    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService, ISpotify spotifyService) : ITrack
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
+        private readonly ISpotify _spotifyService = spotifyService;
+
+        public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
+        {
+            // Kiểm tra file csv
+            if (csvFile is null || csvFile.Length == 0)
+            {
+                throw new ArgumentNullCustomException($"{csvFile} is null");
+            }
+
+            // Khởi tạo các danh sách để insert many 
+            List<Track> tracks = [];
+            List<AudioFeatures> newAudioFeatures = [];
+            List<Artist> newArtists = [];
+
+            // Cấu hình CsvHelper
+            CsvConfiguration csvConfig = new(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = true,  // Đảm bảo có header
+                Delimiter = ",",         // Sử dụng dấu phẩy làm delimiter
+                Quote = '"',             // Xử lý đúng dấu nháy kép
+                BadDataFound = null,     // Bỏ qua dữ liệu lỗi
+                MissingFieldFound = null // Tránh lỗi khi cột bị thiếu
+            };
+
+            using StreamReader reader = new(csvFile.OpenReadStream());
+            using CsvReader csv = new(reader, csvConfig);
+
+            List<TrackCsvModel> records = csv.GetRecords<TrackCsvModel>().ToList();
+
+            foreach (TrackCsvModel? record in records)
+            {
+                string trackId = record.TrackId.Trim();
+
+                // Kiểm tra xem Track ID đã tồn tại trong MongoDB chưa
+                string? existingTrack = await _unitOfWork.GetCollection<Track>()
+                    .Find(m => m.SpotifyId == trackId)
+                    .Project(track => track.SpotifyId)
+                    .FirstOrDefaultAsync();
+
+                if (!string.IsNullOrEmpty(existingTrack))
+                {
+                    Console.WriteLine($"Track {trackId} đã tồn tại. Bỏ qua.");
+                    continue; // Nếu track đã tồn tại, bỏ qua và tiếp tục dòng tiếp theo
+                }
+
+                (List<DataAccessLayer.Repository.Entities.Image> trackImages,
+                    Dictionary<string, string> artistDictionary,
+                    Dictionary<string, List<DataAccessLayer.Repository.Entities.Image>> artistImages,
+                    Dictionary<string, int> artistPopularity,
+                    Dictionary<string, int> artistFollower) = await _spotifyService.FetchTrackAsync(accessToken, trackId);
+
+                // Lấy danh sách nghệ sĩ từ cột "Artist Name(s)"
+                var artistNames = record.ArtistNames.Split(',')
+                    .Select(a => a.Trim().Trim('"'))
+                    .Where(a => !string.IsNullOrEmpty(a))
+                    .ToList();
+
+                // Kiểm tra xem các nghệ sĩ có tồn tại trong MongoDB không
+                var artistIds = new List<string>();
+                foreach (var artistName in artistNames)
+                {
+                    string existingArtistId = await _unitOfWork.GetCollection<Artist>()
+                        .Find(a => a.Name == artistName)
+                        .Project(artist => artist.Id)
+                        .FirstOrDefaultAsync();
+
+                    if (string.IsNullOrEmpty(existingArtistId))
+                    {
+                        // Nếu chưa có, tạo mới nghệ sĩ và lưu vào DB
+                        Artist newArtist = new()
+                        {
+                            Id = ObjectId.GenerateNewId().ToString(),
+                            UserId = null,
+                            SpotifyId = artistDictionary[artistName] ?? null,
+                            Name = artistName,
+                            Followers = artistFollower[artistName],
+                            Popularity = artistPopularity[artistName],
+                            GenreIds = [],
+                            Images = artistImages[artistName] ?? [],
+                            //Images =
+                            //[
+                            //    new DataAccessLayer.Repository.Entities.Image
+                            //    {
+                            //        URL = "https://i.scdn.co/image/ab676161000051747baf6a3e4e70248079e48c5a",
+                            //        Height = 640,
+                            //        Width = 640
+                            //    },
+                            //    new DataAccessLayer.Repository.Entities.Image
+                            //    {
+                            //        URL = "https://i.scdn.co/image/ab6761610000e5eb7baf6a3e4e70248079e48c5a",
+                            //        Height = 300,
+                            //        Width = 300
+                            //    },
+                            //    new DataAccessLayer.Repository.Entities.Image
+                            //    {
+                            //        URL = "https://i.scdn.co/image/ab6761610000b2737baf6a3e4e70248079e48c5a",
+                            //        Height = 64,
+                            //        Width = 64
+                            //    }
+                            //]
+                        };
+
+                        // Thêm artistId vào danh sách nghệ sĩ ids
+                        artistIds.Add(newArtist.Id);
+
+                        // Thêm vào danh sách nghệ sĩ mới
+                        newArtists.Add(newArtist);
+                    }
+                    else
+                    {
+                        // Nếu đã có, lấy ID
+                        artistIds.Add(existingArtistId);
+                    }
+                }
+
+                // Tạo AudioFeatures từ dữ liệu trong CSV
+                AudioFeatures audioFeatures = new()
+                {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    Duration = int.TryParse(record.DurationMs, out int duration) ? duration : 0,
+                    Key = int.TryParse(record.Key, out int key) ? key : 0,
+                    TimeSignature = int.TryParse(record.TimeSignature, out int timeSignature) ? timeSignature : 0,
+                    Mode = int.TryParse(record.Mode, out int mode) ? mode : 0,
+                    Acousticness = float.TryParse(record.Acousticness, NumberStyles.Float, CultureInfo.InvariantCulture, out float acousticness) ? acousticness : 0f,
+                    Danceability = float.TryParse(record.Danceability, NumberStyles.Float, CultureInfo.InvariantCulture, out float danceability) ? danceability : 0f,
+                    Energy = float.TryParse(record.Energy, NumberStyles.Float, CultureInfo.InvariantCulture, out float energy) ? energy : 0f,
+                    Instrumentalness = float.TryParse(record.Instrumentalness, NumberStyles.Float, CultureInfo.InvariantCulture, out float instrumentalness) ? instrumentalness : 0f,
+                    Liveness = float.TryParse(record.Liveness, NumberStyles.Float, CultureInfo.InvariantCulture, out float liveness) ? liveness : 0f,
+                    Loudness = float.TryParse(record.Loudness, NumberStyles.Float, CultureInfo.InvariantCulture, out float loudness) ? loudness : 0f,
+                    Speechiness = float.TryParse(record.Speechiness, NumberStyles.Float, CultureInfo.InvariantCulture, out float speechiness) ? speechiness : 0f,
+                    Tempo = float.TryParse(record.Tempo, NumberStyles.Float, CultureInfo.InvariantCulture, out float tempo) ? tempo : 0f,
+                    Valence = float.TryParse(record.Valence, NumberStyles.Float, CultureInfo.InvariantCulture, out float valence) ? valence : 0f
+                };
+
+                // Thêm vào danh sách audio features mới
+                newAudioFeatures.Add(audioFeatures);
+
+                // Tạo Track từ dữ liệu trong CSV
+                Track track = new()
+                {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    SpotifyId = trackId,
+                    Name = record.TrackName,
+                    Description = null,
+                    Lyrics = null,
+                    PreviewURL = null,
+                    Duration = int.TryParse(record.DurationMs, out int durationMs) ? durationMs : 0,
+                    //Images =
+                    //[
+                    //    new() {
+                    //    URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
+                    //    Height = 640,
+                    //    Width = 640
+                    //},
+                    //    new() {
+                    //        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
+                    //        Height = 300,
+                    //        Width = 300
+                    //    },
+                    //    new() {
+                    //        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
+                    //        Height = 64,
+                    //        Width = 64
+                    //    }
+                    //],
+                    Images = trackImages,
+                    ArtistIds = artistIds,
+                    Popularity = int.TryParse(record.Popularity, out int popularity) ? popularity : 0,
+                    IsExplicit = false,
+                    Restrictions = new()
+                    {
+                        IsPlayable = true,
+                        Reason = RestrictionReason.None,
+                    },
+                    UploadBy = "672c3adb710b9b46a4fd80e8",
+                    UploadDate = DateTime.Now.ToString("yyyy-MM-dd"),
+                    StreamCount = 0,
+                    PlayCount = 0,
+                    DownloadCount = 0,
+                    FavoriteCount = 0,
+                    AudioFeaturesId = audioFeatures.Id,
+                };
+
+                // Thêm vào danh sách track mới
+                tracks.Add(track);
+            }
+
+            // Kiểm tra xem có dữ liệu trong CSV không
+            if (tracks.Count == 0)
+            {
+                throw new InvalidDataCustomException("No data in CSV file");
+            }
+
+            // Kiểm tra xem có nghệ sĩ mới không
+            if (newArtists.Count == 0)
+            {
+                throw new InvalidDataCustomException("No new artists in CSV file");
+            }
+
+            // Kiểm tra xem có audio features mới không
+            if (newAudioFeatures.Count == 0)
+            {
+                throw new InvalidDataCustomException("No new audio features in CSV file");
+            }
+
+            // Lưu danh sách Track, Artist và AudioFeatures vào MongoDB
+            await _unitOfWork.GetCollection<Track>().InsertManyAsync(tracks);
+            await _unitOfWork.GetCollection<Artist>().InsertManyAsync(newArtists);
+            await _unitOfWork.GetCollection<AudioFeatures>().InsertManyAsync(newAudioFeatures);
+        }
 
         #region Chỉ dùng cho mục đích test và sửa lỗi artist null
         //public async Task<IEnumerable<TrackResponseModel>> GetTracksWithArtistIsNull()

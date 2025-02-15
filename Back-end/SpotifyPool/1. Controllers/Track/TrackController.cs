@@ -15,6 +15,13 @@ namespace SpotifyPool._1._Controllers.Track
     {
         private readonly ITrack _trackService = trackService;
 
+        [AllowAnonymous, HttpPost("fetch/csv")]
+        public async Task<IActionResult> FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
+        {
+            await _trackService.FetchTracksByCsvAsync(csvFile, accessToken);
+            return Ok("Fetch successfully!");
+        }
+
         //[AllowAnonymous, HttpGet("testing/tracks-with-artist-null")]
         //public async Task<IActionResult> GetTracksArtistNull()
         //{
