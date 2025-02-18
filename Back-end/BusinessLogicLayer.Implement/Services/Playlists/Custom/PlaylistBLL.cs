@@ -195,7 +195,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                     Name = track.Name,
                     Description = track.Description,
                     Lyrics = track.Lyrics,
-                    PreviewURL = track.PreviewURL,
+                    PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
                     Images = track.Images.Select(image => new ImageResponseModel
                     {
@@ -264,7 +264,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
 
         public async Task CreateMoodPlaylistAsync(string mood)
         {
-            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            // UserID lấy từ phiên người dùng
             string? userId = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
@@ -272,49 +272,54 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
             }
 
-            // Filter
-            FilterDefinition<AudioFeatures> audioFeaturesFilter;
-            audioFeaturesFilter = mood switch
+            // Filter trực tiếp trên Track.AudioFeatures
+            FilterDefinition<Track> trackFilter;
+            trackFilter = mood switch
             {
-                "Sad" => Builders<AudioFeatures>.Filter.And(
-                                      Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 0),
-                                      Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 100),
-                                      Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.4)),
-                "Neutral" => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 100) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 120),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.4) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.6)),
-                "Happy" => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 120) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 160),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.6) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.8)),
-                "Blisfull" => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 140) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 180),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.8) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 1)),
-                "Focus" => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Instrumentalness, 0.7),
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Energy, 0.5)),
-                "Random" => Builders<AudioFeatures>.Filter.Empty,
+                "Sad" => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 0),
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 100),
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.4)),
+
+                "Neutral" => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 100) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 120),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.4) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.6)),
+
+                "Happy" => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 120) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 160),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.6) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.8)),
+
+                "Blisfull" => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 140) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 180),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.8) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 1)),
+
+                "Focus" => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Instrumentalness, 0.7),
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Energy, 0.5)),
+
+                "Random" => Builders<Track>.Filter.Empty,
                 _ => throw new InvalidDataCustomException("The mood is not supported"),
             };
 
-            // Mapping tracks to TrackResponseModel
+            // Projection
             ProjectionDefinition<ASTrack, TrackResponseModel> projectionDefinition = Builders<ASTrack>.Projection.Expression(track =>
                 new TrackResponseModel
                 {
                     Id = track.Id,
                     Name = track.Name,
                     Description = track.Description,
-                    PreviewURL = track.PreviewURL,
+                    PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
-                    Images = track.Images.Select(image => new ImageResponseModel()
+                    Images = track.Images.Select(image => new ImageResponseModel
                     {
                         URL = image.URL,
                         Height = image.Height,
@@ -335,25 +340,18 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                     })
                 });
 
-            // Lấy AudioFeaturesId
-            IEnumerable<string> audioFeaturesIds = await _unitOfWork.GetCollection<AudioFeatures>()
-                .Find(audioFeaturesFilter)
-                .Project(af => af.Id)
-                .ToListAsync();
-
-            // Stage
+            // Lấy danh sách tracks
             IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Lấy thông tin Tracks với Artist
             IEnumerable<TrackResponseModel> tracks = await aggregateFluent
-                .Match(track => audioFeaturesIds.Contains(track.AudioFeaturesId))
+                .Match(trackFilter) // Lọc trực tiếp trên Track
                 .Sample(10)
                 .Lookup<Track, Artist, ASTrack>
                 (
-                    _unitOfWork.GetCollection<Artist>(), // The foreign collection
-                    track => track.ArtistIds, // The field in Track that are joining on
-                    artist => artist.Id, // The field in Artist that are matching against
-                    result => result.Artists // The field in ASTrack to hold the matched artists
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists
                 )
                 .Project(projectionDefinition)
                 .ToListAsync();
@@ -361,7 +359,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Lấy thời gian hiện tại
             DateTime currentTime = Util.GetUtcPlus7Time();
 
-            // Playlist là Custom Songs thì sử dụng hình ảnh mặc định
+            // Ảnh mặc định cho playlist
             List<Image> images = [
                 new() {
                     URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
@@ -380,7 +378,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 }
             ];
 
-            // Tạo mới playlist
+            // Tạo playlist mới
             Playlist playlist = new()
             {
                 Name = $"{mood} Playlist {currentTime}",
@@ -394,11 +392,10 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 Images = images
             };
 
-            // Lưu thông tin playlist vào database
+            // Lưu playlist vào database
             await _unitOfWork.GetCollection<Playlist>().InsertOneAsync(playlist);
-
-            // Do là API nên không cần trả về gì cả
         }
+
 
         public async Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId)
         {
@@ -453,7 +450,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                     Id = track.Id,
                     Name = track.Name,
                     Description = track.Description,
-                    PreviewURL = track.PreviewURL,
+                    PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
                     Images = track.Images.Select(image => new ImageResponseModel()
                     {

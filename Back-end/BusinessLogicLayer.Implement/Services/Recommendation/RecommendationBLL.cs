@@ -21,35 +21,30 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         {
             AudioFeatures matchedAudioFeatures = _mapper.Map<AudioFeatures>(audioFeaturesRequest);
 
-            // Lấy danh sách AudioFeatures trùng với Mode
-            // Truy vấn mode để giảm số lượng audioFeatures cần so sánh
-            IEnumerable<AudioFeatures> similarAudioFeatures = await _unitOfWork.GetCollection<AudioFeatures>()
-                .Find(f => f.Mode == audioFeaturesRequest.Mode)
+            // Lấy danh sách Track có AudioFeatures trùng Mode để giảm số lượng cần so sánh
+            IEnumerable<Track> similarTracks = await _unitOfWork.GetCollection<Track>()
+                .Find(track => track.AudioFeatures.Mode == audioFeaturesRequest.Mode)
                 .ToListAsync();
 
             // Tính toán độ tương đồng và sắp xếp trực tiếp trên danh sách truy vấn
-            // Trả về AudioFeaturesIds của k track tương tự nhất
-            IEnumerable<string> topSimilarFeatures = similarAudioFeatures
-                .Select(audioFeatures => new
+            IEnumerable<Track> topSimilarTracks = similarTracks
+                .Select(track => new
                 {
-                    Feature = audioFeatures,
-                    //Similarity = CalculateSimilarity(matchedAudioFeatures, audioFeatures)
-                    Similarity = similarityScore(matchedAudioFeatures, audioFeatures)
+                    Track = track,
+                    Similarity = similarityScore(matchedAudioFeatures, track.AudioFeatures)
                 })
                 .OrderByDescending(x => x.Similarity)
-                //.Where(x => x.Similarity > 0.5)
                 .Take(k)
-                .Select(x => x.Feature.Id)
+                .Select(x => x.Track)
                 .ToList();
 
-            #region Lấy danh sách Track tương ứng với các AudioFeatures đã lọc
             // Projection
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
                 .Include(track => track.Id)
                 .Include(track => track.Name)
                 .Include(track => track.Description)
                 .Include(track => track.Lyrics)
-                .Include(track => track.PreviewURL)
+                .Include(track => track.StreamingUrl)
                 .Include(track => track.Duration)
                 .Include(track => track.Images)
                 .Include(track => track.Artists);
@@ -59,74 +54,59 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
 
             // Lấy thêm thông tin về artist
             IAggregateFluent<ASTrack> trackPipelines = aggregateFluent
-                .Match(track => topSimilarFeatures.Contains(track.AudioFeaturesId)) // Match the track by audioFeaturesId
+                .Match(track => topSimilarTracks.Select(t => t.Id).Contains(track.Id)) // Lọc theo các track đã chọn
                 .Lookup<Track, Artist, ASTrack>
-                (_unitOfWork.GetCollection<Artist>(), // The foreign collection
-                track => track.ArtistIds, // The field in Track that are joining on
-                artist => artist.Id, // The field in Artist that are matching against
-                result => result.Artists) // The field in ASTrack to hold the matched artists
+                (
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists
+                )
                 .Project<ASTrack>(projectionDefinition);
 
-            // To list
             IEnumerable<ASTrack> recommendedTracks = await trackPipelines.ToListAsync();
-            #endregion
 
-            // Mapping các track tương tự thành TrackResponseModel
+            // Mapping sang TrackResponseModel
             IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(recommendedTracks);
 
             return responseModels;
         }
 
+
         public async Task<IEnumerable<TrackResponseModel>> GetRecommendations(string trackId, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 1)
         {
-            // Empty Pipeline
-            IAggregateFluent<Track> trackAggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+            // Lấy AudioFeatures của track đầu vào
+            Track matchedTrack = await _unitOfWork.GetCollection<Track>()
+                .Find(t => t.Id == trackId)
+                .FirstOrDefaultAsync() ?? throw new InvalidDataCustomException("Matched track not found");
 
-            // Lookup
-            AudioFeatures matchedAudioFeatures = await trackAggregateFluent
-                .Match(track => track.Id == trackId)
-                .Lookup<Track, AudioFeatures, ASTrack>(
-                    _unitOfWork.GetCollection<AudioFeatures>(),
-                    track => track.AudioFeaturesId,
-                    audioFeature => audioFeature.Id,
-                    result => result.AudioFeatures)
-                // Phân rã mảng hoặc danh sách audioFeatures thành một document duy nhất
-                .Unwind(result => result.AudioFeatures, new AggregateUnwindOptions<ASTrack>
-                {
-                    // Danh sách trường cần giữ nguyên giá trị null hoặc rỗng
-                    PreserveNullAndEmptyArrays = true
-                })
-                .Project(result => result.AudioFeatures)
-                .FirstOrDefaultAsync() ?? throw new InvalidDataCustomException("Matched audio features not found");
+            AudioFeatures matchedAudioFeatures = matchedTrack.AudioFeatures;
 
-            // Truy vấn các đặc trưng âm thanh tương tự với track đầu vào
-            IEnumerable<AudioFeatures> similarFeatures = await _unitOfWork.GetCollection<AudioFeatures>()
-                .Find(f => f.Id != matchedAudioFeatures.Id)
+            // Truy vấn các track khác (không bao gồm track đầu vào)
+            IEnumerable<Track> similarTracks = await _unitOfWork.GetCollection<Track>()
+                .Find(t => t.Id != trackId)
                 .ToListAsync();
 
-            // Tính toán độ tương đồng và sắp xếp trực tiếp trên danh sách truy vấn
-            // Trả về AudioFeaturesIds của k track tương tự nhất
-            IEnumerable<string> topSimilarFeatures = similarFeatures
-                .Select(audioFeatures => new
+            // Tính toán độ tương đồng và sắp xếp
+            IEnumerable<Track> topSimilarTracks = similarTracks
+                .Select(track => new
                 {
-                    Feature = audioFeatures,
-                    //Similarity = CalculateSimilarity(matchedAudioFeatures, audioFeatures)
-                    Similarity = similarityScore(matchedAudioFeatures, audioFeatures)
+                    Track = track,
+                    Similarity = similarityScore(matchedAudioFeatures, track.AudioFeatures)
                 })
                 .OrderByDescending(x => x.Similarity)
                 .Where(x => x.Similarity > 0.5)
                 .Take(k)
-                .Select(x => x.Feature.Id)
+                .Select(x => x.Track)
                 .ToList();
 
-            #region Lấy danh sách Track tương ứng với các AudioFeatures đã lọc
             // Projection
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
                 .Include(track => track.Id)
                 .Include(track => track.Name)
                 .Include(track => track.Description)
                 .Include(track => track.Lyrics)
-                .Include(track => track.PreviewURL)
+                .Include(track => track.StreamingUrl)
                 .Include(track => track.Duration)
                 .Include(track => track.Images)
                 .Include(track => track.Artists);
@@ -136,17 +116,17 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
 
             // Lấy thêm thông tin về artist
             IAggregateFluent<ASTrack> trackPipelines = aggregateFluent
-                .Match(track => topSimilarFeatures.Contains(track.AudioFeaturesId)) // Match the track by audioFeaturesId
+                .Match(track => topSimilarTracks.Select(t => t.Id).Contains(track.Id)) // Lọc theo các track đã chọn
                 .Lookup<Track, Artist, ASTrack>
-                (_unitOfWork.GetCollection<Artist>(), // The foreign collection
-                track => track.ArtistIds, // The field in Track that are joining on
-                artist => artist.Id, // The field in Artist that are matching against
-                result => result.Artists) // The field in ASTrack to hold the matched artists
+                (
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists
+                )
                 .Project<ASTrack>(projectionDefinition);
 
-            // To list
             IEnumerable<ASTrack> recommendedTracks = await trackPipelines.ToListAsync();
-            #endregion
 
             // Mapping các track tương tự thành TrackResponseModel
             IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(recommendedTracks);
@@ -154,24 +134,13 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
             return responseModels;
         }
 
+
         public async Task<IEnumerable<TrackResponseModel>> GetManyRecommendations(IEnumerable<string> trackIds, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 1)
         {
-            // Stage
-            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
-
             // Lấy danh sách AudioFeatures của các track đầu vào
-            IEnumerable<AudioFeatures?> matchedAudioFeaturesList = await aggregateFluent
-                .Match(track => trackIds.Contains(track.Id))
-                .Lookup<Track, AudioFeatures, ASTrack>(
-                    _unitOfWork.GetCollection<AudioFeatures>(),
-                    track => track.AudioFeaturesId,
-                    audioFeature => audioFeature.Id,
-                    result => result.AudioFeatures)
-                .Unwind(result => result.AudioFeatures, new AggregateUnwindOptions<ASTrack>
-                {
-                    PreserveNullAndEmptyArrays = true
-                })
-                .Project(result => result.AudioFeatures)
+            IEnumerable<AudioFeatures> matchedAudioFeaturesList = await _unitOfWork.GetCollection<Track>()
+                .Find(track => trackIds.Contains(track.Id))
+                .Project(track => track.AudioFeatures)
                 .ToListAsync();
 
             if (!matchedAudioFeaturesList.Any())
@@ -179,46 +148,46 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                 throw new InvalidDataCustomException("No audio features found for the provided track IDs.");
             }
 
-            // Truy vấn tất cả AudioFeatures không trùng với các track đầu vào
-            IEnumerable<AudioFeatures> allAudioFeatures = await _unitOfWork.GetCollection<AudioFeatures>()
-                .Find(f => !matchedAudioFeaturesList.Select(m => m.Id).Contains(f.Id))
+            // Lấy tất cả Track không thuộc danh sách track đầu vào
+            IEnumerable<Track> allTracks = await _unitOfWork.GetCollection<Track>()
+                .Find(track => !trackIds.Contains(track.Id))
                 .ToListAsync();
 
+            // Tính toán độ tương đồng cho tất cả tracks
             IEnumerable<string> similarityResults = matchedAudioFeaturesList
                 .SelectMany(matchedAudioFeature =>
-                    allAudioFeatures.Select(audioFeature => new
+                    allTracks.Select(track => new
                     {
                         MatchedFeature = matchedAudioFeature,
-                        Feature = audioFeature,
-                        Similarity = similarityScore(matchedAudioFeature ?? throw new InvalidDataCustomException("No audio features found for the provided track IDs."), audioFeature)
+                        Track = track,
+                        Similarity = similarityScore(matchedAudioFeature, track.AudioFeatures)
                     }))
                 .Where(x => x.Similarity > 0.5) // Lọc các bài hát có độ tương đồng lớn hơn 0.5
-                .GroupBy(x => x.MatchedFeature?.Id) // Nhóm theo bài hát gốc
+                .GroupBy(x => x.MatchedFeature) // Nhóm theo audio feature đầu vào
                 .SelectMany(group => group
                     .OrderByDescending(x => x.Similarity) // Sắp xếp theo độ tương đồng
                     .Take(3)) // Lấy top 3 bài hát tương tự
-                .Select(x => x.Feature.Id)
+                .Select(x => x.Track.Id)
                 .Distinct() // Đảm bảo không có ID trùng lặp
                 .ToList();
 
-            #region Lấy danh sách Track tương ứng với các AudioFeatures đã lọc
+            #region Lấy danh sách Track tương ứng
             // Projection
             ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
                 .Include(track => track.Id)
                 .Include(track => track.Name)
                 .Include(track => track.Description)
                 .Include(track => track.Lyrics)
-                .Include(track => track.PreviewURL)
+                .Include(track => track.StreamingUrl)
                 .Include(track => track.Duration)
                 .Include(track => track.Images)
                 .Include(track => track.Artists);
 
-            // Empty Pipeline
-            IAggregateFluent<Track> aggregateFluent2 = _unitOfWork.GetCollection<Track>().Aggregate();
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
             // Lấy thêm thông tin về artist
-            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent2
-                .Match(track => similarityResults.Contains(track.AudioFeaturesId)) // Match the track by audioFeaturesId
+            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent
+                .Match(track => similarityResults.Contains(track.Id)) // Match theo track Id
                 .Lookup<Track, Artist, ASTrack>(
                     _unitOfWork.GetCollection<Artist>(),
                     track => track.ArtistIds,
@@ -226,11 +195,10 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                     result => result.Artists)
                 .Project<ASTrack>(projectionDefinition);
 
-            // To list
             IEnumerable<ASTrack> recommendedTracks = await trackPipelines.ToListAsync();
             #endregion
 
-            // Mapping các track tương tự thành TrackResponseModel
+            // Mapping sang TrackResponseModel
             IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(recommendedTracks);
 
             return responseModels;

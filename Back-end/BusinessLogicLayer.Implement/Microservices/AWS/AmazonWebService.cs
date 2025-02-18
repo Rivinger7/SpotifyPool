@@ -22,11 +22,11 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
             }
 
             // Kiểm tra bằng content-type (image/webp)
-            //string fileType = audioFile.ContentType.Split('/').First();
-            //if (fileType != "audio")
-            //{
-            //    throw new BadRequestCustomException("Unsupported audioFile type");
-            //}
+            string fileType = audioFile.ContentType.Split('/').First();
+            if (fileType != "audio")
+            {
+                throw new BadRequestCustomException("Unsupported audioFile type");
+            }
 
             var bucketName = Environment.GetEnvironmentVariable("");
             var key = $"uploads/{Guid.NewGuid()}_{audioFile.FileName}";

@@ -1,6 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
-using System.Text.Json.Serialization;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace DataAccessLayer.Repository.Entities
 {
@@ -20,23 +19,21 @@ namespace DataAccessLayer.Repository.Entities
         public List<string> ArtistIds { get; set; } = [];
 
         public int? Popularity { get; set; } = 0;
-        public required string PreviewURL { get; set; }
+        public required string StreamingUrl { get; set; }
         public required int Duration { get; set; }
         public List<Image> Images { get; set; } = [];
 
-        public required bool IsExplicit { get; set; } // Spotify API
         public required Restrictions Restrictions { get; set; }
         public required string UploadDate { get; set; }
 
         [BsonRepresentation(BsonType.ObjectId)]
         public required string UploadBy { get; set; }
 
+        public DateTime? LastUpdatedTime { get; set; }
+
         public long StreamCount { get; set; } // Real counting
-        public long PlayCount { get; set; } // Fake counting
         public long DownloadCount { get; set; }
         public long FavoriteCount { get; set; }
-
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string? AudioFeaturesId { get; set; }
+        public required AudioFeatures AudioFeatures { get; set; }
     }
 }

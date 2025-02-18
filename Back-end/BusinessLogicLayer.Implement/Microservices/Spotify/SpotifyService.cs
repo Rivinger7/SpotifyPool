@@ -673,7 +673,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         //            Name = track.Name,
         //            Description = track.Description,
         //            Lyrics = track.Lyrics,
-        //            PreviewURL = track.PreviewURL,
+        //            StreamingUrl = track.StreamingUrl,
         //            Duration = track.Duration,
         //            Images = track.Images.Select(image => new ImageResponseModel
         //            {
