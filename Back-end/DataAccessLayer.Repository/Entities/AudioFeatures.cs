@@ -1,14 +1,7 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
-
-namespace DataAccessLayer.Repository.Entities
+﻿namespace DataAccessLayer.Repository.Entities
 {
     public class AudioFeatures
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } = null!;
-
         public int Duration { get; set; }
         public int Key { get; set; }
         public int TimeSignature { get; set; }

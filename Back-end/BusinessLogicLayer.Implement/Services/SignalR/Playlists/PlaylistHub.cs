@@ -414,7 +414,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 .Include(x => x.Id)
                 .Include(x => x.Name)
                 .Include(x => x.Duration)
-                .Include(x => x.PreviewURL)
+                .Include(x => x.StreamingUrl)
                 .Include(x => x.ArtistIds)
                 .Include(x => x.Images);
 
@@ -570,7 +570,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 .Include(x => x.Id)
                 .Include(x => x.Name)
                 .Include(x => x.Duration)
-                .Include(x => x.PreviewURL)
+                .Include(x => x.StreamingUrl)
                 .Include(x => x.ArtistIds)
                 .Include(x => x.Images);
 

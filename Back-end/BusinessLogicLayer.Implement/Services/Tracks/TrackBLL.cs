@@ -39,25 +39,21 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
         {
-            // Kiểm tra file csv
             if (csvFile is null || csvFile.Length == 0)
             {
                 throw new ArgumentNullCustomException($"{csvFile} is null");
             }
 
-            // Khởi tạo các danh sách để insert many 
             List<Track> tracks = [];
-            List<AudioFeatures> newAudioFeatures = [];
             List<Artist> newArtists = [];
 
-            // Cấu hình CsvHelper
             CsvConfiguration csvConfig = new(CultureInfo.InvariantCulture)
             {
-                HasHeaderRecord = true,  // Đảm bảo có header
-                Delimiter = ",",         // Sử dụng dấu phẩy làm delimiter
-                Quote = '"',             // Xử lý đúng dấu nháy kép
-                BadDataFound = null,     // Bỏ qua dữ liệu lỗi
-                MissingFieldFound = null // Tránh lỗi khi cột bị thiếu
+                HasHeaderRecord = true,
+                Delimiter = ",",
+                Quote = '"',
+                BadDataFound = null,
+                MissingFieldFound = null
             };
 
             using StreamReader reader = new(csvFile.OpenReadStream());
@@ -69,7 +65,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             {
                 string trackId = record.TrackId.Trim();
 
-                // Kiểm tra xem Track ID đã tồn tại trong MongoDB chưa
                 string? existingTrack = await _unitOfWork.GetCollection<Track>()
                     .Find(m => m.SpotifyId == trackId)
                     .Project(track => track.SpotifyId)
@@ -78,22 +73,16 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 if (!string.IsNullOrEmpty(existingTrack))
                 {
                     Console.WriteLine($"Track {trackId} đã tồn tại. Bỏ qua.");
-                    continue; // Nếu track đã tồn tại, bỏ qua và tiếp tục dòng tiếp theo
+                    continue;
                 }
 
-                (List<DataAccessLayer.Repository.Entities.Image> trackImages,
-                    Dictionary<string, string> artistDictionary,
-                    Dictionary<string, List<DataAccessLayer.Repository.Entities.Image>> artistImages,
-                    Dictionary<string, int> artistPopularity,
-                    Dictionary<string, int> artistFollower) = await _spotifyService.FetchTrackAsync(accessToken, trackId);
+                var (trackImages, artistDictionary, artistImages, artistPopularity, artistFollower) = await _spotifyService.FetchTrackAsync(accessToken, trackId);
 
-                // Lấy danh sách nghệ sĩ từ cột "Artist Name(s)"
                 var artistNames = record.ArtistNames.Split(',')
                     .Select(a => a.Trim().Trim('"'))
                     .Where(a => !string.IsNullOrEmpty(a))
                     .ToList();
 
-                // Kiểm tra xem các nghệ sĩ có tồn tại trong MongoDB không
                 var artistIds = new List<string>();
                 foreach (var artistName in artistNames)
                 {
@@ -104,7 +93,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                     if (string.IsNullOrEmpty(existingArtistId))
                     {
-                        // Nếu chưa có, tạo mới nghệ sĩ và lưu vào DB
                         Artist newArtist = new()
                         {
                             Id = ObjectId.GenerateNewId().ToString(),
@@ -115,46 +103,18 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                             Popularity = artistPopularity[artistName],
                             GenreIds = [],
                             Images = artistImages[artistName] ?? [],
-                            //Images =
-                            //[
-                            //    new DataAccessLayer.Repository.Entities.Image
-                            //    {
-                            //        URL = "https://i.scdn.co/image/ab676161000051747baf6a3e4e70248079e48c5a",
-                            //        Height = 640,
-                            //        Width = 640
-                            //    },
-                            //    new DataAccessLayer.Repository.Entities.Image
-                            //    {
-                            //        URL = "https://i.scdn.co/image/ab6761610000e5eb7baf6a3e4e70248079e48c5a",
-                            //        Height = 300,
-                            //        Width = 300
-                            //    },
-                            //    new DataAccessLayer.Repository.Entities.Image
-                            //    {
-                            //        URL = "https://i.scdn.co/image/ab6761610000b2737baf6a3e4e70248079e48c5a",
-                            //        Height = 64,
-                            //        Width = 64
-                            //    }
-                            //]
                         };
-
-                        // Thêm artistId vào danh sách nghệ sĩ ids
                         artistIds.Add(newArtist.Id);
-
-                        // Thêm vào danh sách nghệ sĩ mới
                         newArtists.Add(newArtist);
                     }
                     else
                     {
-                        // Nếu đã có, lấy ID
                         artistIds.Add(existingArtistId);
                     }
                 }
 
-                // Tạo AudioFeatures từ dữ liệu trong CSV
                 AudioFeatures audioFeatures = new()
                 {
-                    Id = ObjectId.GenerateNewId().ToString(),
                     Duration = int.TryParse(record.DurationMs, out int duration) ? duration : 0,
                     Key = int.TryParse(record.Key, out int key) ? key : 0,
                     TimeSignature = int.TryParse(record.TimeSignature, out int timeSignature) ? timeSignature : 0,
@@ -170,10 +130,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     Valence = float.TryParse(record.Valence, NumberStyles.Float, CultureInfo.InvariantCulture, out float valence) ? valence : 0f
                 };
 
-                // Thêm vào danh sách audio features mới
-                newAudioFeatures.Add(audioFeatures);
-
-                // Tạo Track từ dữ liệu trong CSV
                 Track track = new()
                 {
                     Id = ObjectId.GenerateNewId().ToString(),
@@ -181,71 +137,44 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     Name = record.TrackName,
                     Description = null,
                     Lyrics = null,
-                    PreviewURL = null,
+                    StreamingUrl = null,
                     Duration = int.TryParse(record.DurationMs, out int durationMs) ? durationMs : 0,
-                    //Images =
-                    //[
-                    //    new() {
-                    //    URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
-                    //    Height = 640,
-                    //    Width = 640
-                    //},
-                    //    new() {
-                    //        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
-                    //        Height = 300,
-                    //        Width = 300
-                    //    },
-                    //    new() {
-                    //        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
-                    //        Height = 64,
-                    //        Width = 64
-                    //    }
-                    //],
                     Images = trackImages,
                     ArtistIds = artistIds,
                     Popularity = int.TryParse(record.Popularity, out int popularity) ? popularity : 0,
-                    IsExplicit = false,
                     Restrictions = new()
                     {
                         IsPlayable = true,
                         Reason = RestrictionReason.None,
+                        Description = null,
+                        RestrictionDate = null,
                     },
                     UploadBy = "672c3adb710b9b46a4fd80e8",
                     UploadDate = DateTime.Now.ToString("yyyy-MM-dd"),
                     StreamCount = 0,
-                    PlayCount = 0,
                     DownloadCount = 0,
                     FavoriteCount = 0,
-                    AudioFeaturesId = audioFeatures.Id,
+                    AudioFeatures = audioFeatures, // Embed trực tiếp vào Track
+                    LastUpdatedTime = null,
                 };
 
-                // Thêm vào danh sách track mới
                 tracks.Add(track);
             }
 
-            // Kiểm tra xem có dữ liệu trong CSV không
             if (tracks.Count == 0)
             {
-                throw new InvalidDataCustomException("No data in CSV file");
+                throw new InvalidDataCustomException("No track data in CSV file");
             }
 
-            // Kiểm tra xem có nghệ sĩ mới không
             if (newArtists.Count == 0)
             {
-                throw new InvalidDataCustomException("No new artists in CSV file");
+                throw new InvalidDataCustomException("No artist data in CSV file");
             }
 
-            // Kiểm tra xem có audio features mới không
-            if (newAudioFeatures.Count == 0)
-            {
-                throw new InvalidDataCustomException("No new audio features in CSV file");
-            }
-
-            // Lưu danh sách Track, Artist và AudioFeatures vào MongoDB
-            await _unitOfWork.GetCollection<Track>().InsertManyAsync(tracks);
             await _unitOfWork.GetCollection<Artist>().InsertManyAsync(newArtists);
-            await _unitOfWork.GetCollection<AudioFeatures>().InsertManyAsync(newAudioFeatures);
+            await _unitOfWork.GetCollection<Track>().InsertManyAsync(tracks);
         }
+
 
         #region Chỉ dùng cho mục đích test và sửa lỗi artist null
         //public async Task<IEnumerable<TrackResponseModel>> GetTracksWithArtistIsNull()
@@ -258,7 +187,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         //            Name = track.Name,
         //            Description = track.Description,
         //            Lyrics = track.Lyrics,
-        //            PreviewURL = track.PreviewURL,
+        //            StreamingUrl = track.StreamingUrl,
         //            Duration = track.Duration,
         //            Images = track.Images.Select(image => new ImageResponseModel
         //            {
@@ -323,7 +252,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     Name = track.Name,
                     Description = track.Description,
                     Lyrics = track.Lyrics,
-                    PreviewURL = track.PreviewURL,
+                    PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
                     Images = track.Images.Select(image => new ImageResponseModel
                     {
@@ -375,7 +304,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     Name = track.Name,
                     Description = track.Description,
                     Lyrics = track.Lyrics,
-                    PreviewURL = track.PreviewURL,
+                    PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
                     // Lý do không dùng được vì Expression không hỗ trợ các hàm extension
                     // DurationFormated = Util.FormatTimeFromMilliseconds(track.Duration),
@@ -434,7 +363,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     Name = track.Name,
                     Description = track.Description,
                     Lyrics = track.Lyrics,
-                    PreviewURL = track.PreviewURL,
+                    PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
                     Images = track.Images.Select(image => new ImageResponseModel
                     {
@@ -495,7 +424,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             Track newTrack = _mapper.Map<Track>(request);
 
             //thêm các thông tin cần thiết cho Track
-            newTrack.IsExplicit = false;
             newTrack.ArtistIds = [artistId];
             newTrack.UploadBy = artistId ?? throw new ArgumentNullCustomException($"{artistId}");
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
@@ -532,10 +460,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                     // upload lên cloudinary
                     VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
-                    newTrack.PreviewURL = result.SecureUrl.AbsoluteUri;
+                    newTrack.StreamingUrl = result.SecureUrl.AbsoluteUri;
 
                     //chuyển file audio thành spectrogram và dự đoán audio features
-                    Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(newTrack.PreviewURL);
+                    Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(newTrack.StreamingUrl);
 
                     // Lưu bitmap vào MemoryStream thay vì ổ cứng
                     using MemoryStream memoryStream = new();
@@ -549,11 +477,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     // Đặt lại vị trí đầu stream để upload
                     memoryStream.Position = 0;
 
-                    // Khởi tạo audio features id
-                    string audioFeaturesId = ObjectId.GenerateNewId().ToString();
-
                     // Khởi tạo IFormFile từ MemoryStream
-                    IFormFile spectrogramFile = new FormFile(memoryStream, 0, memoryStream.Length, "spectrogram", $"{audioFeaturesId}.png")
+                    IFormFile spectrogramFile = new FormFile(memoryStream, 0, memoryStream.Length, "spectrogram", $"{newTrack.Id}.png")
                     {
                         Headers = new HeaderDictionary(),
                         ContentType = "image/png"
@@ -590,7 +515,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     // Tạo mới audio features từ spectroPredict
                     AudioFeatures audioFeature = new()
                     {
-                        Id = audioFeaturesId,
                         Acousticness = spectroPredict[0],
                         Danceability = spectroPredict[1],
                         Energy = spectroPredict[2],
@@ -606,9 +530,9 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     };
 
 
-                    await _unitOfWork.GetCollection<AudioFeatures>().InsertOneAsync(audioFeature);
+                    //await _unitOfWork.GetCollection<AudioFeatures>().InsertOneAsync(audioFeature);
 
-                    newTrack.AudioFeaturesId = audioFeature.Id;
+                    newTrack.AudioFeatures = audioFeature;
 
                     //lưu track và audio features vào database
                     await _unitOfWork.GetCollection<Track>().InsertOneAsync(newTrack);
@@ -631,49 +555,54 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<IEnumerable<TrackResponseModel>> GetTracksByMoodAsync(Mood mood)
         {
-            // Filter
-            FilterDefinition<AudioFeatures> audioFeaturesFilter;
-            audioFeaturesFilter = mood switch
+            // Filter trực tiếp trên Track.AudioFeatures
+            FilterDefinition<Track> trackFilter;
+            trackFilter = mood switch
             {
-                Mood.Sad => Builders<AudioFeatures>.Filter.And(
-                                      Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 0),
-                                      Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 100),
-                                      Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.4)),
-                Mood.Neutral => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 100) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 120),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.4) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.6)),
-                Mood.Happy => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 120) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 160),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.6) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 0.8)),
-                Mood.Blisfull => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Eq(af => af.Mode, 1),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Tempo, 140) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Tempo, 180),
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Valence, 0.8) &
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Valence, 1)),
-                Mood.Focus => Builders<AudioFeatures>.Filter.And(
-                                        Builders<AudioFeatures>.Filter.Gte(af => af.Instrumentalness, 0.7),
-                                        Builders<AudioFeatures>.Filter.Lte(af => af.Energy, 0.5)),
-                Mood.Random => Builders<AudioFeatures>.Filter.Empty,
+                Mood.Sad => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 0),
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 100),
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.4)),
+
+                Mood.Neutral => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 100) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 120),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.4) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.6)),
+
+                Mood.Happy => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 120) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 160),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.6) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.8)),
+
+                Mood.Blisfull => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 140) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 180),
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.8) &
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 1)),
+
+                Mood.Focus => Builders<Track>.Filter.And(
+                                Builders<Track>.Filter.Gte(t => t.AudioFeatures.Instrumentalness, 0.7),
+                                Builders<Track>.Filter.Lte(t => t.AudioFeatures.Energy, 0.5)),
+
+                Mood.Random => Builders<Track>.Filter.Empty,
                 _ => throw new InvalidDataCustomException("The mood is not supported"),
             };
 
-            // Mapping tracks to TrackResponseModel
+            // Projection
             ProjectionDefinition<ASTrack, TrackResponseModel> projectionDefinition = Builders<ASTrack>.Projection.Expression(track =>
                 new TrackResponseModel
                 {
                     Id = track.Id,
                     Name = track.Name,
                     Description = track.Description,
-                    PreviewURL = track.PreviewURL,
+                    PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
-                    Images = track.Images.Select(image => new ImageResponseModel()
+                    Images = track.Images.Select(image => new ImageResponseModel
                     {
                         URL = image.URL,
                         Height = image.Height,
@@ -694,18 +623,11 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     })
                 });
 
-            // Lấy AudioFeaturesId
-            IEnumerable<string> audioFeaturesIds = await _unitOfWork.GetCollection<AudioFeatures>()
-                .Find(audioFeaturesFilter)
-                .Project(af => af.Id)
-                .ToListAsync();
-
-            // Stage
+            // Thực hiện aggregate
             IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Lookup
             IEnumerable<TrackResponseModel> tracks = await aggregateFluent
-                .Match(track => audioFeaturesIds.Contains(track.AudioFeaturesId))
+                .Match(trackFilter) // Lọc trực tiếp trên Track
                 .Sample(7)
                 .Lookup<Track, Artist, ASTrack>
                 (
@@ -722,5 +644,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             return tracks;
         }
+
     }
 }

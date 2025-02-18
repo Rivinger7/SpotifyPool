@@ -12,7 +12,9 @@ namespace BusinessLogicLayer.Mapper.Mappers.Tracks
                 .ForMember(dest => dest.Restrictions, opt => opt.MapFrom(src => new Restrictions
                 {
                     IsPlayable = src.Restrictions.IsPlayable,
-                    Reason = src.Restrictions.Reason
+                    Reason = src.Restrictions.Reason,
+                    Description = src.Restrictions.Description,
+                    RestrictionDate = src.Restrictions.RestrictionDate
                 }))
                 .ReverseMap();
         }
