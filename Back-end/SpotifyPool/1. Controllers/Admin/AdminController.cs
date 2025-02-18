@@ -5,44 +5,37 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Services.User;
-using System.Security.Claims;
 
 namespace SpotifyPool._1._Controllers.Admin
 {
 	[Route("api/admin")]
 	[ApiController]
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] //"Bearer"
-	public class AdminController : ControllerBase
+	[Authorize(Roles = nameof(UserRole.Admin))]
+	public class AdminController(IAdmin adminBLL) : ControllerBase
 	{
-		private readonly IAdmin _adminBLL;
-
-		public AdminController(IAdmin adminBLL)
-		{
-			_adminBLL = adminBLL;
-		}
+		private readonly IAdmin _adminBLL = adminBLL;
 
 		/// <summary>
-		/// Hiển thị thông tin tất cả người dùng
+		/// Hiển thị danh sách tài khoản ngưởi dùng
 		/// </summary>
 		/// <param name="request">Trang thứ n và Kích cỡ trang</param>
-		/// <param name="model"></param>
+		/// <param name="model">Lọc</param>
 		/// <returns>
-		/// Admin chỉ thấy được Customer và Artist
-		/// Super Admin thì thấy toàn bộ role (Admin, Customer, Artist)
 		/// </returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet()]
+		[HttpGet()]
 		public async Task<IActionResult> GetAllAccount([FromQuery] PagingRequestModel request, [FromQuery] AdminFilter model)
 		{
-			var customer = await _adminBLL.GetAllAccountAsync(request, model);
+			var customer = await _adminBLL.GetPaggingAsync(request, model);
 			return Ok(customer);
 		}
 
 		/// <summary>
-		/// Hiển thị đẩy đủ thông tin người dùng
+		/// Chi tiết thông tin tài khoản 
 		/// </summary>
 		/// <param name="id">Id người dùng</param>
 		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("{id}")]
+		[HttpGet("{id}")]
 		public async Task<IActionResult> GetById(string id)
 		{
 			var customer = await _adminBLL.GetByIdAsync(id);
@@ -54,7 +47,7 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// </summary>
 		/// <param name="model">Thông tin người dùng cần tạo</param>
 		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpPost()]
+		[HttpPost()]
 		public async Task<IActionResult> Create([FromQuery] CreateRequestModel model)
 		{
 			await _adminBLL.CreateAsync(model);
@@ -67,8 +60,8 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// <param name="id">Id người dùng</param>
 		/// <param name="userRequest">Thông tin cần chỉnh sửa</param>
 		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpPut("{id}")]
-		public async Task<IActionResult> UpdateById(string id, [FromQuery] UpdateUserRequestModel userRequest)
+		[HttpPut("{id}")]
+		public async Task<IActionResult> UpdateById(string id, [FromQuery] UpdateRequestModel userRequest)
 		{
 			await _adminBLL.UpdateByIdAsync(id, userRequest);
 			return Ok(new { Message = "Update Account Successfully" });
@@ -79,7 +72,7 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// </summary>
 		/// <param name="id">Id người dùng</param>
 		/// <returns></returns>
-		[Authorize(Roles = nameof(UserRole.Admin)), HttpDelete("{id}")]
+		[HttpDelete("{id}")]
 		public async Task<IActionResult> Delete(string id)
 		{
 			await _adminBLL.DeleteByIdAsync(id);

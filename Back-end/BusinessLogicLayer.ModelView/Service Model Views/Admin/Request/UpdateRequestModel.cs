@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 {
-	public class UpdateUserRequestModel
+	public class UpdateRequestModel
 	{
 		[Required(ErrorMessage = "Display Name cannot be left blank")]
 		[StringLength(30, ErrorMessage = "Display name cannot exceed 30 characters")]

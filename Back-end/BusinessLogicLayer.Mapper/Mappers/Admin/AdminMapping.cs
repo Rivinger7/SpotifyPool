@@ -17,7 +17,7 @@ namespace BusinessLogicLayer.Mapper.Mappers.Admin
 				.ForMember(dest => dest.CreatedTime, opt => opt.MapFrom(src => src.CreatedTime.ToString("HH:mm:ss dd/MM/yyyy")))
 				.ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.HasValue
 					? src.LastLoginTime.Value.ToString("HH:mm:ss dd/MM/yyyy")
-					:null))
+					: null))
 				.ForMember(dest => dest.LastUpdatedTime, opt => opt.MapFrom(src => src.LastUpdatedTime.HasValue
 					? src.LastUpdatedTime.Value.ToString("HH:mm:ss dd/MM/yyyy")
 					: null))

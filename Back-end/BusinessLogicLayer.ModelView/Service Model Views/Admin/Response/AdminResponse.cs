@@ -1,4 +1,5 @@
 ﻿using DataAccessLayer.Repository.Entities;
+
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response
 {
 	public class AdminResponse

@@ -1,5 +1,4 @@
 ﻿using DataAccessLayer.Repository.Entities;
-using SetupLayer.Enum.Services.User;
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response
 {
@@ -11,11 +10,15 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response
 
 		public string DisplayName { get; set; } = null!;
 
-		public UserGender Gender { get; set; }
+		public string Gender { get; set; } = null!;
 
 		public string? Birthdate { get; set; }
 
 		public string? PhoneNumber { get; set; }
+
+		public string CountryId { get; set; } = null!;
+
+		public int Followers { get; set; }
 
 		public string Email { get; set; } = null!;
 

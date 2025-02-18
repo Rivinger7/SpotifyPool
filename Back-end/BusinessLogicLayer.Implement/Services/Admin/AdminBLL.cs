@@ -12,19 +12,13 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Admin
 {
-	public class AdminBLL : IAdmin
+	public class AdminBLL(IUnitOfWork unitOfWork, IMapper mapper) : IAdmin
 	{
-		private readonly IUnitOfWork _unitOfWork;
-		private readonly IMapper _mapper;
-
-		public AdminBLL(IUnitOfWork unitOfWork, IMapper mapper)
-		{
-			_unitOfWork = unitOfWork;
-			_mapper = mapper;
-		}
+		private readonly IUnitOfWork _unitOfWork = unitOfWork;
+		private readonly IMapper _mapper = mapper;
 
 		#region Hiển thị thông tin tất cả người dùng (GetPaging)
-		public async Task<IEnumerable<AdminResponse>> GetAllAccountAsync(PagingRequestModel request, AdminFilter model)
+		public async Task<IEnumerable<AdminResponse>> GetPaggingAsync(PagingRequestModel request, AdminFilter model)
 		{
 			//Tạo danh sách các đk lọc
 			List<FilterDefinition<User>> filters = new List<FilterDefinition<User>>();
@@ -100,7 +94,8 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				Email = userRequest.Email,
 				PhoneNumber = userRequest.PhoneNumber,
 				Roles = userRequest.Roles,
-				Status = UserStatus.Active
+				Status = UserStatus.Active,
+				CreatedTime = Util.GetUtcPlus7Time()
 			};
 
 			//Lưu vào MongoDB
@@ -109,7 +104,7 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 		#endregion
 
 		#region Chỉnh sửa thông tin người dùng (Update)
-		public async Task UpdateByIdAsync(string id, UpdateUserRequestModel userRequest)
+		public async Task UpdateByIdAsync(string id, UpdateRequestModel userRequest)
 		{
 			FilterDefinition<User> filter = Builders<User>.Filter.Eq(u => u.Id, id);
 
