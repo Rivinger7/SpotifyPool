@@ -208,7 +208,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                         Id = artist.Id,
                         Name = artist.Name,
                         Followers = artist.Followers,
-                        GenreIds = artist.GenreIds,
                         Images = artist.Images.Select(image => new ImageResponseModel
                         {
                             URL = image.URL,
@@ -330,7 +329,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                         Id = artist.Id,
                         Name = artist.Name,
                         Followers = artist.Followers,
-                        GenreIds = artist.GenreIds,
                         Images = artist.Images.Select(image => new ImageResponseModel
                         {
                             URL = image.URL,
@@ -463,7 +461,6 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                         Id = artist.Id,
                         Name = artist.Name,
                         Followers = artist.Followers,
-                        GenreIds = artist.GenreIds,
                         Images = artist.Images.Select(image => new ImageResponseModel
                         {
                             URL = image.URL,

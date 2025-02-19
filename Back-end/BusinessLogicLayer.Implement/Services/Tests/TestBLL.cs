@@ -9,6 +9,7 @@ using Org.BouncyCastle.Crypto;
 using System.Drawing;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tests
 {
@@ -250,6 +251,7 @@ namespace BusinessLogicLayer.Implement.Services.Tests
                             StreamCount = 1
                         }
                     ],
+                    CreatedTime = Util.GetUtcPlus7Time()
                 };
                 await _unitOfWork.GetCollection<TopTrack>().InsertOneAsync(newTopItem);
                 return;

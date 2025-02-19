@@ -16,7 +16,9 @@ namespace DataAccessLayer.Repository.Entities
         public string Name { get; set; } = null!;
         public int Followers { get; set; }
         public int Popularity { get; set; }
-        public List<string> GenreIds { get; set; } = [];
         public List<Image> Images { get; set; } = [];
+        public required DateTime CreatedTime { get; set; }
+        public DateTime? LastUpdatedTime { get; set; }
+        public DateTime? DeletedTime { get; set; }
     }
 }
