@@ -63,10 +63,12 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SetupLayer.Enum.EnumMember;
 using SetupLayer.Enum.Microservices.Cloudinary;
+using SetupLayer.Enum.Services.Album;
 using SetupLayer.Enum.Services.Playlist;
 using SetupLayer.Enum.Services.Track;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Setting.Database;
+using SetupLayer.Setting.Microservices.AWS;
 using SetupLayer.Setting.Microservices.EmailSender;
 using SetupLayer.Setting.Microservices.Genius;
 using SetupLayer.Setting.Microservices.Geolocation;
@@ -519,9 +521,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Files
             services.AddScoped<IFiles, FilesBLL>();
-
-            // AWS
-            services.AddScoped<IAmazonWebService, AmazonWebService>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
@@ -829,14 +828,30 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             string secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") ?? throw new Exception("AWS_SECRET_ACCESS_KEY not set");
             string region = Environment.GetEnvironmentVariable("AWS_REGION") ?? throw new Exception("AWS_REGION not set");
 
-            var awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
-            var awsRegion = RegionEndpoint.GetBySystemName(region);
+            BasicAWSCredentials awsCredentials = new(accessKey, secretKey);
+            RegionEndpoint awsRegion = RegionEndpoint.GetBySystemName(region);
 
             // Thêm S3 Client
             services.AddSingleton<IAmazonS3>(new AmazonS3Client(awsCredentials, awsRegion));
 
-            // 🔹 Thêm MediaConvert Client (đây là phần bạn đang bị lỗi)
+            // Thêm MediaConvert Client
             services.AddSingleton<IAmazonMediaConvert>(new AmazonMediaConvertClient(awsCredentials, awsRegion));
+
+            // Config the AWS Client
+            AWSSettings awsSetting = new()
+            {
+                BucketName = Environment.GetEnvironmentVariable("AWS_S3_BUCKET_NAME") ?? throw new DataNotFoundCustomException("BucketName is not set in environment"),
+                Region = Environment.GetEnvironmentVariable("AWS_REGION") ?? throw new DataNotFoundCustomException("Region is not set in environment"),
+                MediaConvertRole = Environment.GetEnvironmentVariable("AWS_MediaConvertRole") ?? throw new DataNotFoundCustomException("MediaConvertRole is not set in environment"),
+                MediaConvertEndpoint = Environment.GetEnvironmentVariable("AWS_MediaConvertEndpoint") ?? throw new DataNotFoundCustomException("MediaConvertEndpoint is not set in environment"),
+                MediaConvertQueue = Environment.GetEnvironmentVariable("AWS_MediaConvertQueue") ?? throw new DataNotFoundCustomException("MediaConvertQueue is not set in environment")
+            };
+
+            // Register the AWSSetting with DI
+            services.AddSingleton(awsSetting);
+
+            // AWS
+            services.AddScoped<IAmazonWebService, AmazonWebService>();
         }
         public static void AddGeolocation(this IServiceCollection services)
         {
@@ -973,6 +988,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(AudioTagChild), new EnumMemberSerializer<AudioTagChild>());
             BsonSerializer.RegisterSerializer(typeof(AudioTagParent), new EnumMemberSerializer<AudioTagParent>());
             BsonSerializer.RegisterSerializer(typeof(ImageTag), new EnumMemberSerializer<ImageTag>());
+
+            // Album
+            BsonSerializer.RegisterSerializer(typeof(ReleaseStatus), new EnumMemberSerializer<ReleaseStatus>());
         }
     }
 }

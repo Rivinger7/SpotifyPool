@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System.Security.Claims;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.TopTracks
 {
@@ -46,7 +47,8 @@ namespace BusinessLogicLayer.Implement.Services.TopTracks
                             TrackId = topTrackRequestModel.TrackId,
                             StreamCount = 1
                         }
-                    ]
+                    ],
+                    CreatedTime = Util.GetUtcPlus7Time()
                 };
 
                 // Lưu thông tin topTrack mới
@@ -133,7 +135,6 @@ namespace BusinessLogicLayer.Implement.Services.TopTracks
                     Id = artist.Id,
                     Name = artist.Name,
                     Followers = artist.Followers,
-                    GenreIds = artist.GenreIds,
                     Images = artist.Images.Select(image => new ImageResponseModel
                     {
                         URL = image.URL,

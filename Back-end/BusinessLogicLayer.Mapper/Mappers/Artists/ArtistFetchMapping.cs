@@ -9,7 +9,6 @@ namespace BusinessLogicLayer.Mapper.Mappers.Artists
         public ArtistFetchMapping()
         {
             CreateMap<SpotifyArtistResponseModel, Artist>()
-                .ForMember(dest => dest.GenreIds, opt => opt.MapFrom(src => src.Genres))
                 .ReverseMap();
         }
     }

@@ -450,6 +450,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     artist => artist.UserId,
                     result => result.Artist
                 )
+                .Unwind(x => x.Artist, new AggregateUnwindOptions<ASUser> { PreserveNullAndEmptyArrays = true })
                 .Project(Builders<ASUser>.Projection
                 .Include(user => user.Id)
                 .Include(user => user.DisplayName)
