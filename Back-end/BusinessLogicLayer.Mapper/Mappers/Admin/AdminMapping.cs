@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response;
 using DataAccessLayer.Repository.Entities;
 
@@ -23,6 +24,10 @@ namespace BusinessLogicLayer.Mapper.Mappers.Admin
 					: null))
 				.ReverseMap();
 
+			CreateMap<UpdateRequestModel, User>()
+				.ForMember(dest => dest.Id, opt => opt.Ignore())
+				.ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+				.ReverseMap();
 		}
 	}
 }

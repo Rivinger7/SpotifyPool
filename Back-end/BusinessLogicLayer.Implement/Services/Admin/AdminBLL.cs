@@ -49,8 +49,7 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				? Builders<User>.Filter.And(filters)
 				: Builders<User>.Filter.Empty;
 
-			IEnumerable<User> result = await _unitOfWork.GetRepository<User>()
-				.Collection
+			IEnumerable<User> result = await _unitOfWork.GetCollection<User>()
 				.Find(combinedFilter)
 				.SortByDescending(i => i.CreatedTime)  //Sắp xếp theo CreatedTime giảm dần
 				.Skip((request.PageNumber - 1) * request.PageSize) //Phân trang
@@ -85,6 +84,21 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				throw new ArgumentException("Confirmation password does not match.");
 			}
 
+			//Danh sách ảnh mặc định
+			var defaultImageUrls = new (string Url, int Height, int Width)[]
+			{
+				("https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg", 640, 640),
+				("https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png", 300, 300),
+				("https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png", 64, 64)
+			};
+
+			List<Image> images = defaultImageUrls.Select(img => new Image
+			{
+				URL = img.Url,
+				Height = img.Height,
+				Width = img.Width
+			}).ToList();
+
 			//Map từ CreateRequestModel sang User
 			User user = new User
 			{
@@ -95,6 +109,7 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				PhoneNumber = userRequest.PhoneNumber,
 				Roles = userRequest.Roles,
 				Status = UserStatus.Active,
+				Images = images,
 				CreatedTime = Util.GetUtcPlus7Time()
 			};
 
@@ -108,26 +123,26 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 		{
 			FilterDefinition<User> filter = Builders<User>.Filter.Eq(u => u.Id, id);
 
-			UpdateDefinition<User> update = Builders<User>.Update
-				.Set(u => u.DisplayName, userRequest.DisplayName)
-				.Set(u => u.Gender, userRequest.Gender)
-				.Set(u => u.PhoneNumber, userRequest.PhoneNumber)
-				.Set(u => u.Birthdate, userRequest.Birthdate)
-				.Set(u => u.Email, userRequest.Email)
-				.Set(u => u.Followers, userRequest.Followers)
-				.Set(u => u.Product, userRequest.Product)
-				.Set(u => u.Roles, userRequest.Roles)
-				.Set(u => u.Images, userRequest.Images)
-				.Set(u => u.LastUpdatedTime, Util.GetUtcPlus7Time());
+			//Lấy User hiện tại
+			User existingUser = await _unitOfWork.GetCollection<User>()
+				.Find(u => u.Id == id)
+				.FirstOrDefaultAsync()
+				?? throw new KeyNotFoundException($"User with ID {id} does not exist");
 
-			//Kiểm tra Status
-			//if (!string.IsNullOrWhiteSpace(userRequest.Status) && Enum.TryParse(typeof(UserStatus), userRequest.Status, out var status))
-			//{
-			//	update = update.Set(u => u.Status, (UserStatus)status);
-			//}
+			//Ánh xạ UpdateRequestModel -> existingUser
+			_mapper.Map(userRequest, existingUser);
 
-			UpdateResult result = await _unitOfWork.GetRepository<User>()
-				.Collection
+			//Cập nhật
+			existingUser.LastUpdatedTime = Util.GetUtcPlus7Time();
+
+			//Chuyển thành BsonDocument để cập nhật, loại bỏ _id
+			BsonDocument bsonDoc = existingUser.ToBsonDocument();
+			bsonDoc.Remove("_id");
+
+			//Tạo UpdateDefinition từ BsonDocument
+			BsonDocument update = new BsonDocument("$set", bsonDoc);
+
+			UpdateResult result = await _unitOfWork.GetCollection<User>()
 				.UpdateOneAsync(filter, update);
 
 			if (result.MatchedCount == 0)

@@ -29,7 +29,7 @@ namespace SpotifyPool._1._Controllers.Genius
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.SuperAdmin)), HttpGet("callback")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("callback")]
         public async Task<IActionResult> Callback([FromQuery] string code)
         {
             if (string.IsNullOrEmpty(code))
