@@ -9,14 +9,16 @@ using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using StackExchange.Redis;
 using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Services.TopTracks
 {
-    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork) : ITopTrack
+    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, IConnectionMultiplexer redis) : ITopTrack
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IDatabase _redis = redis.GetDatabase();
 
         public async Task UpsertTopTrackAsync(TopTrackRequestModel topTrackRequestModel)
         {
@@ -164,6 +166,19 @@ namespace BusinessLogicLayer.Implement.Services.TopTracks
                 .ToList();
 
             return tracksResponseModel;
+        }
+
+        public async Task UpdateStreamCountAsync(string trackId)
+        {
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");      
+            }
+
+            string key = $"stream_count:{userID}";
+            await _redis.HashIncrementAsync(key, trackId, 1);
+            return;
         }
     }
 }

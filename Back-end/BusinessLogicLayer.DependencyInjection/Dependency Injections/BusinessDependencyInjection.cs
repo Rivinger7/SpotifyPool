@@ -18,6 +18,7 @@ using BusinessLogicLayer.Implement.Services.Admin;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
 using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.InMemoryCache;
 using BusinessLogicLayer.Implement.Services.JWTs;
@@ -72,6 +73,7 @@ using SetupLayer.Setting.Microservices.Genius;
 using SetupLayer.Setting.Microservices.Geolocation;
 using SetupLayer.Setting.Microservices.Jira;
 using SetupLayer.Setting.Microservices.Spotify;
+using StackExchange.Redis;
 using System.Diagnostics;
 using System.Reflection;
 using System.Security.Claims;
@@ -208,6 +210,13 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddDistributedMemoryCache();
             stopwatch.Stop();
             Console.WriteLine($"AddDistributedMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+
+	    // Redis Register
+            stopwatch.Restart();
+            services.AddRedis();
+            stopwatch.Stop();
+            Console.WriteLine($"AddRedis took {stopwatch.ElapsedMilliseconds} ms");
+
 
             stopwatch.Restart();
             services.AddSession(options =>
@@ -566,6 +575,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Register the BackgroundEmailSender as a hosted service
             services.AddHostedService<BackgroundEmailSender>();
+
+            // Register the StreamCountBackgroundService as a hosted service
+            services.AddHostedService<StreamCountBackgroundService>();
         }
 
         public static void AddJWT(this IServiceCollection services)
@@ -974,5 +986,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(AudioTagParent), new EnumMemberSerializer<AudioTagParent>());
             BsonSerializer.RegisterSerializer(typeof(ImageTag), new EnumMemberSerializer<ImageTag>());
         }
+
+	private static void AddRedis(this IServiceCollection services)
+        {
+            var option = new ConfigurationOptions
+            {
+                EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
+                Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
+            };
+            services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
+        }
+
     }
 }
