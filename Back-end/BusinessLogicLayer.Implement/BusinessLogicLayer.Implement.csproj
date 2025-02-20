@@ -13,8 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.MediaConvert" Version="3.7.408.2" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.414.3" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="CloudinaryDotNet" Version="1.27.1" />
+    <PackageReference Include="Flurl.Http" Version="4.0.2" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />

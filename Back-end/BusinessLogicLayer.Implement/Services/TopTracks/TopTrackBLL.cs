@@ -120,7 +120,7 @@ namespace BusinessLogicLayer.Implement.Services.TopTracks
                 Name = track.Name,
                 Description = track.Description,
                 Lyrics = track.Lyrics,
-                PreviewURL = track.PreviewURL,
+                PreviewURL = track.StreamingUrl,
                 Duration = track.Duration,
                 Images = track.Images.Select(image => new ImageResponseModel
                 {
