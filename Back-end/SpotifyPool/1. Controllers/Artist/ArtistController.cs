@@ -7,10 +7,10 @@ using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Artist
 {
-    [Route("api/artists")]
+    [Route("api/v1/artists")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class AritstController(IArtist artistService) : ControllerBase
+    public class ArtistController(IArtist artistService) : ControllerBase
     {
         private readonly IArtist _artistService = artistService;
 
@@ -21,7 +21,7 @@ namespace SpotifyPool._1._Controllers.Artist
             return Ok(new { Message = "Create Artist Successfully" });
         }
 
-        [Authorize(Roles = nameof(UserRole.Artist)), HttpPost("switch-profile")]
+        [Authorize(Roles = nameof(UserRole.Artist)), HttpPost("me/profile-switch")]
         public async Task<IActionResult> SwitchToUserProfile()
         {
             var authenticatedResponseModel = await _artistService.SwitchToUserProfile();

@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Services.User;
 
-namespace SpotifyPool._1._Controllers.Admin
+namespace SpotifyPool._1._Controllers.Account
 {
-	[Route("api/admin/accounts")]
+	[Route("api/v1/accounts")]
 	[ApiController]
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] //"Bearer"
 	[Authorize(Roles = nameof(UserRole.Admin))]
-	public class AdminController(IAdmin adminBLL) : ControllerBase
+	public class AccountController(IAdmin adminBLL) : ControllerBase
 	{
 		private readonly IAdmin _adminBLL = adminBLL;
 

@@ -28,7 +28,7 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
         private readonly IMapper _mapper = mapper;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
-        public async Task<IEnumerable<PlaylistsResponseModel>> GetAllPlaylistsAsync()
+        public async Task<IEnumerable<PlaylistsResponseModel>> GetPlaylistsAsync()
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

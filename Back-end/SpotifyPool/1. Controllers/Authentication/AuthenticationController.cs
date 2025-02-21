@@ -23,7 +23,7 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { message = "Account created successfully" });
         }
 
-        [AllowAnonymous, HttpPost("confirm-email")]
+        [AllowAnonymous, HttpPost("email-confirmation")]
         public async Task<IActionResult> ConfirmEmail([FromBody] string token)
         {
             await authenticationBLL.ActivateAccountByToken(token);
@@ -37,14 +37,14 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { message = "Login Successfully", authenticatedResponseModel });
         }
 
-        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}"), HttpPost("switch-profile")]
-        public async Task<IActionResult> SwitchProfile()
-        {
-            var authenticatedResponseModel = await authenticationBLL.SwitchProfile();
-            return Ok(new { message = "Switch Profile Successfully", authenticatedResponseModel });
-        }
+        //[Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}"), HttpPost("switch-profile")]
+        //public async Task<IActionResult> SwitchProfile()
+        //{
+        //    var authenticatedResponseModel = await authenticationBLL.SwitchProfile();
+        //    return Ok(new { message = "Switch Profile Successfully", authenticatedResponseModel });
+        //}
 
-        [AllowAnonymous, HttpPost("resend-email-comfirm")]
+        [AllowAnonymous, HttpPost("email-verification-resend")]
         public async Task<IActionResult> ResendEmailConfirm()
         {
             await authenticationBLL.ReActiveAccountByToken();
@@ -52,14 +52,14 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { message = "Email has sent to user's mail" });
         }
 
-        [AllowAnonymous, HttpPost("login-by-google")]
+        [AllowAnonymous, HttpPost("google-login")]
         public async Task<IActionResult> LoginByGoogle([FromBody] GoogleLoginRequestModel googleToken)
         {
             var token = await authenticationBLL.LoginByGoogle(googleToken.GoogleToken);
             return Ok(new { token });
         }
 
-        [AllowAnonymous, HttpPost("confirm-link-with-google-account")]
+        [AllowAnonymous, HttpPost("google-account-confirmation")]
         public async Task<IActionResult> ConfirmLinkWithGoogleAccount([FromBody] string email)
         {
             var authenticatedResponseModel = await authenticationBLL.ConfirmLinkWithGoogleAccount(email);
@@ -80,7 +80,7 @@ namespace SpotifyPool.Controllers.Authentication
         /// <param name="email"></param>
         /// <param name="otpCode"></param>
         /// <returns></returns>
-        [AllowAnonymous, HttpPost("confirm-otp")]
+        [AllowAnonymous, HttpPost("otp-confirmation")]
         public async Task<IActionResult> ValidateOTP([FromBody] string otpCode, string email) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
         {
             await authenticationBLL.ConfirmOTP(email, otpCode);

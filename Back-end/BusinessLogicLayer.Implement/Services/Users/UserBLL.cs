@@ -105,8 +105,17 @@ namespace BusinessLogicLayer.Implement.Services.Users
             return users;
         }
 
-        public async Task<UserProfileResponseModel> GetUserByIDAsync(string id)
+        public async Task<UserProfileResponseModel> GetProfileAsync()
         {
+            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Kiểm tra UserId
+            if (string.IsNullOrEmpty(userID))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
             // Projection
             ProjectionDefinition<User> userProjection = Builders<User>.Projection
                 .Include(user => user.Id)
@@ -114,7 +123,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 .Include(user => user.Images);
 
             // Lấy thông tin người dùng theo ID
-            User user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == id)
+            User user = await _unitOfWork.GetCollection<User>().Find(user => user.Id == userID)
                 .Project<User>(userProjection)
                 .FirstOrDefaultAsync();
 
