@@ -5,14 +5,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace SpotifyPool._1._Controllers.AWS
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/aws")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class AWSController(IAmazonWebService amazonWebService) : ControllerBase
     {
         private readonly IAmazonWebService _amazonWebService = amazonWebService;
 
-        [AllowAnonymous, HttpPost("upload-audio-file")]
+        [AllowAnonymous, HttpPost("media-jobs")]
         public async Task<IActionResult> UploadAudioFileAsync(IFormFile audioFile, string fileName)
         {
             if (audioFile == null)

@@ -32,12 +32,12 @@ namespace SpotifyPool._1._Controllers.Track
         /// <summary>
         /// Lấy track theo ID
         /// </summary>
-        /// <param name="trackId"></param>
+        /// <param name="id"></param>
         /// <returns></returns>
-        [AllowAnonymous, HttpGet("{trackId}")]
-        public async Task<IActionResult> GetTrackByIdAsync([FromRoute] string trackId)
+        [AllowAnonymous, HttpGet("{id}")]
+        public async Task<IActionResult> GetTrackByIdAsync([FromRoute] string id)
         {
-            var result = await _trackService.GetTrackAsync(trackId);
+            var result = await _trackService.GetTrackAsync(id);
             return Ok(result);
         }
 
@@ -64,12 +64,12 @@ namespace SpotifyPool._1._Controllers.Track
             return Ok(result);
         }
 
-        [AllowAnonymous, HttpGet("filter")]
-        public async Task<IActionResult> GetTracksByMoodAsync([FromQuery] Mood mood)
-        {
-            var result = await _trackService.GetTracksByMoodAsync(mood);
-            return Ok(result);
-        }
+        //[AllowAnonymous, HttpGet("filter")]
+        //public async Task<IActionResult> GetTracksByMoodAsync([FromQuery] Mood mood)
+        //{
+        //    var result = await _trackService.GetTracksByMoodAsync(mood);
+        //    return Ok(result);
+        //}
 
         [Authorize(Roles = $"{nameof(UserRole.Artist)}"), HttpPost("upload")]
         public async Task<IActionResult> UploadTrackAsync([FromForm] UploadTrackRequestModel request)

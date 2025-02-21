@@ -6,7 +6,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom
 {
     public interface IPlaylist
     {
-        Task<IEnumerable<PlaylistsResponseModel>> GetAllPlaylistsAsync();
+        Task<IEnumerable<PlaylistsResponseModel>> GetPlaylistsAsync();
         Task CreatePlaylistAsync(PlaylistRequestModel playlistRequestModel);
         Task AddToPlaylistAsync(string trackId, string playlistId);
         Task RemoveFromPlaylistAsync(string trackId, string playlistId);
