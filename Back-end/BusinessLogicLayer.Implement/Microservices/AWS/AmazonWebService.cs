@@ -14,23 +14,159 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
         private readonly IAmazonS3 _s3Client = s3Client;
         private readonly AWSSettings _aWSSettings = aWSSettings;
 
+        #region Tiêu tiền cao cấp
+        //public async Task<(string, string)> UploadAndConvertToStreamingFile(IFormFile audioFile, string trackIdName)
+        //{
+        //    if (audioFile == null || audioFile.Length == 0)
+        //    {
+        //        throw new BadRequestCustomException("File is empty");
+        //    }
+
+        //    // Lấy thông tin từ settings
+        //    string bucketName = _aWSSettings.BucketName;
+        //    string region = _aWSSettings.Region;
+        //    string mediaConvertRole = _aWSSettings.MediaConvertRole;
+        //    string endpoint = _aWSSettings.MediaConvertEndpoint;
+        //    string queueArn = _aWSSettings.MediaConvertQueue; // Thêm Queue ARN
+
+        //    // Kiểm tra biến môi trường có null không
+        //    if (string.IsNullOrEmpty(bucketName) || string.IsNullOrEmpty(mediaConvertRole) || string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(queueArn))
+        //        throw new Exception("Missing AWS Configuration in Environment Variables");
+
+        //    // Chuẩn bị thông tin file
+        //    string outputFolder = "streaming-audio/";
+        //    string fileName = trackIdName + Path.GetExtension(audioFile.FileName);
+        //    string s3Key = outputFolder + fileName;
+        //    string s3Url = $"s3://{bucketName}/{s3Key}";
+
+        //    // Upload file lên S3
+        //    using (var stream = audioFile.OpenReadStream())
+        //    {
+        //        TransferUtilityUploadRequest uploadRequest = new()
+        //        {
+        //            InputStream = stream,
+        //            BucketName = bucketName,
+        //            Key = s3Key,
+        //            ContentType = "audio/mpeg"
+        //        };
+        //        TransferUtility fileTransferUtility = new(_s3Client);
+        //        await fileTransferUtility.UploadAsync(uploadRequest);
+        //    }
+
+        //    // Tạo URL đúng chuẩn AWS S3 Public
+        //    string s3UrlPublic = $"https://{bucketName}.s3.{region}.amazonaws.com/{s3Key}";
+
+        //    // Khởi tạo MediaConvert Client với endpoint
+        //    AmazonMediaConvertClient mediaConvertClient = new(new AmazonMediaConvertConfig
+        //    {
+        //        ServiceURL = endpoint
+        //    });
+
+        //    // Gửi Job MediaConvert
+        //    CreateJobRequest createJobRequest = new()
+        //    {
+        //        Role = mediaConvertRole,
+        //        Queue = queueArn, // Thêm Queue để AWS xử lý job nhanh hơn
+        //        Settings = new JobSettings
+        //        {
+        //            Inputs =
+        //            [
+        //                new Input
+        //                {
+        //                    FileInput = s3Url,
+        //                    AudioSelectors = new Dictionary<string, AudioSelector>
+        //                    {
+        //                        { "Audio Selector 1", new AudioSelector { DefaultSelection = AudioDefaultSelection.DEFAULT } }
+        //                    }
+        //                }
+        //            ],
+        //            OutputGroups =
+        //            [
+        //                new OutputGroup
+        //                {
+        //                    Name = "HLS",
+        //                    OutputGroupSettings = new OutputGroupSettings
+        //                    {
+        //                        Type = OutputGroupType.HLS_GROUP_SETTINGS,
+        //                        HlsGroupSettings = new HlsGroupSettings
+        //                        {
+        //                            Destination = $"s3://{bucketName}/{outputFolder}{Path.GetFileNameWithoutExtension(fileName)}_hls/",
+        //                            MinSegmentLength = 0,
+        //                            SegmentLength = 10 // Độ dài mỗi segment HLS
+        //                        }
+        //                    },
+        //                    Outputs =
+        //                    [
+        //                        new Output
+        //                        {
+        //                            NameModifier = "_hls",
+        //                            ContainerSettings = new ContainerSettings
+        //                            {
+        //                                Container = ContainerType.M3U8
+        //                            },
+        //                            AudioDescriptions =
+        //                            [
+        //                                new AudioDescription
+        //                                {
+        //                                    AudioSourceName = "Audio Selector 1", // Tham chiếu đến Audio Selector
+        //                                    CodecSettings = new AudioCodecSettings
+        //                                    {
+        //                                        Codec = AudioCodec.AAC,
+        //                                        AacSettings = new AacSettings
+        //                                        {
+        //                                            CodingMode = AacCodingMode.CODING_MODE_2_0,
+        //                                            Bitrate = 128000,
+        //                                            SampleRate = 48000
+        //                                        }
+        //                                    }
+        //                                }
+        //                            ],
+        //                            OutputSettings = new OutputSettings
+        //                            {
+        //                                HlsSettings = new HlsSettings
+        //                                {
+        //                                    SegmentModifier = "_hls"
+        //                                }
+        //                            }
+        //                        }
+        //                    ]
+        //                }
+        //            ]
+        //        }
+        //    };
+
+        //    // Tạo Job
+        //    CreateJobResponse jobResponse = await mediaConvertClient.CreateJobAsync(createJobRequest);
+
+        //    //Console.WriteLine(jobResponse.ToJson());
+
+        //    // Trả về link file .m3u8
+        //    string m3u8Url = $"https://{bucketName}.s3.{region}.amazonaws.com/{outputFolder}{Path.GetFileNameWithoutExtension(fileName)}_hls/{Path.GetFileNameWithoutExtension(fileName)}_hls.m3u8";
+
+        //    return (s3UrlPublic, m3u8Url);
+        //}
+        #endregion
+
+        #region Tối ưu tiền
         public async Task<(string, string)> UploadAndConvertToStreamingFile(IFormFile audioFile, string trackIdName)
         {
             if (audioFile == null || audioFile.Length == 0)
             {
                 throw new BadRequestCustomException("File is empty");
             }
-                
+
             // Lấy thông tin từ settings
             string bucketName = _aWSSettings.BucketName;
             string region = _aWSSettings.Region;
             string mediaConvertRole = _aWSSettings.MediaConvertRole;
             string endpoint = _aWSSettings.MediaConvertEndpoint;
-            string queueArn = _aWSSettings.MediaConvertQueue; // Thêm Queue ARN
+            string queueArn = _aWSSettings.MediaConvertQueue;
 
-            // Kiểm tra biến môi trường có null không
-            if (string.IsNullOrEmpty(bucketName) || string.IsNullOrEmpty(mediaConvertRole) || string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(queueArn))
+            if (string.IsNullOrEmpty(bucketName) || string.IsNullOrEmpty(mediaConvertRole) ||
+                string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(queueArn))
+            {
                 throw new Exception("Missing AWS Configuration in Environment Variables");
+            }
 
             // Chuẩn bị thông tin file
             string outputFolder = "streaming-audio/";
@@ -38,9 +174,16 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
             string s3Key = outputFolder + fileName;
             string s3Url = $"s3://{bucketName}/{s3Key}";
 
-            // Upload file lên S3
-            using (var stream = audioFile.OpenReadStream())
+            // Kiểm tra xem file đã tồn tại trên S3 chưa (Tránh upload lại)
+            try
             {
+                await _s3Client.GetObjectMetadataAsync(bucketName, s3Key);
+                Console.WriteLine($"File {s3Key} đã tồn tại trên S3, không cần upload lại.");
+            }
+            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // File chưa tồn tại → Thực hiện upload
+                using var stream = audioFile.OpenReadStream();
                 TransferUtilityUploadRequest uploadRequest = new()
                 {
                     InputStream = stream,
@@ -52,20 +195,35 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
                 await fileTransferUtility.UploadAsync(uploadRequest);
             }
 
-            // Tạo URL đúng chuẩn AWS S3 Public
+            // URL public cho file gốc
             string s3UrlPublic = $"https://{bucketName}.s3.{region}.amazonaws.com/{s3Key}";
 
-            // Khởi tạo MediaConvert Client với endpoint
-            AmazonMediaConvertClient mediaConvertClient = new(new AmazonMediaConvertConfig
+            // Kiểm tra xem job MediaConvert đã chạy cho file này chưa (Tránh chạy lại)
+            AmazonMediaConvertClient mediaConvertClient = new(new AmazonMediaConvertConfig { ServiceURL = endpoint });
+            ListJobsRequest jobCheckRequest = new()
             {
-                ServiceURL = endpoint
-            });
+                MaxResults = 10,
+                Order = Order.DESCENDING,
+                Queue = queueArn,
+                Status = JobStatus.SUBMITTED
+            };
 
-            // Gửi Job MediaConvert
+            var jobCheckResponse = await mediaConvertClient.ListJobsAsync(jobCheckRequest);
+            if (jobCheckResponse.Jobs.Any(j => j.Settings.Inputs.Any(i => i.FileInput == s3Url)))
+            {
+                Console.WriteLine($"MediaConvert job đã tồn tại cho file {fileName}, không cần tạo lại.");
+                return (s3UrlPublic, ""); // Không tạo job mới nếu job đã chạy
+            }
+
+            // Tạo MediaConvert Job (Tối ưu để chỉ tạo 1 bitrate)
             CreateJobRequest createJobRequest = new()
             {
                 Role = mediaConvertRole,
-                Queue = queueArn, // Thêm Queue để AWS xử lý job nhanh hơn
+                Queue = queueArn,
+                AccelerationSettings = new AccelerationSettings
+                {
+                    Mode = AccelerationMode.DISABLED // Chắc chắn không sử dụng Professional Tier
+                },
                 Settings = new JobSettings
                 {
                     Inputs =
@@ -91,7 +249,12 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
                                 {
                                     Destination = $"s3://{bucketName}/{outputFolder}{Path.GetFileNameWithoutExtension(fileName)}_hls/",
                                     MinSegmentLength = 0,
-                                    SegmentLength = 10 // Độ dài mỗi segment HLS
+                                    SegmentLength = 10,
+                                    SegmentControl = HlsSegmentControl.SINGLE_FILE, // Gộp nhiều segment thành 1 file .ts
+                                    ManifestCompression = HlsManifestCompression.NONE, // Không nén manifest
+                                    ManifestDurationFormat = HlsManifestDurationFormat.FLOATING_POINT, // Giữ thời gian chuẩn
+                                    OutputSelection = HlsOutputSelection.SEGMENTS_ONLY, // Chỉ tạo file .ts, không tạo playlist dư thừa
+                                    ProgramDateTime = HlsProgramDateTime.INCLUDE, // (Tùy chọn) giúp debug thời gian chuẩn
                                 }
                             },
                             Outputs =
@@ -101,32 +264,31 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
                                     NameModifier = "_hls",
                                     ContainerSettings = new ContainerSettings
                                     {
-                                        Container = ContainerType.M3U8
+                                        Container = ContainerType.M3U8,
+                                        M3u8Settings = new M3u8Settings
+                                        {
+                                            AudioFramesPerPes = 4, // Gộp nhiều frame vào .ts để giảm file nhỏ lẻ
+                                            PcrControl = M3u8PcrControl.PCR_EVERY_PES_PACKET // Đảm bảo thời gian chính xác trong .ts
+                                        }
                                     },
                                     AudioDescriptions =
                                     [
                                         new AudioDescription
                                         {
-                                            AudioSourceName = "Audio Selector 1", // Tham chiếu đến Audio Selector
+                                            AudioSourceName = "Audio Selector 1",
                                             CodecSettings = new AudioCodecSettings
                                             {
                                                 Codec = AudioCodec.AAC,
                                                 AacSettings = new AacSettings
                                                 {
                                                     CodingMode = AacCodingMode.CODING_MODE_2_0,
-                                                    Bitrate = 128000,
+                                                    Bitrate = 128000, // Chỉ tạo 1 bitrate thay vì nhiều bitrate
                                                     SampleRate = 48000
                                                 }
                                             }
                                         }
                                     ],
-                                    OutputSettings = new OutputSettings
-                                    {
-                                        HlsSettings = new HlsSettings
-                                        {
-                                            SegmentModifier = "_hls"
-                                        }
-                                    }
+                                    OutputSettings = new OutputSettings { HlsSettings = new HlsSettings { SegmentModifier = "_hls" } }
                                 }
                             ]
                         }
@@ -134,15 +296,15 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
                 }
             };
 
-            // Tạo Job
+            // Gửi Job MediaConvert
             CreateJobResponse jobResponse = await mediaConvertClient.CreateJobAsync(createJobRequest);
-
-            //Console.WriteLine(jobResponse.ToJson());
+            //Console.WriteLine($"MediaConvert job {jobResponse.Job.Id} đã được tạo.");
 
             // Trả về link file .m3u8
             string m3u8Url = $"https://{bucketName}.s3.{region}.amazonaws.com/{outputFolder}{Path.GetFileNameWithoutExtension(fileName)}_hls/{Path.GetFileNameWithoutExtension(fileName)}_hls.m3u8";
 
             return (s3UrlPublic, m3u8Url);
         }
+        #endregion
     }
 }
