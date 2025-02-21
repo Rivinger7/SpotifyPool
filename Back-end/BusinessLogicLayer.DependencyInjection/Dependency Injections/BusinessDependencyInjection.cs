@@ -65,6 +65,7 @@ using SetupLayer.Enum.EnumMember;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.Album;
 using SetupLayer.Enum.Services.Playlist;
+using SetupLayer.Enum.Services.Reccomendation;
 using SetupLayer.Enum.Services.Track;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Setting.Database;
@@ -991,6 +992,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Album
             BsonSerializer.RegisterSerializer(typeof(ReleaseStatus), new EnumMemberSerializer<ReleaseStatus>());
+
+            // Reccomendation
+            BsonSerializer.RegisterSerializer(typeof(Algorithm), new EnumMemberSerializer<Algorithm>());
         }
     }
 }
