@@ -395,9 +395,9 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
         }
 
 
-        public async Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId)
+        public async Task<PlaylistReponseModel> GetPlaylistAsync(string playlistId, PlaylistFilterModel filterModel)
         {
-            // UserID lấy từ phiên người dùng có thể là FE hoặc BE
+            //UserID lấy từ phiên người dùng có thể là FE hoặc BE
             string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userID))
@@ -405,8 +405,30 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
             }
 
-            // Chỉ lấy những fields cần thiết từ ASPlaylist : Playlist
-            ProjectionDefinition<ASPlaylist> playlistProjection = Builders<ASPlaylist>.Projection
+			//Build SortDefinition dựa trên filterModel
+			List<SortDefinition<Track>> sortDefinitions = new();
+
+			if (filterModel?.SortByTrackId.HasValue == true)
+			{
+				sortDefinitions.Add(filterModel.SortByTrackId.Value
+					? Builders<Track>.Sort.Ascending(track => track.Id)
+					: Builders<Track>.Sort.Descending(track => track.Id));
+			}
+
+			if (filterModel?.SortByTrackName.HasValue == true)
+			{
+				sortDefinitions.Add(filterModel.SortByTrackName.Value
+					? Builders<Track>.Sort.Ascending(track => track.Name)
+					: Builders<Track>.Sort.Descending(track => track.Name));
+			}
+
+			//Kết hợp các dk sort
+			SortDefinition<Track>? finalSort = sortDefinitions.Count > 0
+				? Builders<Track>.Sort.Combine(sortDefinitions)
+				: null;
+
+			// Chỉ lấy những fields cần thiết từ ASPlaylist : Playlist
+			ProjectionDefinition<ASPlaylist> playlistProjection = Builders<ASPlaylist>.Projection
                 .Include(playlist => playlist.Id)
                 .Include(playlist => playlist.Name)
                 .Include(playlist => playlist.Images)
@@ -473,9 +495,14 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
             // Empty Pipeline
             IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Lấy thông tin Tracks với Artist
-            // Lookup
-            IEnumerable<TrackResponseModel> tracks = await aggregateFluent
+			if (finalSort != null)
+			{
+				aggregateFluent = aggregateFluent.Sort(finalSort);
+			}
+
+			// Lấy thông tin Tracks với Artist
+			// Lookup
+			IEnumerable<TrackResponseModel> tracks = await aggregateFluent
                 .Match(trackFilter) // Match the pre custom filter
                 .Lookup<Track, Artist, ASTrack>(
                     _unitOfWork.GetCollection<Artist>(), // The foreign collection

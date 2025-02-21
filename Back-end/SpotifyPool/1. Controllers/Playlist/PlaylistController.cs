@@ -14,15 +14,16 @@ namespace SpotifyPool._1._Controllers.Playlist
     {
         private readonly IPlaylist _playlistService = playlistService;
 
-        /// <summary>
-        /// Lấy thông tin playlist bao gồm danh sách track
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
-        public async Task<IActionResult> GetPlaylistAsync(string id)
+		/// <summary>
+		/// Lấy thông tin playlist bao gồm danh sách track
+		/// </summary>
+		/// <param name="id">Id của Playlist</param>
+		/// <param name="filterModel">Sắp xếp. True: Asc, False: Desc</param>
+		/// <returns></returns>
+		[Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
+        public async Task<IActionResult> GetPlaylistAsync(string id, [FromQuery] PlaylistFilterModel filterModel)
         {
-            var result = await _playlistService.GetPlaylistAsync(id);
+            var result = await _playlistService.GetPlaylistAsync(id, filterModel);
             return Ok(result);
         }
 

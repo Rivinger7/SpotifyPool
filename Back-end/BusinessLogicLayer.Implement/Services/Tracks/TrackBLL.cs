@@ -240,10 +240,15 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         //}
         #endregion
 
-        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit)
+        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit, TrackFilterModel filterModel)
         {
-            // Projection
-            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+			//Xử lý các ký tự đặc biệt trong search term
+			string searchTermEscaped = filterModel.SearchTerm != null 
+                ? Util.EscapeSpecialCharacters(filterModel.SearchTerm) 
+                : string.Empty;
+
+			// Projection
+			ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
                 new TrackResponseModel
                 {
                     Id = track.Id,
@@ -272,13 +277,38 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     })
                 });
 
-            // Empty Pipeline
-            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+			//Search
+			FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
+			if (!string.IsNullOrEmpty(searchTermEscaped))
+			{
+				trackFilter = Builders<Track>.Filter.Or(
+					Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
+					Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
+				);
+			}
 
-            // Lấy thông tin Tracks với Artist
-            // Lookup
-            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
-                .Skip((offset - 1) * limit)
+			// Empty Pipeline
+			IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+			//Sorting
+			if (filterModel.SortById.HasValue)
+			{
+				aggregateFluent = filterModel.SortById.Value
+					? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Id))
+					: aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Id));
+			}
+			else if (filterModel.SortByName.HasValue)
+			{
+				aggregateFluent = filterModel.SortByName.Value
+					? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Name))
+					: aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Name));
+			}
+
+			// Lấy thông tin Tracks với Artist
+			// Lookup
+			IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+				.Match(trackFilter)
+				.Skip((offset - 1) * limit)
                 .Limit(limit)
                 .Lookup<Track, Artist, ASTrack>(
                     _unitOfWork.GetCollection<Artist>(),
@@ -343,70 +373,72 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return trackResponseModel;
         }
 
-        public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
-        {
-            // Xử lý các ký tự đặc biệt
-            string searchTermEscaped = Util.EscapeSpecialCharacters(searchTerm);
+        #region SearchTracksAsync (Code này đã được gộp vào trong Code GetAllTrack)
+        //public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
+        //{
+        //    // Xử lý các ký tự đặc biệt
+        //    string searchTermEscaped = Util.EscapeSpecialCharacters(searchTerm);
 
-            // Empty Pipeline
-            IAggregateFluent<Track> pipeline = _unitOfWork.GetCollection<Track>().Aggregate();
+        //    // Empty Pipeline
+        //    IAggregateFluent<Track> pipeline = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Projection
-            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
-                new TrackResponseModel
-                {
-                    Id = track.Id,
-                    Name = track.Name,
-                    Description = track.Description,
-                    Lyrics = track.Lyrics,
-                    PreviewURL = track.StreamingUrl,
-                    Duration = track.Duration,
-                    Images = track.Images.Select(image => new ImageResponseModel
-                    {
-                        URL = image.URL,
-                        Height = image.Height,
-                        Width = image.Width
-                    }),
-                    Artists = track.Artists.Select(artist => new ArtistResponseModel
-                    {
-                        Id = artist.Id,
-                        Name = artist.Name,
-                        Followers = artist.Followers,
-                        Images = artist.Images.Select(image => new ImageResponseModel
-                        {
-                            URL = image.URL,
-                            Height = image.Height,
-                            Width = image.Width
-                        })
-                    })
-                });
+        //    // Projection
+        //    ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+        //        new TrackResponseModel
+        //        {
+        //            Id = track.Id,
+        //            Name = track.Name,
+        //            Description = track.Description,
+        //            Lyrics = track.Lyrics,
+        //            PreviewURL = track.StreamingUrl,
+        //            Duration = track.Duration,
+        //            Images = track.Images.Select(image => new ImageResponseModel
+        //            {
+        //                URL = image.URL,
+        //                Height = image.Height,
+        //                Width = image.Width
+        //            }),
+        //            Artists = track.Artists.Select(artist => new ArtistResponseModel
+        //            {
+        //                Id = artist.Id,
+        //                Name = artist.Name,
+        //                Followers = artist.Followers,
+        //                Images = artist.Images.Select(image => new ImageResponseModel
+        //                {
+        //                    URL = image.URL,
+        //                    Height = image.Height,
+        //                    Width = image.Width
+        //                })
+        //            })
+        //        });
 
-            // Tạo bộ lọc cho ASTrack riêng biệt sau khi Lookup  
-            FilterDefinition<ASTrack> trackWithArtistFilter = Builders<ASTrack>.Filter.Or(
-                Builders<ASTrack>.Filter.Regex(astrack => astrack.Name, new BsonRegularExpression(searchTermEscaped, "i")),
-                Builders<ASTrack>.Filter.Regex(astrack => astrack.Description, new BsonRegularExpression(searchTermEscaped, "i")),
-                Builders<ASTrack>.Filter.ElemMatch(track => track.Artists, artist => artist.Name.Contains(searchTermEscaped, StringComparison.CurrentCultureIgnoreCase))
-            );
+        //    // Tạo bộ lọc cho ASTrack riêng biệt sau khi Lookup  
+        //    FilterDefinition<ASTrack> trackWithArtistFilter = Builders<ASTrack>.Filter.Or(
+        //        Builders<ASTrack>.Filter.Regex(astrack => astrack.Name, new BsonRegularExpression(searchTermEscaped, "i")),
+        //        Builders<ASTrack>.Filter.Regex(astrack => astrack.Description, new BsonRegularExpression(searchTermEscaped, "i")),
+        //        Builders<ASTrack>.Filter.ElemMatch(track => track.Artists, artist => artist.Name.Contains(searchTermEscaped, StringComparison.CurrentCultureIgnoreCase))
+        //    );
 
-            // Empty Pipeline
-            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+        //    // Empty Pipeline
+        //    IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Lấy thông tin Tracks với Artist
-            // Lookup
-            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
-                .Lookup<Track, Artist, ASTrack>(
-                    _unitOfWork.GetCollection<Artist>(),
-                    track => track.ArtistIds,
-                    artist => artist.Id,
-                    result => result.Artists)
-                .Match(trackWithArtistFilter)
-                .Project(trackWithArtistProjection)
-                .ToListAsync();
+        //    // Lấy thông tin Tracks với Artist
+        //    // Lookup
+        //    IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+        //        .Lookup<Track, Artist, ASTrack>(
+        //            _unitOfWork.GetCollection<Artist>(),
+        //            track => track.ArtistIds,
+        //            artist => artist.Id,
+        //            result => result.Artists)
+        //        .Match(trackWithArtistFilter)
+        //        .Project(trackWithArtistProjection)
+        //        .ToListAsync();
 
-            return tracksResponseModel;
-        }
+        //    return tracksResponseModel;
+        //}
+		#endregion
 
-        public async Task UploadTrackAsync(UploadTrackRequestModel request)
+		public async Task UploadTrackAsync(UploadTrackRequestModel request)
         {
             string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
