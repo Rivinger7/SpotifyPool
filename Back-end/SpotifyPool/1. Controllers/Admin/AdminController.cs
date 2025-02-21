@@ -8,7 +8,7 @@ using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Admin
 {
-	[Route("api/admin")]
+	[Route("api/admin/accounts")]
 	[ApiController]
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] //"Bearer"
 	[Authorize(Roles = nameof(UserRole.Admin))]
@@ -24,7 +24,7 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// <returns>
 		/// </returns>
 		[HttpGet()]
-		public async Task<IActionResult> GetAllAccount([FromQuery] PagingRequestModel request, [FromQuery] AdminFilter model)
+		public async Task<IActionResult> GetListAccounts([FromQuery] PagingRequestModel request, [FromQuery] AdminFilter model)
 		{
 			var customer = await _adminBLL.GetPaggingAsync(request, model);
 			return Ok(customer);
@@ -73,7 +73,7 @@ namespace SpotifyPool._1._Controllers.Admin
 		/// <param name="id">Id người dùng</param>
 		/// <returns></returns>
 		[HttpDelete("{id}")]
-		public async Task<IActionResult> Delete(string id)
+		public async Task<IActionResult> BanAccount(string id)
 		{
 			await _adminBLL.DeleteByIdAsync(id);
 			return Ok(new { Message = "Ban Account Successfully" });
