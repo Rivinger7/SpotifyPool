@@ -6,13 +6,13 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Admin
 {
 	public interface IAdmin
 	{
-		Task<IEnumerable<AdminResponse>> GetPaggingAsync(PagingRequestModel request, AdminFilter model);
+		Task<IEnumerable<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model);
 
-		Task<AdminDetailResponse> GetByIdAsync(string id);
+		Task<AccountDetailResponse> GetByIdAsync(string id);
 
-		Task CreateAsync(CreateRequestModel userRequest);
+		Task CreateAsync(CreateRequestModel accountRequest);
 
-		Task UpdateByIdAsync(string id, UpdateRequestModel userRequest);
+		Task UpdateByIdAsync(string id, UpdateRequestModel accountRequest);
 
 		Task DeleteByIdAsync(string id);
 	}

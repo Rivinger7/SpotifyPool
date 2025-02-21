@@ -2,7 +2,7 @@
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response
 {
-	public class AdminResponse
+	public class AccountResponse
 	{
 		public string? UserId { get; set; }
 

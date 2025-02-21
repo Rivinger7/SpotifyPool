@@ -12,9 +12,9 @@ namespace SpotifyPool._1._Controllers.Account
 	[ApiController]
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] //"Bearer"
 	[Authorize(Roles = nameof(UserRole.Admin))]
-	public class AccountController(IAdmin adminBLL) : ControllerBase
+	public class AccountController(IAdmin accountBLL) : ControllerBase
 	{
-		private readonly IAdmin _adminBLL = adminBLL;
+		private readonly IAdmin _accountBLL = accountBLL;
 
 		/// <summary>
 		/// Hiển thị danh sách tài khoản ngưởi dùng
@@ -24,10 +24,10 @@ namespace SpotifyPool._1._Controllers.Account
 		/// <returns>
 		/// </returns>
 		[HttpGet()]
-		public async Task<IActionResult> GetListAccounts([FromQuery] PagingRequestModel request, [FromQuery] AdminFilter model)
+		public async Task<IActionResult> GetListAccounts([FromQuery] PagingRequestModel request, [FromQuery] AccountFilterModel model)
 		{
-			var customer = await _adminBLL.GetPaggingAsync(request, model);
-			return Ok(customer);
+			var account = await _accountBLL.GetPaggingAsync(request, model);
+			return Ok(account);
 		}
 
 		/// <summary>
@@ -38,8 +38,8 @@ namespace SpotifyPool._1._Controllers.Account
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetAccountById(string id)
 		{
-			var customer = await _adminBLL.GetByIdAsync(id);
-			return Ok(customer);
+			var account = await _accountBLL.GetByIdAsync(id);
+			return Ok(account);
 		}
 
 		/// <summary>
@@ -50,20 +50,20 @@ namespace SpotifyPool._1._Controllers.Account
 		[HttpPost()]
 		public async Task<IActionResult> CreateAccount([FromQuery] CreateRequestModel model)
 		{
-			await _adminBLL.CreateAsync(model);
+			await _accountBLL.CreateAsync(model);
 			return Ok(new { Message = "Create Account Successfully" });
 		}
 
 		/// <summary>
 		/// Chỉnh sửa thông tin tài khoản người dùng
 		/// </summary>
-		/// <param name="id">Id người dùng</param>
-		/// <param name="userRequest">Thông tin cần chỉnh sửa</param>
+		/// <param name="id">Id tài khoản người dùng</param>
+		/// <param name="accountRequest">Thông tin cần chỉnh sửa</param>
 		/// <returns></returns>
 		[HttpPut("{id}")]
-		public async Task<IActionResult> UpdateAccountById(string id, [FromQuery] UpdateRequestModel userRequest)
+		public async Task<IActionResult> UpdateAccountById(string id, [FromQuery] UpdateRequestModel accountRequest)
 		{
-			await _adminBLL.UpdateByIdAsync(id, userRequest);
+			await _accountBLL.UpdateByIdAsync(id, accountRequest);
 			return Ok(new { Message = "Update Account Successfully" });
 		}
 
@@ -75,7 +75,7 @@ namespace SpotifyPool._1._Controllers.Account
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> BanAccount(string id)
 		{
-			await _adminBLL.DeleteByIdAsync(id);
+			await _accountBLL.DeleteByIdAsync(id);
 			return Ok(new { Message = "Ban Account Successfully" });
 		}
 	}

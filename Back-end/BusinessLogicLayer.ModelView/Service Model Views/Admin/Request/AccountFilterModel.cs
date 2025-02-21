@@ -2,7 +2,7 @@
 
 namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 {
-	public class AdminFilter
+	public class AccountFilterModel
 	{
 		public string? UserName { get; set; }
 

@@ -14,7 +14,7 @@ using BusinessLogicLayer.Implement.Microservices.Geolocation;
 using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
 using BusinessLogicLayer.Implement.Microservices.OpenAI;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
-using BusinessLogicLayer.Implement.Services.Admin;
+using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
@@ -501,7 +501,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IArtist, ArtistBLL>();
 
 			// Admin
-			services.AddScoped<IAdmin, AdminBLL>();
+			services.AddScoped<IAdmin, AccountBLL>();
 
 			// Top Track
 			services.AddScoped<ITopTrack, TopTrackBLL>();

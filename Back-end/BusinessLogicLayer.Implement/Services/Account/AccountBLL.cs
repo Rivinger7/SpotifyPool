@@ -10,15 +10,15 @@ using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
 using Utility.Coding;
 
-namespace BusinessLogicLayer.Implement.Services.Admin
+namespace BusinessLogicLayer.Implement.Services.Account
 {
-	public class AdminBLL(IUnitOfWork unitOfWork, IMapper mapper) : IAdmin
+	public class AccountBLL(IUnitOfWork unitOfWork, IMapper mapper) : IAdmin
 	{
 		private readonly IUnitOfWork _unitOfWork = unitOfWork;
 		private readonly IMapper _mapper = mapper;
 
 		#region Hiển thị thông tin tất cả người dùng (GetPaging)
-		public async Task<IEnumerable<AdminResponse>> GetPaggingAsync(PagingRequestModel request, AdminFilter model)
+		public async Task<IEnumerable<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model)
 		{
 			//Tạo danh sách các đk lọc
 			List<FilterDefinition<User>> filters = new List<FilterDefinition<User>>();
@@ -56,12 +56,12 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				.Limit(request.PageSize) //Giới hạn số lượng
 				.ToListAsync();
 
-			return _mapper.Map<IReadOnlyCollection<AdminResponse>>(result);
+			return _mapper.Map<IReadOnlyCollection<AccountResponse>>(result);
 		}
 		#endregion
 
 		#region Hiển thị đầy đủ thông tin người dùng (GetById)
-		public async Task<AdminDetailResponse> GetByIdAsync(string id)
+		public async Task<AccountDetailResponse> GetByIdAsync(string id)
 		{
 			//Lấy thông tin người dùng theo ID
 			User user = await _unitOfWork.GetCollection<User>()
@@ -69,7 +69,7 @@ namespace BusinessLogicLayer.Implement.Services.Admin
 				.FirstOrDefaultAsync();
 
 			//Mapping từ User sang UserResponseModel
-			AdminDetailResponse adminResponse = _mapper.Map<AdminDetailResponse>(user);
+			AccountDetailResponse adminResponse = _mapper.Map<AccountDetailResponse>(user);
 
 			return adminResponse;
 		}
