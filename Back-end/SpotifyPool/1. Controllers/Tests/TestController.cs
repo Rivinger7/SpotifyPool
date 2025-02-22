@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SetupLayer.Enum.Services.User;
+using SharpCompress.Common;
 
 namespace SpotifyPool._1._Controllers.Tests
 {
@@ -138,4 +139,27 @@ namespace SpotifyPool._1._Controllers.Tests
  //           return Ok(new { message = "Đã xóa: ", path });
  //       }
  //   }
+ 
+      //[AllowAnonymous, HttpDelete("test-download-FilesBll")]
+    //public async Task<IActionResult> CheckDownloadFilesBll(string path)
+    //{
+    //    try
+    //    {
+    //        byte[] fileBytes = await _fileService.DownloadFile(path);
+
+    //        if (fileBytes == null || fileBytes.Length == 0)
+    //        {
+    //            return NotFound("File không tồn tại hoặc không thể tải xuống.");
+    //        }
+
+    //        string contentType = "application/octet-stream"; // Hoặc xác định loại file dựa trên extension
+    //        string fileName = Path.GetFileName(path); // Lấy tên file từ đường dẫn
+
+    //        return File(fileBytes, contentType, fileName);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, $"Lỗi khi tải file: {ex.Message}");
+    //    }
+    //}
 }

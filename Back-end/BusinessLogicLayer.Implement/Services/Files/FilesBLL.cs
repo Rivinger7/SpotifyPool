@@ -66,5 +66,28 @@ namespace BusinessLogicLayer.Implement.Services.Files
             }
         }
 
+        public async Task<byte[]> DownloadFile(string path)
+        {
+            try
+            {
+                IFlurlResponse response = await path
+                    .WithHeader("AccessKey", ApiKey)
+                    .GetAsync();
+
+                // Kiểm tra nếu status code thành công
+                if (response.StatusCode >= 200 && response.StatusCode < 300)
+                {
+                    return await response.GetBytesAsync(); // Trả về nội dung file dưới dạng byte[]
+                }
+
+                // Nếu lỗi HTTP
+                throw new BadRequestCustomException(response.StatusCode, "Download thất bại");
+            }
+            catch (Exception ex)
+            {
+                throw new BadRequestCustomException(500, $"Error: {ex.Message}");
+            }
+        }
+
     }
 }
