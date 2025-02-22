@@ -7,12 +7,13 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Tracks
 {
     public interface ITrack
     {
-        Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit);
-        Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm);
+        Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit, TrackFilterModel filterModel);
         Task<TrackResponseModel> GetTrackAsync(string id);
         Task UploadTrackAsync(UploadTrackRequestModel request);
         Task<IEnumerable<TrackResponseModel>> GetTracksByMoodAsync(Mood mood);
         Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken);
-        //Task<IEnumerable<TrackResponseModel>> GetTracksWithArtistIsNull();
-    }
+
+		//Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm);
+		//Task<IEnumerable<TrackResponseModel>> GetTracksWithArtistIsNull();
+	}
 }

@@ -20,9 +20,6 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 		[RegularExpression(@"^\d{9,11}$", ErrorMessage = "Phone number must be 9 to 11 digits long")]
 		public string? PhoneNumber { get; set; }
 
-		[Required(ErrorMessage = "Email cannot be left blank")]
-		public string Email { get; set; } = null!;
-
 		public int Followers { get; set; }
 
 		[Required(ErrorMessage = "Product cannot be left blank")]

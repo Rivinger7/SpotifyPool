@@ -1,6 +1,5 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using Utility.Coding;
 
 namespace DataAccessLayer.Repository.Entities
 {
@@ -14,6 +13,9 @@ namespace DataAccessLayer.Repository.Entities
         public required string UserId { get; set; }
 
         public List<TopTrackInfo> TrackInfo { get; set; } = [];
+
+        public required DateTime CreatedTime { get; set; }
+        public DateTime? LastUpdatedTime { get; set; }
     }
 
     public class TopTrackInfo
