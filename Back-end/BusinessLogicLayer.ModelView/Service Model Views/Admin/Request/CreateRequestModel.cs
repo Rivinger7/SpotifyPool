@@ -1,4 +1,5 @@
 ﻿using DataAccessLayer.Repository.Entities;
+using Microsoft.AspNetCore.Http;
 using SetupLayer.Enum.Services.User;
 using System.ComponentModel.DataAnnotations;
 
@@ -45,6 +46,6 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request
 		[Required(ErrorMessage = "Role cannot be left blank")]
 		public List<UserRole> Roles { get; set; } = new List<UserRole>();
 
-		public List<Image> Images { get; set; } = new List<Image>();
+		public IFormFile? Image { get; set; }
 	}
 }

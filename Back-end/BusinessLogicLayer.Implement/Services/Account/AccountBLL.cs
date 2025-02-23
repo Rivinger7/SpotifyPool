@@ -1,21 +1,25 @@
 ﻿using AutoMapper;
+using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Admin;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Paging;
+using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.User;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Account
 {
-	public class AccountBLL(IUnitOfWork unitOfWork, IMapper mapper) : IAdmin
+	public class AccountBLL(IUnitOfWork unitOfWork, IMapper mapper, CloudinaryService cloudinaryService) : IAdmin
 	{
 		private readonly IUnitOfWork _unitOfWork = unitOfWork;
 		private readonly IMapper _mapper = mapper;
+		private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
 		#region Hiển thị thông tin tất cả người dùng (GetPaging)
 		public async Task<IEnumerable<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model)
@@ -84,20 +88,32 @@ namespace BusinessLogicLayer.Implement.Services.Account
 				throw new ArgumentException("Confirmation password does not match.");
 			}
 
-			//Danh sách ảnh mặc định
-			var defaultImageUrls = new (string Url, int Height, int Width)[]
-			{
-				("https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg", 640, 640),
-				("https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png", 300, 300),
-				("https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png", 64, 64)
-			};
+			string? imageUrl = null;
 
-			List<Image> images = defaultImageUrls.Select(img => new Image
+			//Nếu có tải ảnh lên
+			if (userRequest.Image is not null)
 			{
-				URL = img.Url,
-				Height = img.Height,
-				Width = img.Width
-			}).ToList();
+				// Upload ảnh lên Cloudinary
+				ImageUploadResult result = _cloudinaryService.UploadImage(userRequest.Image, ImageTag.Users_Profile);
+
+				//Gán URL của ảnh upload vào biến imageUrl
+				imageUrl = result.SecureUrl.AbsoluteUri;
+			}
+
+			//Nếu không tải ảnh, dùng ảnh mặc định
+			if (string.IsNullOrEmpty(imageUrl))
+			{
+				Console.WriteLine("Using default image.");
+				imageUrl = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg";
+			}
+
+			//Tạo danh sách 3 kích thước ảnh
+			List<Image> images = new List<Image>
+			{
+				new Image { URL = imageUrl, Height = 640, Width = 640 },
+				new Image { URL = imageUrl, Height = 300, Width = 300 },
+				new Image { URL = imageUrl, Height = 64, Width = 64 }
+			};
 
 			//Map từ CreateRequestModel sang User
 			User user = new User
