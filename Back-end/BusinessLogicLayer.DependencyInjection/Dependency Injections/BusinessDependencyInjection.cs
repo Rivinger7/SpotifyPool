@@ -33,7 +33,7 @@ using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
-using BusinessLogicLayer.Interface.Services_Interface.Admin;
+using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
@@ -501,7 +501,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IArtist, ArtistBLL>();
 
 			// Admin
-			services.AddScoped<IAdmin, AccountBLL>();
+			services.AddScoped<IAccount, AccountBLL>();
 
 			// Top Track
 			services.AddScoped<ITopTrack, TopTrackBLL>();
