@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
-using BusinessLogicLayer.Interface.Services_Interface.Admin;
+using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Paging;
@@ -15,7 +15,7 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Account
 {
-	public class AccountBLL(IUnitOfWork unitOfWork, IMapper mapper, CloudinaryService cloudinaryService) : IAdmin
+	public class AccountBLL(IUnitOfWork unitOfWork, IMapper mapper, CloudinaryService cloudinaryService) : IAccount
 	{
 		private readonly IUnitOfWork _unitOfWork = unitOfWork;
 		private readonly IMapper _mapper = mapper;
@@ -53,9 +53,23 @@ namespace BusinessLogicLayer.Implement.Services.Account
 				? Builders<User>.Filter.And(filters)
 				: Builders<User>.Filter.Empty;
 
-			IEnumerable<User> result = await _unitOfWork.GetCollection<User>()
-				.Find(combinedFilter)
-				.SortByDescending(i => i.CreatedTime)  //Sắp xếp theo CreatedTime giảm dần
+			var query = _unitOfWork.GetCollection<User>()
+				.Find(combinedFilter);
+
+			//Sort theo DisplayName (Nếu có)
+			if (model.DisplayName.HasValue)
+			{
+				query = model.DisplayName.Value
+					? query.SortBy(u => u.DisplayName)   //Tăng dần
+					: query.SortByDescending(u => u.DisplayName); //Giảm dần
+			}
+			else
+			{
+				//Sort theo CreateTime giảm dần (tài khoản nào mới tạo sẽ được đưa lên đầu)
+				query = query.SortByDescending(i => i.CreatedTime);
+			}
+
+			IEnumerable<User> result = await query
 				.Skip((request.PageNumber - 1) * request.PageSize) //Phân trang
 				.Limit(request.PageSize) //Giới hạn số lượng
 				.ToListAsync();
@@ -72,10 +86,10 @@ namespace BusinessLogicLayer.Implement.Services.Account
 				.Find(user => user.Id == id)
 				.FirstOrDefaultAsync();
 
-			//Mapping từ User sang UserResponseModel
-			AccountDetailResponse adminResponse = _mapper.Map<AccountDetailResponse>(user);
+			//Mapping từ User sang AccountDetailResponse
+			AccountDetailResponse accountResponse = _mapper.Map<AccountDetailResponse>(user);
 
-			return adminResponse;
+			return accountResponse;
 		}
 		#endregion
 

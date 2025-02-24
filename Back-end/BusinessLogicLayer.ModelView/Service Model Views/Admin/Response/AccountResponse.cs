@@ -8,6 +8,8 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response
 
 		public string UserName { get; set; } = null!;
 
+		public string DisplayName { get; set; } = null!;
+
 		public string? Email { get; set; }
 
 		public List<string> Roles { get; set; } = new List<string>();
