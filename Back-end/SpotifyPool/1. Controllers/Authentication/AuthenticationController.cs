@@ -67,6 +67,12 @@ namespace SpotifyPool.Controllers.Authentication
             //return Redirect(returnUrl); // Tự động chuyển hướng đến returnURL không cần phải nhờ FE chuyển FE chỉ cần bỏ URL vào biến returnURL
         }
 
+
+        /// <summary>
+        /// Quên mật khẩu, điền email đăng ký tài khoản và hàm gửi OTP qua email vừa nhập
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [AllowAnonymous, HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestModel model)
         {
@@ -75,10 +81,10 @@ namespace SpotifyPool.Controllers.Authentication
         }
 
         /// <summary>
-        /// Note here or comment on swagger
+        /// Tạo OTP mới và gửi OTP qua email (cho việc forgot-password ---> reset password)
         /// </summary>
-        /// <param name="email"></param>
-        /// <param name="otpCode"></param>
+        /// <param name="email">email nhận được OTP</param>
+        /// <param name="otpCode">OTP xác thực từ email trên</param>
         /// <returns></returns>
         [AllowAnonymous, HttpPost("otp-confirmation")]
         public async Task<IActionResult> ValidateOTP([FromBody] string otpCode, string email) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
@@ -87,11 +93,30 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { message = "Reset password successfully, please check your email to get new password." });
         }
 
+
+        /// <summary>
+        /// Đặt lại mật khẩu 
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [AllowAnonymous, HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel model)
         {
             await authenticationBLL.ResetPasswordAsync(model);
             return Ok(new{message = "Reset password successfully"});
+        }
+
+
+        /// <summary>
+        /// Lấy thông tin đăng nhập của người dùng từ jwt ở header
+        /// </summary>
+        /// <returns></returns>
+        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, , {nameof(UserRole.Admin)}"), HttpGet("authenticated-user-info")]
+        public async Task<IActionResult> GetAuthenticatedUserInfo()
+        {
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var authenticatedUserInfoResponseModel = await authenticationBLL.GetUserInformation(token);
+            return Ok(new { authenticatedUserInfoResponseModel });
         }
     }
 }
