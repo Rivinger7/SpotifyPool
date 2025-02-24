@@ -4,6 +4,7 @@ using BusinessLogicLayer.Implement.Microservices.NAudio;
 using BusinessLogicLayer.Implement.Services.DataAnalysis;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
@@ -14,10 +15,12 @@ using CsvHelper.Configuration;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using NAudio.Wave;
 using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -27,13 +30,14 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
-    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISpotify spotifyService, IAmazonWebService amazonWebService) : ITrack
+    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISpotify spotifyService, IAmazonWebService amazonWebService, IFFmpegService fFmpegService) : ITrack
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly ISpotify _spotifyService = spotifyService;
         private readonly IAmazonWebService _amazonWebService = amazonWebService;
+        private readonly IFFmpegService _fFmpegService = fFmpegService;
 
         public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
         {
@@ -472,13 +476,20 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     await request.File.CopyToAsync(stream);
                 }
 
-                //cắt vid từ giây 0:00 đến giây thứ 30
+                // Convert file mp3 sang wav for nothing
+                // Lấy duration của file mp3
                 NAudioService.TrimAudioFile(out int duration, inputPath, outputPath, TimeSpan.FromSeconds(30));
+
+                // mở file mp3 lưu ở wwwroot/input để đọc
+                using AudioFileReader reader = new(inputPath);
+
+                // lấy tổng thời gian nhạc trên file mp3
+                //int duration = (int)reader.TotalTime.TotalSeconds * 1000;
 
                 newTrack.Duration = duration;
 
                 //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-                using var outputStream = new FileStream(outputPath, FileMode.Open);
+                using FileStream outputStream = new(outputPath, FileMode.Open);
                 IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
                 {
                     Headers = new HeaderDictionary(),
@@ -493,9 +504,16 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 string trackIdName = $"{newTrack.Id}_{newTrack.Name}";
 
                 // url mp3 public của file audio
-                string publicUrl;
+                string publicUrl = await _amazonWebService.UploadFileAsync(outputFile, trackIdName);
 
-                (publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
+                // Convert audio file sang dạng streaming
+                string outputFolderPath = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
+
+                // Upload streaming files lên AWS S3
+                newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
+
+                // AWS chuyển file audio sang dạng streaming
+                //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
 
                 //chuyển file audio thành spectrogram và dự đoán audio features
                 Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(publicUrl);
