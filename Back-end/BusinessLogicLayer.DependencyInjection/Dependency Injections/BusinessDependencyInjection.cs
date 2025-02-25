@@ -15,6 +15,7 @@ using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
 using BusinessLogicLayer.Implement.Microservices.OpenAI;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
 using BusinessLogicLayer.Implement.Services.Account;
+using BusinessLogicLayer.Implement.Services.Albums;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
@@ -34,6 +35,7 @@ using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Interface.Services_Interface.Admin;
+using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
@@ -522,6 +524,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Files
             services.AddScoped<IFiles, FilesBLL>();
+
+            // Albums
+            services.AddScoped<IAlbums, AlbumsBLL>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)

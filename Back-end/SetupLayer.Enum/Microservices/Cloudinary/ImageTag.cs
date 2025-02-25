@@ -13,7 +13,9 @@ namespace SetupLayer.Enum.Microservices.Cloudinary
         [EnumMember(Value = "Playlist")]
 		Playlist,
         [EnumMember(Value = "Spectrogram")]
-        Spectrogram
+        Spectrogram,
+        [EnumMember(Value = "Album")]
+        Album
 
     }
 }
