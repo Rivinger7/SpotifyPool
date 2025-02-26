@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using StackExchange.Redis;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
 {
@@ -79,7 +80,9 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
                                 TrackId = trackId,
                                 StreamCount = playedTrackCount
                             }
-                            ]
+                            ],
+                            CreatedTime = Util.GetUtcPlus7Time(),
+
                         };
 
                         // Lưu thông tin topTrack mới
