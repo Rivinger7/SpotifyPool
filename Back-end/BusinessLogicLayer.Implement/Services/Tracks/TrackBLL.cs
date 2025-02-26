@@ -15,7 +15,6 @@ using CsvHelper.Configuration;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
@@ -246,13 +245,13 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit, TrackFilterModel filterModel)
         {
-			//Xử lý các ký tự đặc biệt trong search term
-			string searchTermEscaped = filterModel.SearchTerm != null 
-                ? Util.EscapeSpecialCharacters(filterModel.SearchTerm) 
+            //Xử lý các ký tự đặc biệt trong search term
+            string searchTermEscaped = filterModel.SearchTerm != null
+                ? Util.EscapeSpecialCharacters(filterModel.SearchTerm)
                 : string.Empty;
 
-			// Projection
-			ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
                 new TrackResponseModel
                 {
                     Id = track.Id,
@@ -281,38 +280,76 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     })
                 });
 
-			//Search
-			FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
-			if (!string.IsNullOrEmpty(searchTermEscaped))
-			{
-				trackFilter = Builders<Track>.Filter.Or(
-					Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
-					Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
-				);
-			}
+            //Search
+            FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
+            if (!string.IsNullOrEmpty(searchTermEscaped))
+            {
+                trackFilter = Builders<Track>.Filter.Or(
+                    Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
+                    Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
+                );
+            }
+            else if(!string.IsNullOrEmpty(filterModel.Mood.ToString()))
+            {
+                trackFilter = filterModel.Mood switch
+                {
+                    Mood.Sad => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 0),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 100),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.4)),
 
-			// Empty Pipeline
-			IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+                    Mood.Neutral => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 100) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 120),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.4) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.6)),
 
-			//Sorting
-			if (filterModel.SortById.HasValue)
-			{
-				aggregateFluent = filterModel.SortById.Value
-					? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Id))
-					: aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Id));
-			}
-			else if (filterModel.SortByName.HasValue)
-			{
-				aggregateFluent = filterModel.SortByName.Value
-					? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Name))
-					: aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Name));
-			}
+                    Mood.Happy => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 120) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 160),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.6) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.8)),
 
-			// Lấy thông tin Tracks với Artist
-			// Lookup
-			IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
-				.Match(trackFilter)
-				.Skip((offset - 1) * limit)
+                    Mood.Blisfull => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 140) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 180),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.8) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 1)),
+
+                    Mood.Focus => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Instrumentalness, 0.7),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Energy, 0.5)),
+
+                    Mood.Random => Builders<Track>.Filter.Empty,
+                    _ => throw new InvalidDataCustomException("The mood is not supported"),
+                };
+            }
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            //Sorting
+            if (filterModel.SortById.HasValue)
+            {
+                aggregateFluent = filterModel.SortById.Value
+                    ? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Id))
+                    : aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Id));
+            }
+            else if (filterModel.SortByName.HasValue)
+            {
+                aggregateFluent = filterModel.SortByName.Value
+                    ? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Name))
+                    : aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Name));
+            }
+
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Match(trackFilter)
+                .Skip((offset - 1) * limit)
                 .Limit(limit)
                 .Lookup<Track, Artist, ASTrack>(
                     _unitOfWork.GetCollection<Artist>(),
@@ -440,9 +477,9 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         //    return tracksResponseModel;
         //}
-		#endregion
+        #endregion
 
-		public async Task UploadTrackAsync(UploadTrackRequestModel request)
+        public async Task UploadTrackAsync(UploadTrackRequestModel request)
         {
             string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 

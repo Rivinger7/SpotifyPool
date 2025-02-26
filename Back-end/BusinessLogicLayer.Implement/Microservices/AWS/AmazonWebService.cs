@@ -4,7 +4,6 @@ using Amazon.S3;
 using Amazon.S3.Transfer;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
-using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
 using SetupLayer.Setting.Microservices.AWS;
 
