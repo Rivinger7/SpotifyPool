@@ -14,7 +14,7 @@ namespace DataAccessLayer.Repository.Entities
 
         public List<TopTrackInfo> TrackInfo { get; set; } = [];
 
-        public required DateTime CreatedTime { get; set; }
+        public DateTime CreatedTime { get; set; }
         public DateTime? LastUpdatedTime { get; set; }
     }
 
