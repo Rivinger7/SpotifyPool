@@ -18,6 +18,7 @@ using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
 using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.InMemoryCache;
@@ -38,6 +39,7 @@ using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using BusinessLogicLayer.Interface.Services_Interface.Files;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
@@ -531,6 +533,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Files
             services.AddScoped<IFiles, FilesBLL>();
+
+            // FFmpeg
+            services.AddScoped<IFFmpegService, FFmpegService>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)

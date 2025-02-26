@@ -210,7 +210,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Xác thực token của Google và lấy thông tin người dùng
             GoogleJsonWebSignature.Payload payload = await VerifyGoogleToken(googleToken) ?? throw new UnauthorizedAccessException("Invalid Google token.");
 
-            if(!payload.EmailVerified)
+            if (!payload.EmailVerified)
             {
                 throw new UnauthorizedAccessException("Email is not verified. Please verify your email to access our website");
             }
