@@ -224,5 +224,28 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             var decodedToken = tokenHandler.ReadJwtToken(token);
             return decodedToken;
         }
+
+        public ClaimsPrincipal ValidateToken(string token)
+        {
+            var tokenHadler = new JwtSecurityTokenHandler();
+            string key = Environment.GetEnvironmentVariable("JWTSettings_SecretKey");
+
+            TokenValidationParameters tokenValidationParameters = new()
+            {
+                ValidateAudience = false,
+
+                ValidateIssuer = false,
+
+                ValidateIssuerSigningKey = true,
+
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key) ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found")),
+
+                ValidateLifetime = false
+            };
+
+            //var tokenReader = tokenHadler.ReadJwtToken(token);
+            //nếu secret key hợp lệ thì trả về claims chứa thông tin đã encode trong lúc tạo accesstoken
+            return tokenHadler.ValidateToken(token, tokenValidationParameters, out _);
+        }
     }
 }

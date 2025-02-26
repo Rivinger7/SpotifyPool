@@ -630,5 +630,18 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return otpCode;
         }
 
+        public async Task<AuthenticatedUserInfoResponseModel> GetUserInformation(string token)
+        {
+            List<Claim> info = _jwtBLL.ValidateToken(token).Claims.ToList();
+
+            var userinfo = new AuthenticatedUserInfoResponseModel()
+            {
+                Id = info.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
+                Name = info.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
+                Role = info.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList(),
+                Avatar = info.Where(c => c.Type == "Avatar").Select(c => c.Value).ToList()
+            };
+            return userinfo;
+        }
     }
 }
