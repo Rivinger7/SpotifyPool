@@ -1,14 +1,12 @@
-﻿using Hellang.Middleware.ProblemDetails;
-using SpotifyPool.Infrastructure;
-using System.Diagnostics;
-using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
-using SpotifyPool.Infrastructure.EnvironmentVariable;
-using Microsoft.AspNetCore.HttpOverrides;
-using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
-using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
+﻿using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
 using BusinessLogicLayer.Implement.Services.SignalR.PlaybackSync;
+using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
+using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
+using Hellang.Middleware.ProblemDetails;
+using Microsoft.AspNetCore.HttpOverrides;
+using SpotifyPool.Infrastructure;
+using SpotifyPool.Infrastructure.EnvironmentVariable;
+using System.Diagnostics;
 
 // Stopwatch Start
 var stopwatch = new Stopwatch();

@@ -62,6 +62,9 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Lấy thông tin IP Address
             GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
 
+            // Avatar mặc định
+            string avatarUrl = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730097883/60d5dc467b950c5ccc8ced95_spotify-for-artists_on4me9.jpg";
+
             User newUser = new()
             {
                 DisplayName = displayName,
@@ -81,19 +84,19 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 [
                     new()
                     {
-                        URL = null,
+                        URL = avatarUrl,
                         Height = 600,
                         Width = 600,
                     },
                     new()
                     {
-                        URL = null,
+                        URL = avatarUrl,
                         Height = 300,
                         Width = 300,
                     },
                     new()
                     {
-                        URL = null,
+                        URL = avatarUrl,
                         Height = 64,
                         Width = 64,
                     }
