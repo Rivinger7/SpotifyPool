@@ -29,7 +29,7 @@ namespace SpotifyPool._1._Controllers.Spotify
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.SuperAdmin)), HttpGet("callback")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("callback")]
         public async Task<IActionResult> Callback([FromQuery] string code)
         {
             if (string.IsNullOrEmpty(code))
@@ -48,6 +48,22 @@ namespace SpotifyPool._1._Controllers.Spotify
                 RefreshToken = refreshToken
             });
         }
+
+        /// <summary>
+        /// Fix tracks với artist bị null
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <returns></returns>
+        //[Authorize(Roles = nameof(UserRole.SuperAdmin)), HttpGet("fetch/update/artists")]
+        //public async Task<IActionResult> UpFetchManyArtists([FromQuery] string accessToken)
+        //{
+        //    if (string.IsNullOrEmpty(accessToken))
+        //    {
+        //        return BadRequest("Access token is required.");
+        //    }
+        //    await _spotifyService.FixTracksWithArtistIsNullAsync(accessToken);
+        //    return Ok(new { message = "Fetched Data Successfully" });
+        //}
 
         /// <summary>
         /// Fetch tracks từ Spotify API (Dùng khi có tracks mới được thêm vào playlist từ Spotify)

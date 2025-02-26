@@ -1,10 +1,14 @@
 ﻿using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
+using HtmlAgilityPack;
+using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime.Tensors;
+using Microsoft.ML.Tokenizers;
+using MongoDB.Driver;
+using Org.BouncyCastle.Crypto;
+using System.Drawing;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using HtmlAgilityPack;
-using MongoDB.Driver;
-using System.Drawing;
 
 namespace BusinessLogicLayer.Implement.Services.Tests
 {
@@ -12,6 +16,16 @@ namespace BusinessLogicLayer.Implement.Services.Tests
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly HttpClient _httpClient = httpClient;
+
+        public async Task SetArtistAccount()
+        {
+            IEnumerable<Artist> artists = await _unitOfWork.GetCollection<Artist>().FindAsync(Builders<Artist>.Filter.Empty).Result.ToListAsync();
+            foreach (Artist artist in artists)
+            {
+                artist.UserId = null;
+                await _unitOfWork.GetCollection<Artist>().ReplaceOneAsync(Builders<Artist>.Filter.Eq(a => a.Id, artist.Id), artist);
+            }
+        }
 
         public static async Task<IEnumerable<string>> TestImgx()
         {
@@ -156,7 +170,6 @@ namespace BusinessLogicLayer.Implement.Services.Tests
                 return obj.Sum();
             }
         }
-
 
         public static async Task<List<Color>> ExtractPalette(string imagePath, int colorCount)
         {

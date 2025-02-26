@@ -4,6 +4,6 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 {
     public class ModelTrainer : IModelTrainer
     {
-
+        
     }
 }

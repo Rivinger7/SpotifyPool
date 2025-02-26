@@ -113,11 +113,8 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         /// <param name="Id"></param>
         /// <param name="accessToken"></param>
         /// <param name="refreshToken"></param>
-        public void GenerateAccessToken(IEnumerable<Claim> claims, User user, out string accessToken, out string refreshToken)
+        public void GenerateAccessToken(IEnumerable<Claim> claims, string userId, out string accessToken, out string refreshToken)
         {
-            //ObjectId userID = user.SpotifyId;
-            string userID = user.Id;
-
             //generate access token and refresh token
             accessToken = GenerateAccessToken(claims);
 
@@ -130,7 +127,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
                 .Set(user => user.RefreshTokenExpiryTime, refreshTokenExpiryTime);
 
             UpdateResult updateResult = _unitOfWork.GetCollection<User>().UpdateOne(
-                user => user.Id == userID, updateDefinition);
+                user => user.Id == userId, updateDefinition);
 
             if (updateResult.ModifiedCount < 1)
             {

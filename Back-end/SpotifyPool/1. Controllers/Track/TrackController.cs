@@ -3,6 +3,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SetupLayer.Enum.Services.Track;
 using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Track
@@ -13,6 +14,20 @@ namespace SpotifyPool._1._Controllers.Track
     public class TrackController(ITrack trackService) : ControllerBase
     {
         private readonly ITrack _trackService = trackService;
+
+        [AllowAnonymous, HttpPost("fetch/csv")]
+        public async Task<IActionResult> FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
+        {
+            await _trackService.FetchTracksByCsvAsync(csvFile, accessToken);
+            return Ok("Fetch successfully!");
+        }
+
+        //[AllowAnonymous, HttpGet("testing/tracks-with-artist-null")]
+        //public async Task<IActionResult> GetTracksArtistNull()
+        //{
+        //    var result = await _trackService.GetTracksWithArtistIsNull();
+        //    return Ok(result);
+        //}
 
         /// <summary>
         /// Lấy track theo ID
@@ -49,7 +64,14 @@ namespace SpotifyPool._1._Controllers.Track
             return Ok(result);
         }
 
-        [Authorize(Roles = nameof(UserRole.Artist)), HttpPost("upload")]
+        [AllowAnonymous, HttpGet("filter")]
+        public async Task<IActionResult> GetTracksByMoodAsync([FromQuery] Mood mood)
+        {
+            var result = await _trackService.GetTracksByMoodAsync(mood);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = $"{nameof(UserRole.Artist)}"), HttpPost("upload")]
         public async Task<IActionResult> UploadTrackAsync([FromForm] UploadTrackRequestModel request)
         {
             await _trackService.UploadTrackAsync(request);

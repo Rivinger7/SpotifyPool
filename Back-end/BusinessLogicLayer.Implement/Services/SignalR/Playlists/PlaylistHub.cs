@@ -368,6 +368,10 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 // Lưu thông tin playlist vào database
                 await _unitOfWork.GetCollection<Playlist>().InsertOneAsync(playlist);
 
+                // Tăng FavoriteSongsCount lên 1
+                UpdateDefinition<Track> trackUpdateDefinition = Builders<Track>.Update.Inc(track => track.FavoriteCount, 1);
+                await _unitOfWork.GetCollection<Track>().UpdateOneAsync(track => track.Id == trackId, trackUpdateDefinition);
+
                 // Mapping thông tin playlist sang PlaylistsResponseModel
                 PlaylistsResponseModel playlistResponseModel = _mapper.Map<PlaylistsResponseModel>(playlist);
 
@@ -410,7 +414,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 .Include(x => x.Id)
                 .Include(x => x.Name)
                 .Include(x => x.Duration)
-                .Include(x => x.PreviewURL)
+                .Include(x => x.StreamingUrl)
                 .Include(x => x.ArtistIds)
                 .Include(x => x.Images);
 
@@ -566,7 +570,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
                 .Include(x => x.Id)
                 .Include(x => x.Name)
                 .Include(x => x.Duration)
-                .Include(x => x.PreviewURL)
+                .Include(x => x.StreamingUrl)
                 .Include(x => x.ArtistIds)
                 .Include(x => x.Images);
 

@@ -1,69 +1,85 @@
 #region Dependencies
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text;
+using Amazon;
+using Amazon.MediaConvert;
+using Amazon.Runtime;
+using Amazon.S3;
+using Business_Logic_Layer.Services_Interface.InMemoryCache;
+using Business_Logic_Layer.Services_Interface.Users;
 using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Implement.Microservices.AWS;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
-using CloudinaryDotNet;
-using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using BusinessLogicLayer.Implement.Microservices.EmailSender;
+using BusinessLogicLayer.Implement.Microservices.Genius;
+using BusinessLogicLayer.Implement.Microservices.Geolocation;
 using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
+using BusinessLogicLayer.Implement.Microservices.OpenAI;
+using BusinessLogicLayer.Implement.Microservices.Spotify;
+using BusinessLogicLayer.Implement.Services.Admin;
+using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
+using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
+using BusinessLogicLayer.Implement.Services.Files;
+using BusinessLogicLayer.Implement.Services.InMemoryCache;
 using BusinessLogicLayer.Implement.Services.JWTs;
+using BusinessLogicLayer.Implement.Services.Playlists.Custom;
+using BusinessLogicLayer.Implement.Services.Recommendation;
+using BusinessLogicLayer.Implement.Services.Tests;
+using BusinessLogicLayer.Implement.Services.TopTracks;
+using BusinessLogicLayer.Implement.Services.Tracks;
+using BusinessLogicLayer.Implement.Services.Users;
+using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
+using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
+using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
+using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
+using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.Admin;
+using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
+using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Interface.Services_Interface.Files;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
-using Microsoft.IdentityModel.Tokens;
+using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
+using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
+using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
+using BusinessLogicLayer.Interface.Services_Interface.Tracks;
+using CloudinaryDotNet;
+using DataAccessLayer.Implement.MongoDB.Generic_Repository;
+using DataAccessLayer.Implement.MongoDB.UOW;
+using DataAccessLayer.Interface.MongoDB.Generic_Repository;
+using DataAccessLayer.Interface.MongoDB.UOW;
+using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
+using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.OpenApi.Models;
-using Business_Logic_Layer.Services_Interface.InMemoryCache;
-using BusinessLogicLayer.Implement.Services.InMemoryCache;
-using Business_Logic_Layer.Services_Interface.Users;
-using BusinessLogicLayer.Implement.Services.Users;
-using MongoDB.Driver;
-using System.Diagnostics;
-using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
-using BusinessLogicLayer.Implement.Microservices.Spotify;
-using System.Reflection;
-using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Utility.Coding;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using BusinessLogicLayer.Implement.Microservices.Geolocation;
-using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
-using DataAccessLayer.Implement.MongoDB.UOW;
-using DataAccessLayer.Interface.MongoDB.UOW;
-using SetupLayer.Setting.Microservices.Geolocation;
-using SetupLayer.Setting.Microservices.EmailSender;
-using SetupLayer.Setting.Microservices.Jira;
-using SetupLayer.Setting.Database;
-using BusinessLogicLayer.Interface.Services_Interface.Tracks;
-using BusinessLogicLayer.Implement.Services.Tracks;
-using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MongoDB.Bson.Serialization;
-using SetupLayer.Enum.Services.Playlist;
-using SetupLayer.Enum.Services.User;
-using SetupLayer.Enum.Microservices.Cloudinary;
-using BusinessLogicLayer.Implement.Services.Tests;
-using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
-using System.Threading.Channels;
-using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
-using SetupLayer.Enum.Services.Track;
-using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
-using BusinessLogicLayer.Implement.Microservices.Genius;
-using SetupLayer.Setting.Microservices.Genius;
-using SetupLayer.Setting.Microservices.Spotify;
+using MongoDB.Driver;
 using SetupLayer.Enum.EnumMember;
-using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
-using BusinessLogicLayer.Implement.Services.Recommendation;
-using DataAccessLayer.Implement.MongoDB.Generic_Repository;
-using DataAccessLayer.Interface.MongoDB.Generic_Repository;
-using BusinessLogicLayer.Implement.Services.Playlists.Custom;
-using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
-using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
-using BusinessLogicLayer.Implement.Services.TopTracks;
+using SetupLayer.Enum.Microservices.Cloudinary;
+using SetupLayer.Enum.Services.Playlist;
+using SetupLayer.Enum.Services.Track;
+using SetupLayer.Enum.Services.User;
+using SetupLayer.Setting.Database;
+using SetupLayer.Setting.Microservices.EmailSender;
+using SetupLayer.Setting.Microservices.Genius;
+using SetupLayer.Setting.Microservices.Geolocation;
+using SetupLayer.Setting.Microservices.Jira;
+using SetupLayer.Setting.Microservices.Spotify;
+using StackExchange.Redis;
+using System.Diagnostics;
+using System.Reflection;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Channels;
+using Utility.Coding;
 #endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
@@ -142,6 +158,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             stopwatch.Stop();
             Console.WriteLine($"AddCloudinary took {stopwatch.ElapsedMilliseconds} ms");
 
+            // AWS
+            stopwatch.Restart();
+            services.AddAmazonWebService(configuration);
+            stopwatch.Stop();
+            Console.WriteLine($"AddAmazonWebService took {stopwatch.ElapsedMilliseconds} ms");
+
             // Spotify
             stopwatch.Restart();
             services.AddSpotify();
@@ -188,6 +210,13 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddDistributedMemoryCache();
             stopwatch.Stop();
             Console.WriteLine($"AddDistributedMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+
+	    // Redis Register
+            stopwatch.Restart();
+            services.AddRedis();
+            stopwatch.Stop();
+            Console.WriteLine($"AddRedis took {stopwatch.ElapsedMilliseconds} ms");
+
 
             stopwatch.Restart();
             services.AddSession(options =>
@@ -469,13 +498,19 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Register BLL services
 
             // Authentication
-            services.AddScoped<IAuthenticationBLL, AuthenticationBLL>();
+            services.AddScoped<IAuthentication, AuthenticationBLL>();
 
             // User
-            services.AddScoped<IUserBLL, UserBLL>();
+            services.AddScoped<IUser, UserBLL>();
 
-            // Top Track
-            services.AddScoped<ITopTrack, TopTrackBLL>();
+            // Artist
+            services.AddScoped<IArtist, ArtistBLL>();
+
+			// Admin
+			services.AddScoped<IAdmin, AdminBLL>();
+
+			// Top Track
+			services.AddScoped<ITopTrack, TopTrackBLL>();
 
             // Track
             services.AddScoped<ITrack, TrackBLL>();
@@ -487,6 +522,15 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IRecommendation, RecommendationBLL>();
 
             //services.AddScoped<NAudioService>();
+
+            // OpenApi
+            services.AddScoped<IOpenAIService, OpenAIService>();
+
+            // Files
+            services.AddScoped<IFiles, FilesBLL>();
+
+            // AWS
+            services.AddScoped<IAmazonWebService, AmazonWebService>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
@@ -531,6 +575,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Register the BackgroundEmailSender as a hosted service
             services.AddHostedService<BackgroundEmailSender>();
+
+            // Register the StreamCountBackgroundService as a hosted service
+            services.AddHostedService<StreamCountBackgroundService>();
         }
 
         public static void AddJWT(this IServiceCollection services)
@@ -788,6 +835,21 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<CloudinaryService>();
         }
 
+        public static void AddAmazonWebService(this IServiceCollection services, IConfiguration configuration)
+        {
+            string accessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID") ?? throw new Exception("AWS_ACCESS_KEY_ID not set");
+            string secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") ?? throw new Exception("AWS_SECRET_ACCESS_KEY not set");
+            string region = Environment.GetEnvironmentVariable("AWS_REGION") ?? throw new Exception("AWS_REGION not set");
+
+            var awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
+            var awsRegion = RegionEndpoint.GetBySystemName(region);
+
+            // Thêm S3 Client
+            services.AddSingleton<IAmazonS3>(new AmazonS3Client(awsCredentials, awsRegion));
+
+            // 🔹 Thêm MediaConvert Client (đây là phần bạn đang bị lỗi)
+            services.AddSingleton<IAmazonMediaConvert>(new AmazonMediaConvertClient(awsCredentials, awsRegion));
+        }
         public static void AddGeolocation(this IServiceCollection services)
         {
             string? geolocationApiKey = Environment.GetEnvironmentVariable("IPGEOLOCATION_API_KEY");
@@ -917,11 +979,23 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Track
             BsonSerializer.RegisterSerializer(typeof(PlaylistName), new EnumMemberSerializer<PlaylistName>());
             BsonSerializer.RegisterSerializer(typeof(RestrictionReason), new EnumMemberSerializer<RestrictionReason>());
+            BsonSerializer.RegisterSerializer(typeof(Mood), new EnumMemberSerializer<Mood>());
 
             // Cloudinary
             BsonSerializer.RegisterSerializer(typeof(AudioTagChild), new EnumMemberSerializer<AudioTagChild>());
             BsonSerializer.RegisterSerializer(typeof(AudioTagParent), new EnumMemberSerializer<AudioTagParent>());
             BsonSerializer.RegisterSerializer(typeof(ImageTag), new EnumMemberSerializer<ImageTag>());
         }
+
+	private static void AddRedis(this IServiceCollection services)
+        {
+            var option = new ConfigurationOptions
+            {
+                EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
+                Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
+            };
+            services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
+        }
+
     }
 }

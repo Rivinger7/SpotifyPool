@@ -1,13 +1,12 @@
-﻿using Hellang.Middleware.ProblemDetails;
-using SpotifyPool.Infrastructure;
-using System.Diagnostics;
-using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
-using SpotifyPool.Infrastructure.EnvironmentVariable;
-using Microsoft.AspNetCore.HttpOverrides;
-using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
+﻿using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
+using BusinessLogicLayer.Implement.Services.SignalR.PlaybackSync;
 using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
+using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
+using Hellang.Middleware.ProblemDetails;
+using Microsoft.AspNetCore.HttpOverrides;
+using SpotifyPool.Infrastructure;
+using SpotifyPool.Infrastructure.EnvironmentVariable;
+using System.Diagnostics;
 
 // Stopwatch Start
 var stopwatch = new Stopwatch();
@@ -119,6 +118,7 @@ app.MapControllers();
 
 app.MapHub<StreamCountingHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL")}");
 app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL")}");
+app.MapHub<PlaybackSyncHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYBACK_SYNC_URL")}");
 
 // Stopwatch End
 stopwatch.Stop();
