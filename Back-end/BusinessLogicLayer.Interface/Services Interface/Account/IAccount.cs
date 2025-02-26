@@ -2,9 +2,9 @@
 using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Paging;
 
-namespace BusinessLogicLayer.Interface.Services_Interface.Admin
+namespace BusinessLogicLayer.Interface.Services_Interface.Account
 {
-	public interface IAdmin
+	public interface IAccount
 	{
 		Task<IEnumerable<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model);
 

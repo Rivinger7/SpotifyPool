@@ -27,5 +27,12 @@ namespace SpotifyPool._1._Controllers.TopTrack
             var result = await _topTrackService.GetTopTrackAsync();
             return Ok(result);
         }
+
+        [AllowAnonymous, HttpPost()]
+        public async Task<IActionResult> UpdateStreamCountAsync([FromBody] string trackId)
+        {
+            await _topTrackService.UpdateStreamCountAsync(trackId);
+            return Ok(new { Message = "Update Stream Count Successfully" });
+        }
     }
 }

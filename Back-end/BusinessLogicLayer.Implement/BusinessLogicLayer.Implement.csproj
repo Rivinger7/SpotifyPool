@@ -31,6 +31,7 @@
     <PackageReference Include="OpenAI" Version="2.1.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
     <PackageReference Include="Spectrogram" Version="1.6.1" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.24" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.0" />
     <PackageReference Include="System.Text.Json" Version="9.0.2" />
     <PackageReference Include="Tokenizers.DotNet.runtime.win-x64" Version="1.1.0" />

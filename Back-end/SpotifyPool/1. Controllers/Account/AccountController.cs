@@ -1,4 +1,4 @@
-﻿using BusinessLogicLayer.Interface.Services_Interface.Admin;
+﻿using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Admin.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Paging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,9 +12,9 @@ namespace SpotifyPool._1._Controllers.Account
 	[ApiController]
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] //"Bearer"
 	[Authorize(Roles = nameof(UserRole.Admin))]
-	public class AccountController(IAdmin accountBLL) : ControllerBase
+	public class AccountController(IAccount accountBLL) : ControllerBase
 	{
-		private readonly IAdmin _accountBLL = accountBLL;
+		private readonly IAccount _accountBLL = accountBLL;
 
 		/// <summary>
 		/// Hiển thị danh sách tài khoản ngưởi dùng

@@ -12,5 +12,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.JWTs
         string GenerateJWTTokenForConfirmEmail(string email, string encrpytedToken);
         JwtSecurityToken DecodeToken(string token);
         void GenerateAccessToken(IEnumerable<Claim> claims, string userId, out string accessToken, out string refreshToken);
+        ClaimsPrincipal ValidateToken(string token);
     }
 }

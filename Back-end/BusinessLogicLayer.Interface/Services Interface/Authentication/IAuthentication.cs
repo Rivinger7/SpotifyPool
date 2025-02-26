@@ -17,5 +17,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
         Task ConfirmOTP(string userId, string otpCode);
         Task ResetPasswordAsync(ResetPasswordRequestModel model);
         Task<AuthenticatedResponseModel> SwitchProfile();
+        Task<AuthenticatedUserInfoResponseModel> GetUserInformation(string token);
     }
 }
