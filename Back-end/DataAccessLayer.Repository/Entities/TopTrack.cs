@@ -16,6 +16,11 @@ namespace DataAccessLayer.Repository.Entities
 
         public required DateTime CreatedTime { get; set; }
         public DateTime? LastUpdatedTime { get; set; }
+
+        public TopTrack()
+        {
+            
+        }
     }
 
     public class TopTrackInfo

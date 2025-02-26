@@ -72,6 +72,7 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
                         TopTrack newTopTrack = new()
                         {
                             UserId = userId,
+                            CreatedTime = DateTime.UtcNow,
                             TrackInfo =
                             [
                                 new()
