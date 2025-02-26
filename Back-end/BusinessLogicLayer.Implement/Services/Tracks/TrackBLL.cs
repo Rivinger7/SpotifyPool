@@ -1,15 +1,15 @@
 using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.NAudio;
 using BusinessLogicLayer.Implement.Services.DataAnalysis;
+using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
-using CloudinaryDotNet.Actions;
 using CsvHelper;
 using CsvHelper.Configuration;
 using DataAccessLayer.Interface.MongoDB.UOW;
@@ -19,7 +19,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using SetupLayer.Enum.Microservices.Cloudinary;
+using NAudio.Wave;
 using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -29,13 +29,14 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
-    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService, ISpotify spotifyService) : ITrack
+    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISpotify spotifyService, IAmazonWebService amazonWebService, IFFmpegService fFmpegService) : ITrack
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly CloudinaryService _cloudinaryService = cloudinaryService;
         private readonly ISpotify _spotifyService = spotifyService;
+        private readonly IAmazonWebService _amazonWebService = amazonWebService;
+        private readonly IFFmpegService _fFmpegService = fFmpegService;
 
         public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
         {
@@ -101,8 +102,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                             Name = artistName,
                             Followers = artistFollower[artistName],
                             Popularity = artistPopularity[artistName],
-                            GenreIds = [],
                             Images = artistImages[artistName] ?? [],
+                            CreatedTime = Util.GetUtcPlus7Time(),
                         };
                         artistIds.Add(newArtist.Id);
                         newArtists.Add(newArtist);
@@ -242,8 +243,13 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         //}
         #endregion
 
-        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit)
+        public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit, TrackFilterModel filterModel)
         {
+            //Xử lý các ký tự đặc biệt trong search term
+            string searchTermEscaped = filterModel.SearchTerm != null
+                ? Util.EscapeSpecialCharacters(filterModel.SearchTerm)
+                : string.Empty;
+
             // Projection
             ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
                 new TrackResponseModel
@@ -265,7 +271,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                         Id = artist.Id,
                         Name = artist.Name,
                         Followers = artist.Followers,
-                        GenreIds = artist.GenreIds,
                         Images = artist.Images.Select(image => new ImageResponseModel
                         {
                             URL = image.URL,
@@ -275,12 +280,75 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     })
                 });
 
+            //Search
+            FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
+            if (!string.IsNullOrEmpty(searchTermEscaped))
+            {
+                trackFilter = Builders<Track>.Filter.Or(
+                    Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
+                    Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
+                );
+            }
+            else if(!string.IsNullOrEmpty(filterModel.Mood.ToString()))
+            {
+                trackFilter = filterModel.Mood switch
+                {
+                    Mood.Sad => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 0),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 100),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.4)),
+
+                    Mood.Neutral => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 100) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 120),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.4) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.6)),
+
+                    Mood.Happy => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 120) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 160),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.6) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.8)),
+
+                    Mood.Blisfull => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 140) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 180),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.8) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 1)),
+
+                    Mood.Focus => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Instrumentalness, 0.7),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Energy, 0.5)),
+
+                    Mood.Random => Builders<Track>.Filter.Empty,
+                    _ => throw new InvalidDataCustomException("The mood is not supported"),
+                };
+            }
+
             // Empty Pipeline
             IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            //Sorting
+            if (filterModel.SortById.HasValue)
+            {
+                aggregateFluent = filterModel.SortById.Value
+                    ? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Id))
+                    : aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Id));
+            }
+            else if (filterModel.SortByName.HasValue)
+            {
+                aggregateFluent = filterModel.SortByName.Value
+                    ? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Name))
+                    : aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Name));
+            }
 
             // Lấy thông tin Tracks với Artist
             // Lookup
             IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Match(trackFilter)
                 .Skip((offset - 1) * limit)
                 .Limit(limit)
                 .Lookup<Track, Artist, ASTrack>(
@@ -319,7 +387,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                         Id = artist.Id,
                         Name = artist.Name,
                         Followers = artist.Followers,
-                        GenreIds = artist.GenreIds,
                         Images = artist.Images.Select(image => new ImageResponseModel
                         {
                             URL = image.URL,
@@ -347,69 +414,70 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             return trackResponseModel;
         }
 
-        public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
-        {
-            // Xử lý các ký tự đặc biệt
-            string searchTermEscaped = Util.EscapeSpecialCharacters(searchTerm);
+        #region SearchTracksAsync (Code này đã được gộp vào trong Code GetAllTrack)
+        //public async Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm)
+        //{
+        //    // Xử lý các ký tự đặc biệt
+        //    string searchTermEscaped = Util.EscapeSpecialCharacters(searchTerm);
 
-            // Empty Pipeline
-            IAggregateFluent<Track> pipeline = _unitOfWork.GetCollection<Track>().Aggregate();
+        //    // Empty Pipeline
+        //    IAggregateFluent<Track> pipeline = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Projection
-            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
-                new TrackResponseModel
-                {
-                    Id = track.Id,
-                    Name = track.Name,
-                    Description = track.Description,
-                    Lyrics = track.Lyrics,
-                    PreviewURL = track.StreamingUrl,
-                    Duration = track.Duration,
-                    Images = track.Images.Select(image => new ImageResponseModel
-                    {
-                        URL = image.URL,
-                        Height = image.Height,
-                        Width = image.Width
-                    }),
-                    Artists = track.Artists.Select(artist => new ArtistResponseModel
-                    {
-                        Id = artist.Id,
-                        Name = artist.Name,
-                        Followers = artist.Followers,
-                        GenreIds = artist.GenreIds,
-                        Images = artist.Images.Select(image => new ImageResponseModel
-                        {
-                            URL = image.URL,
-                            Height = image.Height,
-                            Width = image.Width
-                        })
-                    })
-                });
+        //    // Projection
+        //    ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+        //        new TrackResponseModel
+        //        {
+        //            Id = track.Id,
+        //            Name = track.Name,
+        //            Description = track.Description,
+        //            Lyrics = track.Lyrics,
+        //            PreviewURL = track.StreamingUrl,
+        //            Duration = track.Duration,
+        //            Images = track.Images.Select(image => new ImageResponseModel
+        //            {
+        //                URL = image.URL,
+        //                Height = image.Height,
+        //                Width = image.Width
+        //            }),
+        //            Artists = track.Artists.Select(artist => new ArtistResponseModel
+        //            {
+        //                Id = artist.Id,
+        //                Name = artist.Name,
+        //                Followers = artist.Followers,
+        //                Images = artist.Images.Select(image => new ImageResponseModel
+        //                {
+        //                    URL = image.URL,
+        //                    Height = image.Height,
+        //                    Width = image.Width
+        //                })
+        //            })
+        //        });
 
-            // Tạo bộ lọc cho ASTrack riêng biệt sau khi Lookup  
-            FilterDefinition<ASTrack> trackWithArtistFilter = Builders<ASTrack>.Filter.Or(
-                Builders<ASTrack>.Filter.Regex(astrack => astrack.Name, new BsonRegularExpression(searchTermEscaped, "i")),
-                Builders<ASTrack>.Filter.Regex(astrack => astrack.Description, new BsonRegularExpression(searchTermEscaped, "i")),
-                Builders<ASTrack>.Filter.ElemMatch(track => track.Artists, artist => artist.Name.Contains(searchTermEscaped, StringComparison.CurrentCultureIgnoreCase))
-            );
+        //    // Tạo bộ lọc cho ASTrack riêng biệt sau khi Lookup  
+        //    FilterDefinition<ASTrack> trackWithArtistFilter = Builders<ASTrack>.Filter.Or(
+        //        Builders<ASTrack>.Filter.Regex(astrack => astrack.Name, new BsonRegularExpression(searchTermEscaped, "i")),
+        //        Builders<ASTrack>.Filter.Regex(astrack => astrack.Description, new BsonRegularExpression(searchTermEscaped, "i")),
+        //        Builders<ASTrack>.Filter.ElemMatch(track => track.Artists, artist => artist.Name.Contains(searchTermEscaped, StringComparison.CurrentCultureIgnoreCase))
+        //    );
 
-            // Empty Pipeline
-            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+        //    // Empty Pipeline
+        //    IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Lấy thông tin Tracks với Artist
-            // Lookup
-            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
-                .Lookup<Track, Artist, ASTrack>(
-                    _unitOfWork.GetCollection<Artist>(),
-                    track => track.ArtistIds,
-                    artist => artist.Id,
-                    result => result.Artists)
-                .Match(trackWithArtistFilter)
-                .Project(trackWithArtistProjection)
-                .ToListAsync();
+        //    // Lấy thông tin Tracks với Artist
+        //    // Lookup
+        //    IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+        //        .Lookup<Track, Artist, ASTrack>(
+        //            _unitOfWork.GetCollection<Artist>(),
+        //            track => track.ArtistIds,
+        //            artist => artist.Id,
+        //            result => result.Artists)
+        //        .Match(trackWithArtistFilter)
+        //        .Project(trackWithArtistProjection)
+        //        .ToListAsync();
 
-            return tracksResponseModel;
-        }
+        //    return tracksResponseModel;
+        //}
+        #endregion
 
         public async Task UploadTrackAsync(UploadTrackRequestModel request)
         {
@@ -424,6 +492,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             Track newTrack = _mapper.Map<Track>(request);
 
             //thêm các thông tin cần thiết cho Track
+            newTrack.Id = ObjectId.GenerateNewId().ToString();
             newTrack.ArtistIds = [artistId];
             newTrack.UploadBy = artistId ?? throw new ArgumentNullCustomException($"{artistId}");
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
@@ -444,100 +513,101 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     await request.File.CopyToAsync(stream);
                 }
 
-                //cắt vid từ giây 0:00 đến giây thứ 30
+                // Convert file mp3 sang wav for nothing
+                // Lấy duration của file mp3
                 NAudioService.TrimAudioFile(out int duration, inputPath, outputPath, TimeSpan.FromSeconds(30));
+
+                // mở file mp3 lưu ở wwwroot/input để đọc
+                using AudioFileReader reader = new(inputPath);
+
+                // lấy tổng thời gian nhạc trên file mp3
+                //int duration = (int)reader.TotalTime.TotalSeconds * 1000;
 
                 newTrack.Duration = duration;
 
                 //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-                using (var outputStream = new FileStream(outputPath, FileMode.Open))
+                using FileStream outputStream = new(outputPath, FileMode.Open);
+                IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
                 {
-                    IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
-                    {
-                        Headers = new HeaderDictionary(),
-                        ContentType = "audio/wav"
-                    };
+                    Headers = new HeaderDictionary(),
+                    ContentType = "audio/wav"
+                };
 
-                    // upload lên cloudinary
-                    VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
-                    newTrack.StreamingUrl = result.SecureUrl.AbsoluteUri;
+                // upload lên cloudinary
+                //VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
+                //newTrack.StreamingUrl = result.SecureUrl.AbsoluteUri;
 
-                    //chuyển file audio thành spectrogram và dự đoán audio features
-                    Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(newTrack.StreamingUrl);
+                // Đặt tên file theo id và name của track
+                string trackIdName = $"{newTrack.Id}_{newTrack.Name}";
 
-                    // Lưu bitmap vào MemoryStream thay vì ổ cứng
-                    using MemoryStream memoryStream = new();
+                // url mp3 public của file audio
+                string publicUrl = await _amazonWebService.UploadFileAsync(outputFile, trackIdName);
 
-                    // Lưu ở định dạng PNG (hoặc định dạng khác nếu muốn)
-                    spectrogram.Save(memoryStream, ImageFormat.Png);
+                // Convert audio file sang dạng streaming
+                string outputFolderPath = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
 
-                    // Giải phóng tài nguyên từ bitmap
-                    spectrogram.Dispose();
+                // Upload streaming files lên AWS S3
+                newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
 
-                    // Đặt lại vị trí đầu stream để upload
-                    memoryStream.Position = 0;
+                // AWS chuyển file audio sang dạng streaming
+                //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
 
-                    // Khởi tạo IFormFile từ MemoryStream
-                    IFormFile spectrogramFile = new FormFile(memoryStream, 0, memoryStream.Length, "spectrogram", $"{newTrack.Id}.png")
-                    {
-                        Headers = new HeaderDictionary(),
-                        ContentType = "image/png"
-                    };
+                //chuyển file audio thành spectrogram và dự đoán audio features
+                Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(publicUrl);
 
-                    //upload spectrogram lên cloudinary
-                    ImageUploadResult imageResult = _cloudinaryService.UploadImage(spectrogramFile, ImageTag.Spectrogram);
+                // Lưu bitmap vào MemoryStream thay vì ổ cứng
+                using MemoryStream memoryStream = new();
 
-                    // Chuyển spectrogram thành tensor
-                    Tensor<float> tensor = await SpectrogramProcessor.ProcessImageToTensor(imageResult.SecureUrl.AbsoluteUri);
+                // Lưu ở định dạng PNG (hoặc định dạng khác nếu muốn)
+                spectrogram.Save(memoryStream, ImageFormat.Png);
 
-                    // Dự đoán audio features từ tensor
-                    float[] spectroPredict = SpectrogramProcessor.Predict(tensor);
+                // Giải phóng tài nguyên từ bitmap
+                spectrogram.Dispose();
 
-                    ////tạo mới audio features từ spectroPredict 
-                    //AudioFeatures audioFeature = new()
-                    //{
-                    //    Id = audioFeaturesId,
-                    //    Duration = (int)Math.Round(spectroPredict[0], 2),
-                    //    Key = (int)Math.Round(spectroPredict[1], 2),
-                    //    TimeSignature = (int)Math.Round(spectroPredict[2], 2),
-                    //    Mode = (int)Math.Round(spectroPredict[3], 2),
-                    //    Acousticness = spectroPredict[4],
-                    //    Danceability = spectroPredict[5],
-                    //    Energy = spectroPredict[6],
-                    //    Instrumentalness = spectroPredict[7],
-                    //    Liveness = spectroPredict[8],
-                    //    Loudness = spectroPredict[9],
-                    //    Speechiness = spectroPredict[10],
-                    //    Tempo = spectroPredict[11],
-                    //    Valence = spectroPredict[12]
-                    //};
+                // Đặt lại vị trí đầu stream để upload
+                memoryStream.Position = 0;
 
-                    // Tạo mới audio features từ spectroPredict
-                    AudioFeatures audioFeature = new()
-                    {
-                        Acousticness = spectroPredict[0],
-                        Danceability = spectroPredict[1],
-                        Energy = spectroPredict[2],
-                        Instrumentalness = spectroPredict[3],
-                        Key = (int)Math.Round(spectroPredict[4], 2),
-                        Liveness = spectroPredict[5],
-                        Loudness = spectroPredict[6],
-                        Mode = (int)Math.Round(spectroPredict[7], 2),
-                        Speechiness = spectroPredict[8],
-                        Tempo = spectroPredict[9],
-                        TimeSignature = (int)Math.Round(spectroPredict[10], 2),
-                        Valence = spectroPredict[11]
-                    };
+                // Khởi tạo IFormFile từ MemoryStream
+                IFormFile spectrogramFile = new FormFile(memoryStream, 0, memoryStream.Length, "spectrogram", $"{newTrack.Id}.png")
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = "image/png"
+                };
+
+                //upload spectrogram lên cloudinary
+                //ImageUploadResult imageResult = _cloudinaryService.UploadImage(spectrogramFile, ImageTag.Spectrogram);
+
+                // Chuyển spectrogram thành tensor
+                //Tensor<float> tensor = await SpectrogramProcessor.ProcessImageToTensor(imageResult.SecureUrl.AbsoluteUri);
+                Tensor<float> tensor = await SpectrogramProcessor.ProcessImageToTensor(spectrogramFile);
+
+                // Dự đoán audio features từ tensor
+                float[] spectroPredict = SpectrogramProcessor.Predict(tensor);
+
+                // Tạo mới audio features từ spectroPredict
+                AudioFeatures audioFeature = new()
+                {
+                    Acousticness = spectroPredict[0],
+                    Danceability = spectroPredict[1],
+                    Energy = spectroPredict[2],
+                    Instrumentalness = spectroPredict[3],
+                    Key = (int)Math.Round(spectroPredict[4], 2),
+                    Liveness = spectroPredict[5],
+                    Loudness = spectroPredict[6],
+                    Mode = (int)Math.Round(spectroPredict[7], 2),
+                    Speechiness = spectroPredict[8],
+                    Tempo = spectroPredict[9],
+                    TimeSignature = (int)Math.Round(spectroPredict[10], 2),
+                    Valence = spectroPredict[11]
+                };
 
 
-                    //await _unitOfWork.GetCollection<AudioFeatures>().InsertOneAsync(audioFeature);
+                //await _unitOfWork.GetCollection<AudioFeatures>().InsertOneAsync(audioFeature);
 
-                    newTrack.AudioFeatures = audioFeature;
+                newTrack.AudioFeatures = audioFeature;
 
-                    //lưu track và audio features vào database
-                    await _unitOfWork.GetCollection<Track>().InsertOneAsync(newTrack);
-
-                }
+                //lưu track và audio features vào database
+                await _unitOfWork.GetCollection<Track>().InsertOneAsync(newTrack);
                 return;
             }
             //catch (Exception ex)
@@ -613,7 +683,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                         Id = artist.Id,
                         Name = artist.Name,
                         Followers = artist.Followers,
-                        GenreIds = artist.GenreIds,
                         Images = artist.Images.Select(image => new ImageResponseModel
                         {
                             URL = image.URL,

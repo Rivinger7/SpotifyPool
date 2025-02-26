@@ -12,24 +12,18 @@ namespace SpotifyPool._1._Controllers.Playlist
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class PlaylistController(IPlaylist playlistService) : ControllerBase
     {
-        private readonly IPlaylist playlistService = playlistService;
+        private readonly IPlaylist _playlistService = playlistService;
 
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet]
-        public async Task<IActionResult> GetAllPlaylistsAsync()
+		/// <summary>
+		/// Lấy thông tin playlist bao gồm danh sách track
+		/// </summary>
+		/// <param name="id">Id của Playlist</param>
+		/// <param name="filterModel">Sắp xếp. True: Asc, False: Desc</param>
+		/// <returns></returns>
+		[Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
+        public async Task<IActionResult> GetPlaylistAsync(string id, [FromQuery] PlaylistFilterModel filterModel)
         {
-            var result = await playlistService.GetAllPlaylistsAsync();
-            return Ok(result);
-        }
-
-        /// <summary>
-        /// Lấy thông tin playlist bao gồm danh sách track
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("{id}")]
-        public async Task<IActionResult> GetPlaylistAsync(string id)
-        {
-            var result = await playlistService.GetPlaylistAsync(id);
+            var result = await _playlistService.GetPlaylistAsync(id, filterModel);
             return Ok(result);
         }
 
@@ -41,33 +35,34 @@ namespace SpotifyPool._1._Controllers.Playlist
         [Authorize(Roles = nameof(UserRole.Customer)), HttpPost]
         public async Task<IActionResult> CreatePlaylistAsync([FromForm] PlaylistRequestModel playlistRequestModel)
         {
-            await playlistService.CreatePlaylistAsync(playlistRequestModel);
+            await _playlistService.CreatePlaylistAsync(playlistRequestModel);
             return Ok(new { Message = "Create Playlist Successfully" });
         }
 
-        /// <summary>
-        /// Lấy danh sách track được đề xuất
-        /// </summary>
-        /// <param name="offset"></param>
-        /// <param name="limit"></param>
-        /// <returns></returns>
-        [AllowAnonymous, HttpGet("recommendation/tracks")]
-        public async Task<IActionResult> GetRecommendationPlaylist([FromQuery] int offset = 1, [FromQuery] int limit = 20)
-        {
-            var result = await playlistService.GetRecommendationPlaylist(offset, limit);
-            return Ok(result);
-        }
+        // Chưa xong
+        ///// <summary>
+        ///// Lấy danh sách track được đề xuất
+        ///// </summary>
+        ///// <param name="offset"></param>
+        ///// <param name="limit"></param>
+        ///// <returns></returns>
+        //[AllowAnonymous, HttpGet("recommendation/tracks")]
+        //public async Task<IActionResult> GetRecommendationPlaylist([FromQuery] int offset = 1, [FromQuery] int limit = 20)
+        //{
+        //    var result = await _playlistService.GetRecommendationPlaylist(offset, limit);
+        //    return Ok(result);
+        //}
 
         /// <summary>
         /// Thêm track vào playlist
         /// </summary>
         /// <param name="trackID"></param>
-        /// <param name="playlistId"></param>
+        /// <param name="id"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("{playlistId}/add-track")]
-        public async Task<IActionResult> AddToPlaylistAsync([FromBody] string trackID, string playlistId)
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("{id}/tracks")]
+        public async Task<IActionResult> AddToPlaylistAsync([FromBody] string trackID, string id)
         {
-            await playlistService.AddToPlaylistAsync(trackID, playlistId);
+            await _playlistService.AddToPlaylistAsync(trackID, id);
             return Ok(new { Message = "Add to Playlist Successfully" });
         }
 
@@ -76,10 +71,10 @@ namespace SpotifyPool._1._Controllers.Playlist
         /// </summary>
         /// <param name="mood"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("create-playlist-by-mood")]
-        public async Task<IActionResult> CreateMoodPlaylist([FromQuery] string mood = "Sad")
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("mood")]
+        public async Task<IActionResult> CreateMoodPlaylist([FromBody] string mood = "Sad")
         {
-            await playlistService.CreateMoodPlaylistAsync(mood);
+            await _playlistService.CreateMoodPlaylistAsync(mood);
             return Ok(new { Message = "Create Mood Playlist Successfully" });
         }
 
@@ -87,12 +82,12 @@ namespace SpotifyPool._1._Controllers.Playlist
         /// Xóa track khỏi playlist
         /// </summary>
         /// <param name="trackID"></param>
-        /// <param name="playlistID"></param>
+        /// <param name="id"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpDelete("{playlistID}")]
-        public async Task<IActionResult> RemoveTrackFromCustomPlaylist(string trackID, string playlistID)
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpDelete("{id}/tracks/{trackId}")]
+        public async Task<IActionResult> RemoveTrackFromCustomPlaylist(string trackID, string id)
         {
-            await playlistService.RemoveFromPlaylistAsync(trackID, playlistID);
+            await _playlistService.RemoveFromPlaylistAsync(trackID, id);
             return Ok(new { Message = "Remove Custom Playlist Successfully" });
         }
     }

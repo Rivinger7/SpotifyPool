@@ -71,7 +71,7 @@ namespace SpotifyPool._1._Controllers.Spotify
         /// <param name="accessToken"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.SuperAdmin)), HttpGet("fetch/update/playlist/{id}/tracks")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("fetch/update/playlist/{id}/tracks")]
         public async Task<IActionResult> UpdateFetchPlaylistItems([FromQuery] string accessToken, string id)
         {
             if (string.IsNullOrEmpty(accessToken))
@@ -89,7 +89,7 @@ namespace SpotifyPool._1._Controllers.Spotify
         /// <param name="accessToken"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.SuperAdmin)), HttpGet("fetch/playlist/{id}/tracks")]
+        [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("fetch/playlist/{id}/tracks")]
         public async Task<IActionResult> FetchPlaylistItems([FromQuery] string accessToken, string id)
         {
             if (string.IsNullOrEmpty(accessToken))

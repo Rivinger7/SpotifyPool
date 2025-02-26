@@ -14,10 +14,11 @@ using BusinessLogicLayer.Implement.Microservices.Geolocation;
 using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
 using BusinessLogicLayer.Implement.Microservices.OpenAI;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
-using BusinessLogicLayer.Implement.Services.Admin;
+using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
 using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.InMemoryCache;
@@ -34,10 +35,11 @@ using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
-using BusinessLogicLayer.Interface.Services_Interface.Admin;
+using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using BusinessLogicLayer.Interface.Services_Interface.Files;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
@@ -64,10 +66,13 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SetupLayer.Enum.EnumMember;
 using SetupLayer.Enum.Microservices.Cloudinary;
+using SetupLayer.Enum.Services.Album;
 using SetupLayer.Enum.Services.Playlist;
+using SetupLayer.Enum.Services.Reccomendation;
 using SetupLayer.Enum.Services.Track;
 using SetupLayer.Enum.Services.User;
 using SetupLayer.Setting.Database;
+using SetupLayer.Setting.Microservices.AWS;
 using SetupLayer.Setting.Microservices.EmailSender;
 using SetupLayer.Setting.Microservices.Genius;
 using SetupLayer.Setting.Microservices.Geolocation;
@@ -507,7 +512,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IArtist, ArtistBLL>();
 
 			// Admin
-			services.AddScoped<IAdmin, AdminBLL>();
+			services.AddScoped<IAccount, AccountBLL>();
 
 			// Top Track
 			services.AddScoped<ITopTrack, TopTrackBLL>();
@@ -529,8 +534,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Files
             services.AddScoped<IFiles, FilesBLL>();
 
-            // AWS
-            services.AddScoped<IAmazonWebService, AmazonWebService>();
+            // FFmpeg
+            services.AddScoped<IFFmpegService, FFmpegService>();
         }
 
         //public static void AddRepositories(this IServiceCollection services)
@@ -841,14 +846,30 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             string secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") ?? throw new Exception("AWS_SECRET_ACCESS_KEY not set");
             string region = Environment.GetEnvironmentVariable("AWS_REGION") ?? throw new Exception("AWS_REGION not set");
 
-            var awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
-            var awsRegion = RegionEndpoint.GetBySystemName(region);
+            BasicAWSCredentials awsCredentials = new(accessKey, secretKey);
+            RegionEndpoint awsRegion = RegionEndpoint.GetBySystemName(region);
 
             // Thêm S3 Client
             services.AddSingleton<IAmazonS3>(new AmazonS3Client(awsCredentials, awsRegion));
 
-            // 🔹 Thêm MediaConvert Client (đây là phần bạn đang bị lỗi)
+            // Thêm MediaConvert Client
             services.AddSingleton<IAmazonMediaConvert>(new AmazonMediaConvertClient(awsCredentials, awsRegion));
+
+            // Config the AWS Client
+            AWSSettings awsSetting = new()
+            {
+                BucketName = Environment.GetEnvironmentVariable("AWS_S3_BUCKET_NAME") ?? throw new DataNotFoundCustomException("BucketName is not set in environment"),
+                Region = Environment.GetEnvironmentVariable("AWS_REGION") ?? throw new DataNotFoundCustomException("Region is not set in environment"),
+                MediaConvertRole = Environment.GetEnvironmentVariable("AWS_MediaConvertRole") ?? throw new DataNotFoundCustomException("MediaConvertRole is not set in environment"),
+                MediaConvertEndpoint = Environment.GetEnvironmentVariable("AWS_MediaConvertEndpoint") ?? throw new DataNotFoundCustomException("MediaConvertEndpoint is not set in environment"),
+                MediaConvertQueue = Environment.GetEnvironmentVariable("AWS_MediaConvertQueue") ?? throw new DataNotFoundCustomException("MediaConvertQueue is not set in environment")
+            };
+
+            // Register the AWSSetting with DI
+            services.AddSingleton(awsSetting);
+
+            // AWS
+            services.AddScoped<IAmazonWebService, AmazonWebService>();
         }
         public static void AddGeolocation(this IServiceCollection services)
         {
@@ -985,6 +1006,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(AudioTagChild), new EnumMemberSerializer<AudioTagChild>());
             BsonSerializer.RegisterSerializer(typeof(AudioTagParent), new EnumMemberSerializer<AudioTagParent>());
             BsonSerializer.RegisterSerializer(typeof(ImageTag), new EnumMemberSerializer<ImageTag>());
+
+            // Album
+            BsonSerializer.RegisterSerializer(typeof(ReleaseStatus), new EnumMemberSerializer<ReleaseStatus>());
+
+            // Reccomendation
+            BsonSerializer.RegisterSerializer(typeof(Algorithm), new EnumMemberSerializer<Algorithm>());
         }
 
 	private static void AddRedis(this IServiceCollection services)

@@ -4,8 +4,10 @@ namespace BusinessLogicLayer.Interface.Microservices_Interface.AWS
 {
     public interface IAmazonWebService
     {
-        Task<string> CreateHlsJobAsync(string inputFile);
-        Task<string> UploadAndConvertToStreamingFile(IFormFile audioFile);
-        Task UploadAudioFileAsync(IFormFile audioFile);
+        //Task<string> UploadAndConvertToStreamingFile(IFormFile audioFile);
+        //Task<(string, string)> UploadAndConvertToStreamingFile(IFormFile audioFile);
+        Task<(string, string)> UploadAndConvertToStreamingFile(IFormFile audioFile, string fileName);
+        Task<string> UploadFileAsync(IFormFile audioFile, string trackId);
+        Task<string> UploadFolderAsync(string localFolderPath, string trackId, string trackName);
     }
 }

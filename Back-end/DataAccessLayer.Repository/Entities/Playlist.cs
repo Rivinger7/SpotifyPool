@@ -21,6 +21,8 @@ namespace DataAccessLayer.Repository.Entities
         public List<Image> Images { get; set; } = [];
 
         public DateTime CreatedTime { get; set; }
+        public DateTime? LastUpdatedTime { get; set; }
+        public DateTime? DeletedTime { get; set; }
     }
 
     public class PlaylistTracksInfo

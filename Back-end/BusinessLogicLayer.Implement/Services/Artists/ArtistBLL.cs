@@ -12,6 +12,7 @@ using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.User;
 using System.Security.Claims;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Artists
 {
@@ -85,6 +86,7 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                 Name = artistRequest.Name,
                 UserId = userID,
                 Images = images,
+                CreatedTime = Util.GetUtcPlus7Time(),
             };
 
             // Lưu thông tin nghệ sĩ vào database
