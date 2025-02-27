@@ -369,5 +369,5 @@ Back-end/**/*.env
 /Back-end/SpotifyPool/4. Application/.env
 
 # Bỏ qua file FFMPEG
-Back-end/SpotifyPool/ffmpeg.exe
-Back-end/SpotifyPool/ffprobe.exe
+/Back-end/SpotifyPool/ffmpeg.exe
+/Back-end/SpotifyPool/ffprobe.exe
