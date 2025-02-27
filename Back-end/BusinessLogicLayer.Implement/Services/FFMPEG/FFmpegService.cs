@@ -21,10 +21,51 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
             string ffmpegPath = Directory.GetCurrentDirectory();
 
+            #region
             //Console.WriteLine("==================================");
             //Console.WriteLine($"{Directory.GetCurrentDirectory()}");
             //Console.WriteLine($"{AppDomain.CurrentDomain.BaseDirectory}");
             //Console.WriteLine("==================================");
+
+            string directoryPath = Directory.GetCurrentDirectory();
+
+            if (Directory.Exists(directoryPath))
+            {
+                string[] directories = Directory.GetDirectories(directoryPath);
+
+                Console.WriteLine($"📂 Danh sách thư mục trong {directoryPath}:");
+                foreach (var dir in directories)
+                {
+                    Console.WriteLine($"- {dir}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Thư mục {directoryPath} không tồn tại!");
+            }
+
+            string spotifyPoolPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end", "SpotifyPool");
+
+            if (Directory.Exists(spotifyPoolPath))
+            {
+                Console.WriteLine($"Thư mục {spotifyPoolPath} tồn tại.");
+            }
+            else
+            {
+                Console.WriteLine($"Thư mục {spotifyPoolPath} không tồn tại.");
+            }
+
+            string backendPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end");
+
+            if (Directory.Exists(backendPath))
+            {
+                Console.WriteLine($"Thư mục {backendPath} tồn tại.");
+            }
+            else
+            {
+                Console.WriteLine($"Thư mục {backendPath} không tồn tại.");
+            }
+            #endregion
 
             // Chuẩn hóa đường dẫn
             ffmpegPath = Path.GetFullPath(ffmpegPath);
@@ -60,11 +101,17 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 
                 // Lấy đường dẫn gốc của dự án (Back-end)
                 //string basePath = AppDomain.CurrentDomain.BaseDirectory;
-                string basePath = Directory.GetCurrentDirectory();
+                //string basePath = Directory.GetCurrentDirectory();
 
-                // Định nghĩa đường dẫn tương đối từ thư mục Back-end
-                string inputFolder = Path.Combine(basePath, "Commons", "temp", "input_audio");
-                outputFolder = Path.Combine(basePath, "Commons", "temp", "output_audio", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
+                //// Định nghĩa đường dẫn tương đối từ thư mục Back-end
+                //string inputFolder = Path.Combine(basePath, "Commons", "temp", "input_audio");
+                //outputFolder = Path.Combine(basePath, "Commons", "temp", "output_audio", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
+
+                string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+
+                string inputFolder = Path.Combine(basePath, "temp", "input_audio");
+                outputFolder = Path.Combine(basePath, "temp", "output_audio",
+                    $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
 
                 // Tạo thư mục nếu chưa tồn tại
                 if (!Directory.Exists(inputFolder))
