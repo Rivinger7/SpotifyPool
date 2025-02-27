@@ -18,7 +18,13 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
         private async Task EnsureFFmpegExists()
         {
             // Đặt đường dẫn FFmpeg về thư mục chính của backend
-            string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
+            //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
+            string ffmpegPath = Directory.GetCurrentDirectory();
+
+            Console.WriteLine("==================================");
+            Console.WriteLine($"{Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"{AppDomain.CurrentDomain.BaseDirectory}");
+            Console.WriteLine("==================================");
 
             // Chuẩn hóa đường dẫn
             ffmpegPath = Path.GetFullPath(ffmpegPath);
