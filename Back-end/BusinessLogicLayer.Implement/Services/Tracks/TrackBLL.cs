@@ -500,10 +500,21 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             //string fileNameUnique = $"{Path.GetFileNameWithoutExtension(request.File.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}{Path.GetExtension(request.File.FileName)}";
             //Console.WriteLine(fileNameUnique);
 
-            //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads trong wwwroot
+            //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads
             string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", request.File.FileName);
 
             string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
+
+            // Tạo thư mục nếu chưa tồn tại
+            if (!Directory.Exists(inputPath))
+            {
+                Directory.CreateDirectory(inputPath);
+            }
+
+            if (!Directory.Exists(outputPath))
+            {
+                Directory.CreateDirectory(outputPath);
+            }
 
             try
             {

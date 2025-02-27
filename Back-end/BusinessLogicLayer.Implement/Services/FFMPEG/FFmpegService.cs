@@ -21,10 +21,10 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
             string ffmpegPath = Directory.GetCurrentDirectory();
 
-            Console.WriteLine("==================================");
-            Console.WriteLine($"{Directory.GetCurrentDirectory()}");
-            Console.WriteLine($"{AppDomain.CurrentDomain.BaseDirectory}");
-            Console.WriteLine("==================================");
+            //Console.WriteLine("==================================");
+            //Console.WriteLine($"{Directory.GetCurrentDirectory()}");
+            //Console.WriteLine($"{AppDomain.CurrentDomain.BaseDirectory}");
+            //Console.WriteLine("==================================");
 
             // Chuẩn hóa đường dẫn
             ffmpegPath = Path.GetFullPath(ffmpegPath);
@@ -59,7 +59,8 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                     throw new ArgumentException("File âm thanh không hợp lệ.");
 
                 // Lấy đường dẫn gốc của dự án (Back-end)
-                string basePath = AppDomain.CurrentDomain.BaseDirectory;
+                //string basePath = AppDomain.CurrentDomain.BaseDirectory;
+                string basePath = Directory.GetCurrentDirectory();
 
                 // Định nghĩa đường dẫn tương đối từ thư mục Back-end
                 string inputFolder = Path.Combine(basePath, "Commons", "temp", "input_audio");
