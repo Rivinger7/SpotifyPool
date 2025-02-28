@@ -501,9 +501,15 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             //Console.WriteLine(fileNameUnique);
 
             //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads
-            string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", request.File.FileName);
+            //string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", request.File.FileName);
 
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
+            //string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
+
+            string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+
+            string inputPath = Path.Combine(basePath, "AudioTemp", "input", request.File.FileName);
+
+            string outputPath = Path.Combine(basePath, "AudioTemp", "output", request.File.FileName);
 
             // Tạo thư mục nếu chưa tồn tại
             if (!Directory.Exists(inputPath))
