@@ -44,27 +44,43 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 Console.WriteLine($"⚠️ Thư mục {directoryPath} không tồn tại!");
             }
 
-            string spotifyPoolPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end", "SpotifyPool");
+            string tmpPath = "/tmp";
 
-            if (Directory.Exists(spotifyPoolPath))
+            if (Directory.Exists(tmpPath))
             {
-                Console.WriteLine($"Thư mục {spotifyPoolPath} tồn tại.");
+                string[] directories = Directory.GetDirectories(tmpPath);
+                Console.WriteLine($"📂 Danh sách thư mục trong {tmpPath}:");
+                foreach (var dir in directories)
+                {
+                    Console.WriteLine($"- {dir}");
+                }
             }
             else
             {
-                Console.WriteLine($"Thư mục {spotifyPoolPath} không tồn tại.");
+                Console.WriteLine($"⚠️ Thư mục {tmpPath} không tồn tại!");
             }
 
-            string backendPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end");
+            //string spotifyPoolPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end", "SpotifyPool");
 
-            if (Directory.Exists(backendPath))
-            {
-                Console.WriteLine($"Thư mục {backendPath} tồn tại.");
-            }
-            else
-            {
-                Console.WriteLine($"Thư mục {backendPath} không tồn tại.");
-            }
+            //if (Directory.Exists(spotifyPoolPath))
+            //{
+            //    Console.WriteLine($"Thư mục {spotifyPoolPath} tồn tại.");
+            //}
+            //else
+            //{
+            //    Console.WriteLine($"Thư mục {spotifyPoolPath} không tồn tại.");
+            //}
+
+            //string backendPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end");
+
+            //if (Directory.Exists(backendPath))
+            //{
+            //    Console.WriteLine($"Thư mục {backendPath} tồn tại.");
+            //}
+            //else
+            //{
+            //    Console.WriteLine($"Thư mục {backendPath} không tồn tại.");
+            //}
             #endregion
 
             // Chuẩn hóa đường dẫn
