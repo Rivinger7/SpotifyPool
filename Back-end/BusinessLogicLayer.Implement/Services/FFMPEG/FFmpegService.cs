@@ -2,6 +2,7 @@
 using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
+using Mono.Unix.Native;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 
@@ -123,17 +124,23 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 //string inputFolder = Path.Combine(basePath, "Commons", "temp", "input_audio");
                 //outputFolder = Path.Combine(basePath, "Commons", "temp", "output_audio", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
 
-                string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+                //string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+                string basePath = "/var/data";
 
-                string inputFolder = Path.Combine(basePath, "temp", "input_audio");
-                outputFolder = Path.Combine(basePath, "temp", "output_audio",
-                    $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
+                string inputFolder = Path.Combine(basePath, "input_temp_audio_hls");
+                outputFolder = Path.Combine(basePath, "output_temp_audio_hls");
+                //outputFolder = Path.Combine(basePath, "output_temp_audio_hls",
+                //    $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
 
                 // Tạo thư mục nếu chưa tồn tại
                 if (!Directory.Exists(inputFolder))
                     Directory.CreateDirectory(inputFolder);
                 if (!Directory.Exists(outputFolder))
                     Directory.CreateDirectory(outputFolder);
+
+                // Cấp quyền cho thư mục
+                Syscall.chmod(inputFolder, FilePermissions.ALLPERMS);
+                Syscall.chmod(outputFolder, FilePermissions.ALLPERMS);
 
                 // Tạo tên file input tạm
                 inputFileTemp = Path.Combine(inputFolder, ObjectId.GenerateNewId().ToString() + $"{Path.GetExtension(audioFile.FileName)}");
