@@ -553,7 +553,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             try
             {
                 // lưu tạm thời file upload vào thư mục input
-                using (var stream = new FileStream(inputFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var stream = new FileStream(inputFilePath, FileMode.Create))
                 {
                     await request.File.CopyToAsync(stream);
                 }
@@ -571,7 +571,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 newTrack.Duration = duration;
 
                 //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-                using FileStream outputStream = new(outputFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using FileStream outputStream = new(outputFilePath, FileMode.Open);
                 IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
                 {
                     Headers = new HeaderDictionary(),
