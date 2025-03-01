@@ -28,38 +28,38 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             //Console.WriteLine($"{AppDomain.CurrentDomain.BaseDirectory}");
             //Console.WriteLine("==================================");
 
-            string directoryPath = Directory.GetCurrentDirectory();
+            //string directoryPath = Directory.GetCurrentDirectory();
 
-            if (Directory.Exists(directoryPath))
-            {
-                string[] directories = Directory.GetDirectories(directoryPath);
+            //if (Directory.Exists(directoryPath))
+            //{
+            //    string[] directories = Directory.GetDirectories(directoryPath);
 
-                Console.WriteLine($"📂 Danh sách thư mục trong {directoryPath}:");
-                foreach (var dir in directories)
-                {
-                    Console.WriteLine($"- {dir}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"⚠️ Thư mục {directoryPath} không tồn tại!");
-            }
+            //    Console.WriteLine($"📂 Danh sách thư mục trong {directoryPath}:");
+            //    foreach (var dir in directories)
+            //    {
+            //        Console.WriteLine($"- {dir}");
+            //    }
+            //}
+            //else
+            //{
+            //    Console.WriteLine($"⚠️ Thư mục {directoryPath} không tồn tại!");
+            //}
 
-            string tmpPath = "/tmp";
+            //string tmpPath = "/tmp";
 
-            if (Directory.Exists(tmpPath))
-            {
-                string[] directories = Directory.GetDirectories(tmpPath);
-                Console.WriteLine($"📂 Danh sách thư mục trong {tmpPath}:");
-                foreach (var dir in directories)
-                {
-                    Console.WriteLine($"- {dir}");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"⚠️ Thư mục {tmpPath} không tồn tại!");
-            }
+            //if (Directory.Exists(tmpPath))
+            //{
+            //    string[] directories = Directory.GetDirectories(tmpPath);
+            //    Console.WriteLine($"📂 Danh sách thư mục trong {tmpPath}:");
+            //    foreach (var dir in directories)
+            //    {
+            //        Console.WriteLine($"- {dir}");
+            //    }
+            //}
+            //else
+            //{
+            //    Console.WriteLine($"⚠️ Thư mục {tmpPath} không tồn tại!");
+            //}
 
             //string spotifyPoolPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end", "SpotifyPool");
 
