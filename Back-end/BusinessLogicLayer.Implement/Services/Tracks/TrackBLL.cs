@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Mono.Unix.Native;
 using NAudio.Wave;
 using SetupLayer.Enum.Services.Track;
 using System.Drawing;
@@ -505,11 +506,16 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             //string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
 
-            string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+            //string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+            string basePath = "/var/data";
 
-            string inputPath = Path.Combine(basePath, "AudioTemp", "input", request.File.FileName);
+            //string inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
 
-            string outputPath = Path.Combine(basePath, "AudioTemp", "output", request.File.FileName);
+            //string outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+
+            string inputPath = Path.Combine(basePath, "input_temp_audio");
+
+            string outputPath = Path.Combine(basePath, "output_temp_audio");
 
             // Tạo thư mục nếu chưa tồn tại
             if (!Directory.Exists(inputPath))
@@ -521,6 +527,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             {
                 Directory.CreateDirectory(outputPath);
             }
+
+            // Cấp quyền cho thư mục
+            Syscall.chmod(inputPath, FilePermissions.ALLPERMS);
+            Syscall.chmod(outputPath, FilePermissions.ALLPERMS);
 
             try
             {
