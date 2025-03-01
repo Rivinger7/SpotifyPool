@@ -139,8 +139,8 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                     Directory.CreateDirectory(outputFolder);
 
                 // Cấp quyền cho thư mục
-                Syscall.chmod(inputFolder, FilePermissions.ALLPERMS);
-                Syscall.chmod(outputFolder, FilePermissions.ALLPERMS);
+                //Syscall.chmod(inputFolder, FilePermissions.ALLPERMS);
+                //Syscall.chmod(outputFolder, FilePermissions.ALLPERMS);
 
                 // Tạo tên file input tạm
                 inputFileTemp = Path.Combine(inputFolder, ObjectId.GenerateNewId().ToString() + $"{Path.GetExtension(audioFile.FileName)}");

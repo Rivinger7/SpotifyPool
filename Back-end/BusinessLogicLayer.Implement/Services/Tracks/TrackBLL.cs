@@ -529,8 +529,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             }
 
             // Cấp quyền cho thư mục
-            Syscall.chmod(inputPath, FilePermissions.ALLPERMS);
-            Syscall.chmod(outputPath, FilePermissions.ALLPERMS);
+            //Syscall.chmod(inputPath, FilePermissions.ALLPERMS);
+            //Syscall.chmod(outputPath, FilePermissions.ALLPERMS);
 
             try
             {
