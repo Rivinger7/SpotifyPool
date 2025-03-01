@@ -528,24 +528,42 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 Directory.CreateDirectory(outputPath);
             }
 
+            try
+            {
+                // Kiểm tra quyền ghi
+                string testFile = Path.Combine(inputPath, "test.txt");
+                File.WriteAllText(testFile, "Test write permission.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Write test failed: {ex.Message}");
+                throw new UnauthorizedAccessException("Write permission denied on `/var/data/input_temp_audio`.");
+            }
+
+
             // Cấp quyền cho thư mục
             //Syscall.chmod(inputPath, FilePermissions.ALLPERMS);
             //Syscall.chmod(outputPath, FilePermissions.ALLPERMS);
 
+            // Tạo đường dẫn file
+            string fileName = Path.GetFileName(request.File.FileName);
+            string inputFilePath = Path.Combine(inputPath, fileName);
+            string outputFilePath = Path.Combine(outputPath, fileName);
+
             try
             {
                 // lưu tạm thời file upload vào thư mục input
-                using (var stream = new FileStream(inputPath, FileMode.Create))
+                using (var stream = new FileStream(inputFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     await request.File.CopyToAsync(stream);
                 }
 
                 // Convert file mp3 sang wav for nothing
                 // Lấy duration của file mp3
-                NAudioService.TrimAudioFile(out int duration, inputPath, outputPath, TimeSpan.FromSeconds(30));
+                NAudioService.TrimAudioFile(out int duration, inputFilePath, outputFilePath, TimeSpan.FromSeconds(30));
 
                 // mở file mp3 lưu ở wwwroot/input để đọc
-                using AudioFileReader reader = new(inputPath);
+                using AudioFileReader reader = new(inputFilePath);
 
                 // lấy tổng thời gian nhạc trên file mp3
                 //int duration = (int)reader.TotalTime.TotalSeconds * 1000;
@@ -553,7 +571,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 newTrack.Duration = duration;
 
                 //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-                using FileStream outputStream = new(outputPath, FileMode.Open);
+                using FileStream outputStream = new(outputFilePath, FileMode.Open, FileAccess.Read, FileShare.Read;
                 IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
                 {
                     Headers = new HeaderDictionary(),
@@ -645,8 +663,36 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             finally
             {
                 //xóa các file tạm không cần nữa trong wwwroot
-                File.Delete(inputPath);
-                File.Delete(outputPath);
+                //File.Delete(inputFilePath);
+                //File.Delete(outputPath);
+
+                // Xóa file tạm, đảm bảo file không bị lock trước khi xóa
+                try
+                {
+                    if (File.Exists(inputFilePath))
+                    {
+                        using (var fs = new FileStream(inputFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                        {
+                            fs.Close();
+                        }
+                        File.Delete(inputFilePath);
+                        Console.WriteLine($"🗑️ Deleted: {inputFilePath}");
+                    }
+
+                    if (File.Exists(outputFilePath))
+                    {
+                        using (var fs = new FileStream(outputFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                        {
+                            fs.Close();
+                        }
+                        File.Delete(outputFilePath);
+                        Console.WriteLine($"🗑️ Deleted: {outputFilePath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error deleting files: {ex.Message}");
+                }
             }
         }
 
