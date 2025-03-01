@@ -671,7 +671,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 {
                     if (File.Exists(inputFilePath))
                     {
-                        using (var fs = new FileStream(inputFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                        using (var fs = new FileStream(inputFilePath, FileMode.Open))
                         {
                             fs.Close();
                         }
@@ -681,7 +681,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                     if (File.Exists(outputFilePath))
                     {
-                        using (var fs = new FileStream(outputFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                        using (var fs = new FileStream(outputFilePath, FileMode.Open))
                         {
                             fs.Close();
                         }
