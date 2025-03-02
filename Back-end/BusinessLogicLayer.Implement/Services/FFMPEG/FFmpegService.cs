@@ -109,10 +109,10 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
         }
 
 
-        public async Task<(string, string)> ConvertToHls(IFormFile audioFile, string trackId)
+        public async Task<(string, string, string)> ConvertToHls(IFormFile audioFile, string trackId)
         {
             string inputFolder = string.Empty;
-            string? inputFileTemp = null;
+            string inputFileTemp = string.Empty;
             string outputFilePath = string.Empty;
             string outputFolder = string.Empty;
             try
@@ -214,7 +214,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                     //}
             }
 
-            return (inputFolder, outputFolder);
+            return (inputFileTemp, inputFolder, outputFolder);
         }
     }
 }
