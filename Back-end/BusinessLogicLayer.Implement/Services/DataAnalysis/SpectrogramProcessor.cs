@@ -194,7 +194,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             if(IsWindows)
             {
                 basePath = Directory.GetCurrentDirectory();
-                onnxModelPath = Path.Combine(basePath, "4. Application", "audio_features_model.onnx");
+                onnxModelPath = Path.Combine(basePath, "TrainingModel", "audio_features_model.onnx");
             }
             else if (IsLinux)
             {
