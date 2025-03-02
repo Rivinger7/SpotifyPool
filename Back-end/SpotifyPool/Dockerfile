@@ -45,8 +45,17 @@ WORKDIR /app
 # Install Libgdiplus to support System.Drawing.common
 RUN apk add --no-cache libgdiplus
 
-# Install ONNX Runtime
-RUN apk add --no-cache onnxruntime
+# Install the library needed to run onnxruntime
+RUN apk add --no-cache libstdc++ libc6-compat wget tar
+
+# Download and extract onnxruntime from github
+RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-x64-1.15.0.tgz && \
+    mkdir -p /usr/local/lib/onnxruntime && \
+    tar -xzf /tmp/onnxruntime.tar.gz -C /usr/local/lib/onnxruntime --strip-components=1 && \
+    rm /tmp/onnxruntime.tar.gz
+
+# Set environmental variables for the application to find onnxruntime
+ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
 
 # Create folders if not exist for the model
 RUN mkdir -p /var/data/TrainingModel
