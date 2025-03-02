@@ -52,7 +52,7 @@ RUN apk add --no-cache onnxruntime
 RUN mkdir -p /var/data/TrainingModel
 
 # Copy model ONNX into TrainingModel folder
-COPY Back-end/SpotifyPool/4.Application/audio_features_model.onnx /var/data/TrainingModel/
+COPY SpotifyPool/4.Application/audio_features_model.onnx /var/data/TrainingModel/
 
 # Copy the published files to the container
 COPY --from=publish /app/publish .
