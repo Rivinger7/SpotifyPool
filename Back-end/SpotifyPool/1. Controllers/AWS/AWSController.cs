@@ -22,5 +22,12 @@ namespace SpotifyPool._1._Controllers.AWS
             var result = await _amazonWebService.UploadAndConvertToStreamingFile(audioFile, fileName);
             return Ok(result);
         }
+
+        //[AllowAnonymous, HttpPost("upload/folder")]
+        //public async Task<IActionResult> UploadFolderAsync(string folderPath)
+        //{
+        //    await _amazonWebService.UploadFolderAsync(folderPath);
+        //    return Ok();
+        //}
     }
 }

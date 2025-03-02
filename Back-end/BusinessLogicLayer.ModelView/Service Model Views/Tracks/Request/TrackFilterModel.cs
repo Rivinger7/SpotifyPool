@@ -1,4 +1,6 @@
-﻿namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request
+﻿using SetupLayer.Enum.Services.Track;
+
+namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request
 {
 	public class TrackFilterModel
 	{
@@ -7,5 +9,7 @@
 		public bool? SortById { get; set; }
 
 		public bool? SortByName { get; set; }
-	}
+
+		public Mood? Mood { get; set; }
+    }
 }

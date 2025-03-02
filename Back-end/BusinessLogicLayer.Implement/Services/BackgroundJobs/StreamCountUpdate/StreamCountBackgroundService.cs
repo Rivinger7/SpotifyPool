@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using StackExchange.Redis;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
 {
@@ -34,7 +35,7 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
 
                         if (committed)
                         {
-                            Console.WriteLine("Stream count updated to MongoDB");
+                            //Console.WriteLine("Stream count updated to MongoDB");
                         }
 
                         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
@@ -79,7 +80,9 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
                                 TrackId = trackId,
                                 StreamCount = playedTrackCount
                             }
-                            ]
+                            ],
+                            CreatedTime = Util.GetUtcPlus7Time(),
+
                         };
 
                         // Lưu thông tin topTrack mới

@@ -20,6 +20,7 @@ using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
+using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.InMemoryCache;
 using BusinessLogicLayer.Implement.Services.JWTs;
@@ -35,12 +36,12 @@ using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
 using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
-using BusinessLogicLayer.Interface.Services_Interface.Admin;
-using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.Interface.Services_Interface.Account;
+using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
+using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using BusinessLogicLayer.Interface.Services_Interface.Files;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
@@ -90,7 +91,7 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
-    public static class BusinessDependencyInjection
+	public static class BusinessDependencyInjection
     {
         private static readonly ILogger _logger;
 
@@ -535,8 +536,13 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Files
             services.AddScoped<IFiles, FilesBLL>();
 
+
             // Albums
             services.AddScoped<IAlbums, AlbumsBLL>();
+
+            // FFmpeg
+            services.AddScoped<IFFmpegService, FFmpegService>();
+
         }
 
         //public static void AddRepositories(this IServiceCollection services)
