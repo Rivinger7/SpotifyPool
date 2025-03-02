@@ -24,31 +24,32 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             // Đặt đường dẫn FFmpeg về thư mục chính của backend
             //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
 
-            string basePath;
+            //string basePath;
+            //string ffmpegFolder;
             string ffmpegPath;
-            string ffmpegFolder;
 
-            if (IsWindows)
-            {
-                basePath = AppDomain.CurrentDomain.BaseDirectory;
-                ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
-            }
-            else if (IsLinux)
-            {
-                basePath = "/var/data";
-                ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
-            }
-            else
-            {
-                throw new PlatformNotSupportedException("This platform is not supported");
-            }
+            //if (IsWindows)
+            //{
+            //    basePath = AppDomain.CurrentDomain.BaseDirectory;
+            //    ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
+            //}
+            //else if (IsLinux)
+            //{
+            //    basePath = "/var/data";
+            //    ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
+            //}
+            //else
+            //{
+            //    throw new PlatformNotSupportedException("This platform is not supported");
+            //}
 
-            // Tạo thư mục nếu chưa tồn tại
-            if (!Directory.Exists(ffmpegFolder))
-                Directory.CreateDirectory(ffmpegFolder);
+            //// Tạo thư mục nếu chưa tồn tại
+            //if (!Directory.Exists(ffmpegFolder))
+            //    Directory.CreateDirectory(ffmpegFolder);
 
             // Chuẩn hóa đường dẫn
-            ffmpegPath = Path.GetFullPath(ffmpegFolder);
+            //ffmpegPath = Path.GetFullPath(ffmpegFolder);
+            ffmpegPath = Path.GetFullPath(Directory.GetCurrentDirectory());
 
             // Thiết lập đường dẫn FFmpeg
             FFmpeg.SetExecutablesPath(ffmpegPath);
@@ -67,7 +68,6 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 //Console.WriteLine($"FFmpeg đã tồn tại ở {ffmpegPath}, bỏ qua tải xuống.");
             }
         }
-
 
         public async Task<(string, string, string)> ConvertToHls(IFormFile audioFile, string trackId)
         {
