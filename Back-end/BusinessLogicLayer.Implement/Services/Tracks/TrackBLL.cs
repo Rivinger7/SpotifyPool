@@ -501,14 +501,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             newTrack.UploadBy = artistId ?? throw new ArgumentNullCustomException($"{artistId}");
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
 
-            //string fileNameUnique = $"{Path.GetFileNameWithoutExtension(request.File.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}{Path.GetExtension(request.File.FileName)}";
-            //Console.WriteLine(fileNameUnique);
-
-            //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads
-            //string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", request.File.FileName);
-
-            //string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
-
             // Đường dẫn thư mục lưu trữ audio file tạm thời
             string basePath = string.Empty;
             string inputPath = string.Empty;
@@ -569,6 +561,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             string outputFilePath = Path.Combine(outputPath, fileName);
 
             // Folder từ ConvertToHls
+            string inputFileTemp = string.Empty;
             string inputFolderPath = string.Empty;
             string outputFolderPath = string.Empty;
 
@@ -580,32 +573,11 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     await request.File.CopyToAsync(stream);
                 }
 
-                // Convert file mp3 sang wav for nothing
-                // Lấy duration của file mp3
-                //NAudioService.TrimAudioFile(out int duration, inputFilePath, outputFilePath, TimeSpan.FromSeconds(30));
-
                 // Lấy thông tin file audio
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputFilePath);
                 
                 // lấy tổng thời gian nhạc trên file mp3
                 newTrack.Duration = (int)mediaInfo.Duration.TotalMilliseconds;
-
-                // mở file mp3 lưu ở wwwroot/input để đọc
-                //using AudioFileReader reader = new(inputFilePath);
-                //using (var reader = new NAudio.Wave.AudioFileReader(inputFilePath)) // Hỗ trợ trên cả Linux & Windows
-                //{
-                //    // lấy tổng thời gian nhạc trên file mp3
-                //    duration = (int)reader.TotalTime.TotalSeconds * 1000;
-                //}
-
-                // Bug ở đây (Not found file)
-                //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-                //using FileStream outputStream = new(outputFilePath, FileMode.Open);
-                //IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
-                //{
-                //    Headers = new HeaderDictionary(),
-                //    ContentType = "audio/wav"
-                //};
 
                 // upload lên cloudinary
                 //VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
@@ -618,7 +590,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 string publicUrl = await _amazonWebService.UploadFileAsync(request.File, trackIdName);
 
                 // Convert audio file sang dạng streaming
-                (inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
+                (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
 
                 // Upload streaming files lên AWS S3
                 newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
@@ -627,7 +599,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
 
                 //chuyển file audio thành spectrogram và dự đoán audio features
-                Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(publicUrl);
+                Bitmap spectrogram = await SpectrogramProcessor.ConvertToSpectrogram(inputFileTemp);
 
                 // Lưu bitmap vào MemoryStream thay vì ổ cứng
                 using MemoryStream memoryStream = new();
