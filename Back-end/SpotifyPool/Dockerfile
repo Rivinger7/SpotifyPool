@@ -41,6 +41,9 @@ RUN dotnet publish "SpotifyPool.csproj" -c $BUILD_CONFIGURATION -o /app/publish 
 # Final phase to run the application
 FROM base AS final
 WORKDIR /app
+
+# Install Libgdiplus to support System.Drawing.common
+RUN apk add --no-cache libgdiplus
 COPY --from=publish /app/publish .
 
 ENTRYPOINT ["dotnet", "SpotifyPool.dll"]
