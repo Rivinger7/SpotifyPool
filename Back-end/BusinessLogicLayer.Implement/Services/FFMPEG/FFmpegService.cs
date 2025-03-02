@@ -31,12 +31,12 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             if (IsWindows)
             {
                 basePath = AppDomain.CurrentDomain.BaseDirectory;
-                ffmpegFolder = Path.Combine(basePath, "ffmpeg");
+                ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
             }
             else if (IsLinux)
             {
                 basePath = "/var/data";
-                ffmpegFolder = Path.Combine(basePath, "ffmpeg");
+                ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
             }
             else
             {
