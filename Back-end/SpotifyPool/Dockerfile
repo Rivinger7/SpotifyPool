@@ -44,6 +44,17 @@ WORKDIR /app
 
 # Install Libgdiplus to support System.Drawing.common
 RUN apk add --no-cache libgdiplus
+
+# Install ONNX Runtime
+RUN apk add --no-cache onnxruntime
+
+# Create folders if not exist for the model
+RUN mkdir -p /var/data/TrainingModel
+
+# Copy model ONNX into TrainingModel folder
+COPY Back-end/SpotifyPool/4.Application/audio_features_model.onnx /var/data/TrainingModel/
+
+# Copy the published files to the container
 COPY --from=publish /app/publish .
 
 ENTRYPOINT ["dotnet", "SpotifyPool.dll"]

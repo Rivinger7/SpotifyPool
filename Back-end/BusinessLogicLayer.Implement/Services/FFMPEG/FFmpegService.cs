@@ -23,72 +23,32 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
         {
             // Đặt đường dẫn FFmpeg về thư mục chính của backend
             //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
-            string ffmpegPath = Directory.GetCurrentDirectory();
 
-            #region
-            //Console.WriteLine("==================================");
-            //Console.WriteLine($"{Directory.GetCurrentDirectory()}");
-            //Console.WriteLine($"{AppDomain.CurrentDomain.BaseDirectory}");
-            //Console.WriteLine("==================================");
+            string basePath;
+            string ffmpegPath;
+            string ffmpegFolder;
 
-            //string directoryPath = Directory.GetCurrentDirectory();
+            if (IsWindows)
+            {
+                basePath = AppDomain.CurrentDomain.BaseDirectory;
+                ffmpegFolder = Path.Combine(basePath, "ffmpeg");
+            }
+            else if (IsLinux)
+            {
+                basePath = "/var/data";
+                ffmpegFolder = Path.Combine(basePath, "ffmpeg");
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("This platform is not supported");
+            }
 
-            //if (Directory.Exists(directoryPath))
-            //{
-            //    string[] directories = Directory.GetDirectories(directoryPath);
-
-            //    Console.WriteLine($"📂 Danh sách thư mục trong {directoryPath}:");
-            //    foreach (var dir in directories)
-            //    {
-            //        Console.WriteLine($"- {dir}");
-            //    }
-            //}
-            //else
-            //{
-            //    Console.WriteLine($"⚠️ Thư mục {directoryPath} không tồn tại!");
-            //}
-
-            //string tmpPath = "/tmp";
-
-            //if (Directory.Exists(tmpPath))
-            //{
-            //    string[] directories = Directory.GetDirectories(tmpPath);
-            //    Console.WriteLine($"📂 Danh sách thư mục trong {tmpPath}:");
-            //    foreach (var dir in directories)
-            //    {
-            //        Console.WriteLine($"- {dir}");
-            //    }
-            //}
-            //else
-            //{
-            //    Console.WriteLine($"⚠️ Thư mục {tmpPath} không tồn tại!");
-            //}
-
-            //string spotifyPoolPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end", "SpotifyPool");
-
-            //if (Directory.Exists(spotifyPoolPath))
-            //{
-            //    Console.WriteLine($"Thư mục {spotifyPoolPath} tồn tại.");
-            //}
-            //else
-            //{
-            //    Console.WriteLine($"Thư mục {spotifyPoolPath} không tồn tại.");
-            //}
-
-            //string backendPath = Path.Combine(Directory.GetCurrentDirectory(), "Back-end");
-
-            //if (Directory.Exists(backendPath))
-            //{
-            //    Console.WriteLine($"Thư mục {backendPath} tồn tại.");
-            //}
-            //else
-            //{
-            //    Console.WriteLine($"Thư mục {backendPath} không tồn tại.");
-            //}
-            #endregion
+            // Tạo thư mục nếu chưa tồn tại
+            if (!Directory.Exists(ffmpegFolder))
+                Directory.CreateDirectory(ffmpegFolder);
 
             // Chuẩn hóa đường dẫn
-            ffmpegPath = Path.GetFullPath(ffmpegPath);
+            ffmpegPath = Path.GetFullPath(ffmpegFolder);
 
             // Thiết lập đường dẫn FFmpeg
             FFmpeg.SetExecutablesPath(ffmpegPath);

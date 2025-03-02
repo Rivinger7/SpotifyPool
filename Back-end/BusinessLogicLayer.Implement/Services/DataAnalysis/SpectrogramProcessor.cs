@@ -1,18 +1,21 @@
-﻿using Microsoft.ML.OnnxRuntime;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp;
-using BitmapDrawing = System.Drawing.Bitmap;
+using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Microsoft.AspNetCore.Http;
-using NAudio.Wave;
+using System.Runtime.InteropServices;
 using Xabe.FFmpeg;
-using System.Threading.Tasks;
+using BitmapDrawing = System.Drawing.Bitmap;
 
 namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 {
     public static class SpectrogramProcessor
     {
+        // Xác định hệ điều hành
+        public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        public static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
         //public static BitmapDrawing ConvertToSpectrogram(IFormFile audioFile)
         //{
         //    // Đọc audio từ URL hoặc file
@@ -185,8 +188,23 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
         public static float[] Predict(Tensor<float> inputTensor)
         {
             // Đường dẫn tới mô hình ONNX
-            string currentDirectory = Directory.GetCurrentDirectory();
-            string onnxModelPath = Path.Combine(currentDirectory, "4. Application", "audio_features_model.onnx");
+            string basePath;
+            string onnxModelPath;
+
+            if(IsWindows)
+            {
+                basePath = Directory.GetCurrentDirectory();
+                onnxModelPath = Path.Combine(basePath, "4. Application", "audio_features_model.onnx");
+            }
+            else if (IsLinux)
+            {
+                basePath = "/var/data/TrainingModel";
+                onnxModelPath = Path.Combine(basePath, "audio_features_model.onnx");
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("This platform is not supported");
+            }
 
             // Chạy suy luận
             using InferenceSession session = new(onnxModelPath);
