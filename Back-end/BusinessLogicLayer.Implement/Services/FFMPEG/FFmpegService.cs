@@ -1,9 +1,6 @@
-﻿using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
-using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
-using Microsoft.AspNetCore.Components.Forms;
+﻿using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
-using Mono.Unix.Native;
 using System.Runtime.InteropServices;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;

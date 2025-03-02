@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using NAudio.Wave;
 using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -26,6 +25,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
 using Utility.Coding;
+using Xabe.FFmpeg;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
@@ -584,13 +584,19 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 // Lấy duration của file mp3
                 //NAudioService.TrimAudioFile(out int duration, inputFilePath, outputFilePath, TimeSpan.FromSeconds(30));
 
-                // mở file mp3 lưu ở wwwroot/input để đọc
-                using AudioFileReader reader = new(inputFilePath);
-
+                // Lấy thông tin file audio
+                IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputFilePath);
+                
                 // lấy tổng thời gian nhạc trên file mp3
-                int duration = (int)reader.TotalTime.TotalSeconds * 1000;
+                newTrack.Duration = (int)mediaInfo.Duration.TotalMilliseconds;
 
-                newTrack.Duration = duration;
+                // mở file mp3 lưu ở wwwroot/input để đọc
+                //using AudioFileReader reader = new(inputFilePath);
+                //using (var reader = new NAudio.Wave.AudioFileReader(inputFilePath)) // Hỗ trợ trên cả Linux & Windows
+                //{
+                //    // lấy tổng thời gian nhạc trên file mp3
+                //    duration = (int)reader.TotalTime.TotalSeconds * 1000;
+                //}
 
                 // Bug ở đây (Not found file)
                 //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
