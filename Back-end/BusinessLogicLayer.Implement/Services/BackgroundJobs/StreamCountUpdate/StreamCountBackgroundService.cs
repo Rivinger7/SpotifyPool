@@ -35,7 +35,7 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
 
                         if (committed)
                         {
-                            Console.WriteLine("Stream count updated to MongoDB");
+                            //Console.WriteLine("Stream count updated to MongoDB");
                         }
 
                         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);

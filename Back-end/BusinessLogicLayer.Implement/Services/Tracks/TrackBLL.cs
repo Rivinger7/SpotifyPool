@@ -1,6 +1,5 @@
 using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.Implement.Microservices.NAudio;
 using BusinessLogicLayer.Implement.Services.DataAnalysis;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
@@ -19,12 +18,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Mono.Unix.Native;
 using NAudio.Wave;
 using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using Utility.Coding;
 
@@ -38,6 +37,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         private readonly ISpotify _spotifyService = spotifyService;
         private readonly IAmazonWebService _amazonWebService = amazonWebService;
         private readonly IFFmpegService _fFmpegService = fFmpegService;
+
+        // Xác định hệ điều hành
+        public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        public static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
         public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
         {
@@ -506,16 +509,29 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             //string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
 
-            //string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
-            string basePath = "/var/data";
+            // Đường dẫn thư mục lưu trữ audio file tạm thời
+            string basePath = string.Empty;
+            string inputPath = string.Empty;
+            string outputPath = string.Empty;
 
-            //string inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+            if (IsWindows)
+            {
+                basePath = AppDomain.CurrentDomain.BaseDirectory;
 
-            //string outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+                inputPath = Path.Combine(basePath, "Commons", "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+                outputPath = Path.Combine(basePath, "Commons", "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+            }
+            else if (IsLinux)
+            {
+                basePath = "/var/data";
 
-            string inputPath = Path.Combine(basePath, "input_temp_audio");
-
-            string outputPath = Path.Combine(basePath, "output_temp_audio");
+                inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+                outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("This platform is not supported");
+            }
 
             // Tạo thư mục nếu chưa tồn tại
             if (!Directory.Exists(inputPath))
@@ -528,17 +544,19 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 Directory.CreateDirectory(outputPath);
             }
 
-            try
-            {
-                // Kiểm tra quyền ghi
-                string testFile = Path.Combine(inputPath, "test.txt");
-                File.WriteAllText(testFile, "Test write permission.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Write test failed: {ex.Message}");
-                throw new UnauthorizedAccessException("Write permission denied on `/var/data/input_temp_audio`.");
-            }
+            #region Kiểm tra quyền ghi trong môi trường Production (Linux)
+            //try
+            //{
+            //    // Kiểm tra quyền ghi
+            //    string testFile = Path.Combine(inputPath, "test.txt");
+            //    File.WriteAllText(testFile, "Test write permission.");
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"❌ Write test failed: {ex.Message}");
+            //    throw new UnauthorizedAccessException("Write permission denied on `/var/data/input_temp_audio`.");
+            //}
+            #endregion
 
 
             // Cấp quyền cho thư mục
@@ -550,6 +568,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             string inputFilePath = Path.Combine(inputPath, fileName);
             string outputFilePath = Path.Combine(outputPath, fileName);
 
+            // Folder từ ConvertToHls
+            string inputFolderPath = string.Empty;
+            string outputFolderPath = string.Empty;
+
             try
             {
                 // lưu tạm thời file upload vào thư mục input
@@ -560,23 +582,24 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                 // Convert file mp3 sang wav for nothing
                 // Lấy duration của file mp3
-                NAudioService.TrimAudioFile(out int duration, inputFilePath, outputFilePath, TimeSpan.FromSeconds(30));
+                //NAudioService.TrimAudioFile(out int duration, inputFilePath, outputFilePath, TimeSpan.FromSeconds(30));
 
                 // mở file mp3 lưu ở wwwroot/input để đọc
                 using AudioFileReader reader = new(inputFilePath);
 
                 // lấy tổng thời gian nhạc trên file mp3
-                //int duration = (int)reader.TotalTime.TotalSeconds * 1000;
+                int duration = (int)reader.TotalTime.TotalSeconds * 1000;
 
                 newTrack.Duration = duration;
 
+                // Bug ở đây (Not found file)
                 //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-                using FileStream outputStream = new(outputFilePath, FileMode.Open);
-                IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
-                {
-                    Headers = new HeaderDictionary(),
-                    ContentType = "audio/wav"
-                };
+                //using FileStream outputStream = new(outputFilePath, FileMode.Open);
+                //IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
+                //{
+                //    Headers = new HeaderDictionary(),
+                //    ContentType = "audio/wav"
+                //};
 
                 // upload lên cloudinary
                 //VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
@@ -586,10 +609,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 string trackIdName = $"{newTrack.Id}_{newTrack.Name}";
 
                 // url mp3 public của file audio
-                string publicUrl = await _amazonWebService.UploadFileAsync(outputFile, trackIdName);
+                string publicUrl = await _amazonWebService.UploadFileAsync(request.File, trackIdName);
 
                 // Convert audio file sang dạng streaming
-                string outputFolderPath = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
+                (inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
 
                 // Upload streaming files lên AWS S3
                 newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
@@ -666,33 +689,65 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 //File.Delete(inputFilePath);
                 //File.Delete(outputPath);
 
-                // Xóa file tạm, đảm bảo file không bị lock trước khi xóa
+                // Xóa folder tạm, đảm bảo file không bị lock trước khi xóa
                 try
                 {
-                    if (File.Exists(inputFilePath))
+                    if (Directory.Exists(inputPath))
                     {
-                        using (var fs = new FileStream(inputFilePath, FileMode.Open))
-                        {
-                            fs.Close();
-                        }
-                        File.Delete(inputFilePath);
-                        Console.WriteLine($"🗑️ Deleted: {inputFilePath}");
+                        Directory.Delete(inputPath, true); // Tham số 'true' để xóa cả thư mục con và file bên trong
+                        //Console.WriteLine($"Deleted folder: {inputPath}");
                     }
 
-                    if (File.Exists(outputFilePath))
+                    if (Directory.Exists(outputPath))
                     {
-                        using (var fs = new FileStream(outputFilePath, FileMode.Open))
-                        {
-                            fs.Close();
-                        }
-                        File.Delete(outputFilePath);
-                        Console.WriteLine($"🗑️ Deleted: {outputFilePath}");
+                        Directory.Delete(outputPath, true);
+                        //Console.WriteLine($"Deleted folder: {outputPath}");
+                    }
+
+                    if (Directory.Exists(inputFolderPath))
+                    {
+                        Directory.Delete(inputFolderPath, true);
+                        //Console.WriteLine($"Deleted folder: {inputFolderPath}");
+                    }
+
+                    if (Directory.Exists(outputFolderPath))
+                    {
+                        Directory.Delete(outputFolderPath, true);
+                        //Console.WriteLine($"Deleted folder: {outputFolderPath}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"❌ Error deleting files: {ex.Message}");
+                    Console.WriteLine($"Error deleting folders: {ex.Message}");
                 }
+
+                // Xóa file tạm, đảm bảo file không bị lock trước khi xóa
+                //try
+                //{
+                //    if (File.Exists(inputFilePath))
+                //    {
+                //        using (var fs = new FileStream(inputFilePath, FileMode.Open))
+                //        {
+                //            fs.Close();
+                //        }
+                //        File.Delete(inputFilePath);
+                //        Console.WriteLine($"🗑️ Deleted: {inputFilePath}");
+                //    }
+
+                //    if (File.Exists(outputFilePath))
+                //    {
+                //        using (var fs = new FileStream(outputFilePath, FileMode.Open))
+                //        {
+                //            fs.Close();
+                //        }
+                //        File.Delete(outputFilePath);
+                //        Console.WriteLine($"🗑️ Deleted: {outputFilePath}");
+                //    }
+                //}
+                //catch (Exception ex)
+                //{
+                //    Console.WriteLine($"❌ Error deleting files: {ex.Message}");
+                //}
             }
         }
 
