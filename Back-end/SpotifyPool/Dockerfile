@@ -59,6 +59,8 @@ RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/rel
     tar -xzf /tmp/onnxruntime.tar.gz -C /usr/local/lib/onnxruntime --strip-components=1 && \
     rm /tmp/onnxruntime.tar.gz
 
+
+
 # Create SYMLINK so that the application can be found libibinxruntime.so
 # RUN ln -s /usr/local/lib/onnxruntime/lib/libonnxruntime.so /usr/lib/libonnxruntime.so
 
