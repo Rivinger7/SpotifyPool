@@ -48,12 +48,6 @@ RUN apk add --no-cache libgdiplus
 # Install the library needed to run onnxruntime
 RUN apk add --no-cache libstdc++ libc6-compat wget tar
 
-# Install glibc from an external repository
-RUN apk del gcompat && \
-    wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
-    wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r1/glibc-2.35-r1.apk && \
-    apk add --allow-untrusted glibc-2.35-r1.apk
-
 # Download and extract onnxruntime from github
 RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-x64-1.15.0.tgz && \
     mkdir -p /usr/local/lib/onnxruntime && \
