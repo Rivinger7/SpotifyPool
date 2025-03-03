@@ -1,13 +1,12 @@
 # Use the ASP.NET Core image for the runtime environment
 #FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-bullseye-slim AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
 # Use SDK image for build environment
-#FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-FROM mcr.microsoft.com/dotnet/sdk:8.0-bullseye AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
