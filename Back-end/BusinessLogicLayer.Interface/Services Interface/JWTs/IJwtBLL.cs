@@ -7,7 +7,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.JWTs
 {
     public interface IJwtBLL
     {
-        void RevokeToken(string Id);
+        //void RevokeToken(string Id);
         void RefreshAccessToken(out string newAccessToken, out string newRefreshToken, TokenApiRequestModel tokenApiModel);
         string GenerateJWTTokenForConfirmEmail(string email, string encrpytedToken);
         JwtSecurityToken DecodeToken(string token);

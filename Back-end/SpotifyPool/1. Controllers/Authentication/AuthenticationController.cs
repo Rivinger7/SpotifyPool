@@ -6,15 +6,18 @@ using BusinessLogicLayer.ModelView;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using SetupLayer.Enum.Services.User;
+using BusinessLogicLayer.Interface.Services_Interface.JWTs;
+using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 
 namespace SpotifyPool.Controllers.Authentication
 {
     [Route("api/v1/authentication")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class AuthenticationController(IAuthentication authenticationBLL) : ControllerBase
+    public class AuthenticationController(IAuthentication authenticationBLL, IJwtBLL jwtBLL) : ControllerBase
     {
         private readonly IAuthentication authenticationBLL = authenticationBLL;
+        private readonly IJwtBLL _jwtBLL = jwtBLL;
 
         [AllowAnonymous, HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)
@@ -33,8 +36,8 @@ namespace SpotifyPool.Controllers.Authentication
         [AllowAnonymous, HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestModel loginModel)
         {
-            var authenticatedResponseModel = await authenticationBLL.Authenticate(loginModel);
-            return Ok(new { message = "Login Successfully", authenticatedResponseModel });
+            var accessToken = await authenticationBLL.Authenticate(loginModel);
+            return Ok(new { message = "Login Successfully", accessToken });
         }
 
         //[Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}"), HttpPost("switch-profile")]
@@ -103,7 +106,7 @@ namespace SpotifyPool.Controllers.Authentication
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel model)
         {
             await authenticationBLL.ResetPasswordAsync(model);
-            return Ok(new{message = "Reset password successfully"});
+            return Ok(new { message = "Reset password successfully" });
         }
 
 
@@ -117,6 +120,14 @@ namespace SpotifyPool.Controllers.Authentication
             var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
             var authenticatedUserInfoResponseModel = await authenticationBLL.GetUserInformation(token);
             return Ok(new { authenticatedUserInfoResponseModel });
+        }
+
+
+        [AllowAnonymous, HttpPost("refresh-token")]
+        public IActionResult RefreshToken()
+        {
+            var result = authenticationBLL.Relog();   
+            return Ok(new { result });
         }
     }
 }

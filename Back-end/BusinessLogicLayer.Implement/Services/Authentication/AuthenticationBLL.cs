@@ -10,6 +10,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
@@ -365,7 +366,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return authenticationModel;
         }
 
-        public async Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel)
+        public async Task<string> Authenticate(LoginRequestModel loginModel)
         {
             string username = loginModel.Username;
             string password = loginModel.Password;
@@ -404,11 +405,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             //}
 
             // New object ModelView
-            AuthenticatedResponseModel authenticationModel = new()
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            };
+            //AuthenticatedResponseModel authenticationModel = new()
+            //{
+            //    AccessToken = accessToken,
+            //    RefreshToken = refreshToken
+            //};
 
             // Update LastLoginTime
             // Chỗ này chưa cần phải kiểm tra Update Result
@@ -416,7 +417,18 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> lastLoginTimeUpdate = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, lastLoginTimeUpdate);
 
-            return authenticationModel;
+            //tạo Cookie chứa refresh token
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.Now.AddDays(7)
+            };
+
+            _httpContextAccessor?.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+
+            return accessToken;
         }
 
         public async Task<AuthenticatedResponseModel> SwitchProfile()
@@ -634,6 +646,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         {
             List<Claim> info = _jwtBLL.ValidateToken(token).Claims.ToList();
 
+            // lấy thông tin người dùng từ token
             var userinfo = new AuthenticatedUserInfoResponseModel()
             {
                 Id = info.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
@@ -642,6 +655,26 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Avatar = info.Where(c => c.Type == "Avatar").Select(c => c.Value).ToList()
             };
             return userinfo;
+        }
+
+        public string Relog()
+        {
+            // lấy refresh token từ cookie
+            _httpContextAccessor.HttpContext.Request.Cookies.TryGetValue("refreshToken", out string refreshTokenValue);
+
+            TokenApiRequestModel model = new()
+            {
+                AccessToken = _httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""),
+                RefreshToken = refreshTokenValue
+            };
+            // gọi hàm để gen lại access token & refresh token 
+            _jwtBLL.RefreshAccessToken(out string accessToken, out string RefreshToken, model);
+
+            // cập nhật lại refresh token mới vào cookie
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("refreshToken");
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", RefreshToken);
+
+            return accessToken;
         }
     }
 }

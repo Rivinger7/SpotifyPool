@@ -2,6 +2,7 @@
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 
 namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
 {
@@ -9,7 +10,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
     {
         Task CreateAccount(RegisterRequestModel registerModel);
         Task ActivateAccountByToken(string token);
-        Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel);
+        Task<string> Authenticate(LoginRequestModel loginModel);
         Task ReActiveAccountByToken();
         Task<AuthenticatedResponseModel> LoginByGoogle(string googleToken);
         Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email);
@@ -18,5 +19,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
         Task ResetPasswordAsync(ResetPasswordRequestModel model);
         Task<AuthenticatedResponseModel> SwitchProfile();
         Task<AuthenticatedUserInfoResponseModel> GetUserInformation(string token);
+        string Relog();
     }
 }
