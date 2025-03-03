@@ -49,7 +49,7 @@ RUN apk add --no-cache libgdiplus
 RUN apk add --no-cache libstdc++ libc6-compat wget tar
 
 # Download and extract onnxruntime from github
-RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-x64-1.15.0.tgz && \
+RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/alpinelinux/onnxruntime/releases/download/v1.15.0/onnxruntime-musl-linux-x64-1.15.0.tgz && \
     mkdir -p /usr/local/lib/onnxruntime && \
     tar -xzf /tmp/onnxruntime.tar.gz -C /usr/local/lib/onnxruntime --strip-components=1 && \
     rm /tmp/onnxruntime.tar.gz
