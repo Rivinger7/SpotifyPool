@@ -54,7 +54,7 @@ RUN apt-get update && apt-get install -y libgdiplus
 RUN apt-get update && apt-get install -y wget tar libstdc++6
 
 # Download and extract onnxruntime from github
-RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-x64-1.15.0.tgz && \
+RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz && \
     mkdir -p /usr/local/lib/onnxruntime && \
     tar -xzf /tmp/onnxruntime.tar.gz -C /usr/local/lib/onnxruntime --strip-components=1 && \
     rm /tmp/onnxruntime.tar.gz
@@ -66,7 +66,7 @@ RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/rel
 ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
 
 # Copy model ONNX into TrainingModel folder
-COPY ["Back-end/SpotifyPool/TrainingModel/audio_features_model.onnx", "/var/data/"]
+COPY ["Back-end/SpotifyPool/TrainingModel/audio_features_model.onnx", "/app"]
 
 # Copy the published files to the container
 COPY --from=publish /app/publish .
