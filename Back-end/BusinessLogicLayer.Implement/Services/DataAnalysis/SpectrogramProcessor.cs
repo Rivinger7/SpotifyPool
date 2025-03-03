@@ -207,8 +207,10 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             }
 
             // Chạy suy luận
-            using InferenceSession session = new(onnxModelPath);
-            var inputName = session.InputMetadata.Keys.First();
+            SessionOptions options = new();
+            options.RegisterCustomOpLibraryV2("/usr/local/lib/onnxruntime/lib/libonnxruntime.so", out _);
+            using InferenceSession session = new(onnxModelPath, options);
+            string inputName = session.InputMetadata.Keys.First();
             List<NamedOnnxValue> inputs =
             [
                 NamedOnnxValue.CreateFromTensor(inputName, inputTensor)

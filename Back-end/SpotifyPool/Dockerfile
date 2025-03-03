@@ -48,11 +48,19 @@ RUN apk add --no-cache libgdiplus
 # Install the library needed to run onnxruntime
 RUN apk add --no-cache libstdc++ libc6-compat wget tar
 
+# Install glibc from an external repository
+RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
+    wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r1/glibc-2.35-r1.apk && \
+    apk add glibc-2.35-r1.apk
+
 # Download and extract onnxruntime from github
 RUN wget -O /tmp/onnxruntime.tar.gz https://github.com/microsoft/onnxruntime/releases/download/v1.15.0/onnxruntime-linux-x64-1.15.0.tgz && \
     mkdir -p /usr/local/lib/onnxruntime && \
     tar -xzf /tmp/onnxruntime.tar.gz -C /usr/local/lib/onnxruntime --strip-components=1 && \
     rm /tmp/onnxruntime.tar.gz
+
+# Create SYMLINK so that the application can be found libibinxruntime.so
+# RUN ln -s /usr/local/lib/onnxruntime/lib/libonnxruntime.so /usr/lib/libonnxruntime.so
 
 # Set environmental variables for the application to find onnxruntime
 ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
