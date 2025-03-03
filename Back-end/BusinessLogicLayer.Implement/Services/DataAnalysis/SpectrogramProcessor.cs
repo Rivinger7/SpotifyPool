@@ -198,7 +198,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             }
             else if (IsLinux)
             {
-                basePath = "/var/data/TrainingModel";
+                basePath = "/var/data";
                 onnxModelPath = Path.Combine(basePath, "audio_features_model.onnx");
             }
             else
