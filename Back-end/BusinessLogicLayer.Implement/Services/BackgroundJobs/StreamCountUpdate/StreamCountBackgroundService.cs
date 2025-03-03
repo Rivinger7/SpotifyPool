@@ -1,4 +1,5 @@
-﻿using DataAccessLayer.Interface.MongoDB.UOW;
+﻿using DataAccessLayer.Implement.MongoDB.UOW;
+using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,39 +14,29 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
         private readonly IServiceScopeFactory _factory = factory;
         private readonly IDatabase _redis = redis.GetDatabase();
         private readonly IServer server = redis.GetServer(redis.GetEndPoints().First());
+        IUnitOfWork _unitOfWork;
+        private DateTime _lastUpdate = DateTime.MinValue;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                using (var scope = _factory.CreateScope())
+                var scope = _factory.CreateScope();
+                _unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+                int availableListeningTrack = await CountAvailableListeningTrack();
+                if (availableListeningTrack >= 50 || (DateTime.UtcNow - _lastUpdate).TotalMinutes >= 5)
                 {
-                    IUnitOfWork _unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-                    {
-                        var tran = _redis.CreateTransaction();
-
-                        foreach (var key in server.Keys(pattern: "stream_count:*"))
-                        {
-                            await UpdateCountToMongoDB(_unitOfWork, key);
-                            await _redis.KeyDeleteAsync(key);
-                        }
-
-                        bool committed = await tran.ExecuteAsync();
-
-                        if (committed)
-                        {
-                            Console.WriteLine("Stream count updated to MongoDB");
-                        }
-
-                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-                    }
+                    await UpdateListenedTrack();
+                    _lastUpdate = DateTime.UtcNow;
                 }
+
+                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
             }
         }
 
-        private async Task UpdateCountToMongoDB(IUnitOfWork _unitOfWork, RedisKey key)
+        private async Task UpdateCountToMongoDB(RedisKey key)
         {
-
             // Lấy thông tin user từ Redis
             string[] keyParts = key.ToString().Split(':');
             string userId = keyParts[1];
@@ -63,7 +54,6 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
                     // Lấy thông tin topTrack của user
                     TopTrack topTrack = await _unitOfWork.GetCollection<TopTrack>()
                         .Find(topTrack => topTrack.UserId == userId)
-                        //.Project(topTrack => topTrack.Id)
                         .FirstOrDefaultAsync();
 
                     // Nếu không có topTrack thì tạo mới
@@ -75,10 +65,10 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
                             TrackInfo =
                             [
                                 new()
-                            {
-                                TrackId = trackId,
-                                StreamCount = playedTrackCount
-                            }
+                                {
+                                    TrackId = trackId,
+                                    StreamCount = playedTrackCount
+                                }
                             ]
                         };
 
@@ -119,14 +109,44 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
                     // Do MongoDB không hỗ trợ hoàn toàn các Linq query nên phải thao tác trực tiếp với MongoDB
                     UpdateDefinition<TopTrack> updateDefinition = Builders<TopTrack>.Update.Inc(topTrack => topTrack.TrackInfo.FirstMatchingElement().StreamCount, playedTrackCount);
                     await _unitOfWork.GetCollection<TopTrack>().UpdateOneAsync(filterDefinition, updateDefinition);
-
                 }
                 // Xóa key đã cập nhật
                 await _redis.KeyDeleteAsync(key);
 
                 return;
             }
+        }
 
+        private async Task UpdateListenedTrack()
+        {
+            var tran = _redis.CreateTransaction();
+
+            foreach (var key in server.Keys(pattern: "stream_count:*"))
+            {
+                await UpdateCountToMongoDB(key);
+                await _redis.KeyDeleteAsync(key);
+            }
+
+            await tran.ExecuteAsync();
+        }
+
+        //hàm đếm tổng số lượng nghe của các track của các user từ redis ra
+        private async Task<int> CountAvailableListeningTrack()
+        {
+            //luaScript
+            string luaScript = @"
+                    local keys = redis.call('keys', 'stream_count:*')
+                    local totalCount = 0
+                    for _, key in ipairs(keys) do
+                        local value = redis.call('GET', key)
+                        if value then
+                            totalCount = totalCount + tonumber(value)
+                        end
+                    end
+                    return totalCount";
+
+            RedisResult result = await _redis.ScriptEvaluateAsync(luaScript);
+            return (int)result;
         }
     }
 }
