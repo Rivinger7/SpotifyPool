@@ -30,21 +30,18 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
         //    UpdateResult trackUpdateResult = await _unitOfWork.GetCollection<Track>().UpdateOneAsync(track => track.Id == trackId, streamCountTrackUpdateDefinition);
         //}
 
-        public async Task UpdateStreamCountAsync(string trackId, int trackDuration, int listenedDuration)
+        public async Task UpdateStreamCountAsync(string trackId)
         {
             string userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId is null)
+            if (string.IsNullOrEmpty(userId))
             {
                 await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to create playlist!");
                 return;
             }
 
-            if (listenedDuration >= trackDuration / 3)
-            {
-                string redisKey = $"stream_count:{userId}:{trackId}";
-                await _redis.StringIncrementAsync(redisKey);
-            }
+            string key = $"stream_count:{userId}";
+            await _redis.HashIncrementAsync(key, trackId, 1);
+            return;
         }
 
     }
