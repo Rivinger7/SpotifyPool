@@ -50,7 +50,8 @@ RUN apk add --no-cache libgdiplus libstdc++ \
 COPY ["Back-end/SpotifyPool/TrainingModel/audio_features_model.onnx", "/app"]
 
 # Set environmental variables for the application to find onnxruntime
-ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
+#ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/app/runtimes/linux-x64/native:$LD_LIBRARY_PATH"
 
 # Copy the published files to the container
 COPY --from=publish /app/publish .
