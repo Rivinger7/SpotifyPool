@@ -1,30 +1,28 @@
 ﻿using AutoMapper;
-using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using Business_Logic_Layer.Services_Interface.Users;
+using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
+using BusinessLogicLayer.Interface.Services_Interface.JWTs;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
+using CloudinaryDotNet.Actions;
+using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
+using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using BusinessLogicLayer.Implement.CustomExceptions;
-using DataAccessLayer.Interface.MongoDB.UOW;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
-using Microsoft.AspNetCore.Http;
-using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
-using CloudinaryDotNet.Actions;
-using SetupLayer.Enum.Services.User;
 using SetupLayer.Enum.Microservices.Cloudinary;
-using Utility.Coding;
+using SetupLayer.Enum.Services.User;
 using System.Security.Claims;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
-using BusinessLogicLayer.Interface.Services_Interface.JWTs;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Users
 {
-    public class UserBLL(IUnitOfWork unitOfWork, IMapper mapper, ICacheCustom cache, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService, IJwtBLL jwtBLL) : IUser
+    public class UserBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService, IJwtBLL jwtBLL) : IUser
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
-        private readonly ICacheCustom _cache = cache;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
@@ -63,44 +61,24 @@ namespace BusinessLogicLayer.Implement.Services.Users
 
             // Lấy tất cả thông tin người dùng và áp dụng bộ lọc
             IEnumerable<UserResponseModel> users;
-            if (isCache)
+
+            users = await _unitOfWork.GetCollection<User>().Find(filter)
+            .Project(users => new UserResponseModel
             {
-                users = await _cache.GetOrSetAsync(cacheKey, () => _unitOfWork.GetCollection<User>().Find(filter)
-                .Project(users => new UserResponseModel
-                {
-                    UserId = users.Id.ToString(),
-                    Role = users.Roles.ToString(),
-                    Email = users.Email,
-                    DisplayName = users.DisplayName,
-                    Gender = users.Gender.ToString(),
-                    Birthdate = users.Birthdate,
-                    //ImageResponseModel = users.ImageResponseModel,
-                    IsLinkedWithGoogle = users.IsLinkedWithGoogle,
-                    Status = users.Status.ToString(),
-                    CreatedTime = Util.GetUtcPlus7Time().ToString("yyyy-MM-dd")
-                })
-                .ToListAsync());
-            }
-            else
-            {
-                users = await _unitOfWork.GetCollection<User>().Find(filter)
-                .Project(users => new UserResponseModel
-                {
-                    UserId = users.Id.ToString(),
-                    Role = users.Roles.ToString(),
-                    Email = users.Email,
-                    DisplayName = users.DisplayName,
-                    Gender = users.Gender.ToString(),
-                    Birthdate = users.Birthdate,
-                    //ImageResponseModel = users.ImageResponseModel,
-                    IsLinkedWithGoogle = users.IsLinkedWithGoogle,
-                    Status = users.Status.ToString(),
-                    CreatedTime = users.CreatedTime.ToString(),
-                    LastLoginTime = users.LastLoginTime.HasValue ? users.LastLoginTime.Value.ToString() : null,
-                    LastUpdatedTime = users.LastUpdatedTime.HasValue ? users.LastUpdatedTime.Value.ToString() : null,
-                })
-                .ToListAsync();
-            }
+                UserId = users.Id.ToString(),
+                Role = users.Roles.ToString(),
+                Email = users.Email,
+                DisplayName = users.DisplayName,
+                Gender = users.Gender.ToString(),
+                Birthdate = users.Birthdate,
+                //ImageResponseModel = users.ImageResponseModel,
+                IsLinkedWithGoogle = users.IsLinkedWithGoogle,
+                Status = users.Status.ToString(),
+                CreatedTime = users.CreatedTime.ToString(),
+                LastLoginTime = users.LastLoginTime.HasValue ? users.LastLoginTime.Value.ToString() : null,
+                LastUpdatedTime = users.LastUpdatedTime.HasValue ? users.LastUpdatedTime.Value.ToString() : null,
+            })
+            .ToListAsync();
 
             return users;
         }

@@ -1,11 +1,11 @@
 # Use the ASP.NET Core image for the runtime environment
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 #EXPOSE 8081
 
 # Use Alpine SDK image for build environment
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
@@ -43,15 +43,14 @@ FROM base AS final
 WORKDIR /app
 
 # Install Libgdiplus to support System.Drawing.common and OnnxRuntime
-RUN apk add --no-cache libgdiplus libstdc++ \
-    && rm -rf /var/cache/apk/*
+RUN apt-get update && apt-get install -y libgdiplus libstdc++6 libc6 && rm -rf /var/lib/apt/lists/*
 
 # Copy model ONNX into TrainingModel folder
 COPY ["Back-end/SpotifyPool/TrainingModel/audio_features_model.onnx", "/app"]
 
 # Set environmental variables for the application to find onnxruntime
-#ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
-ENV LD_LIBRARY_PATH="/app/runtimes/linux-x64/native:$LD_LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
+#ENV LD_LIBRARY_PATH="/app/runtimes/linux-x64/native:$LD_LIBRARY_PATH"
 
 # Copy the published files to the container
 COPY --from=publish /app/publish .
