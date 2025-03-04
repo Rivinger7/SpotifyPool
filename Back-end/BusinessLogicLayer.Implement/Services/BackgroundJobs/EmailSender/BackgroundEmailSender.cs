@@ -26,6 +26,11 @@ namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender
             // Liên tục lắng nghe các yêu cầu từ Channel
             await foreach (IEmailSenderCustom emailRequest in _emailChannel.Reader.ReadAllAsync(stoppingToken))
             {
+                if (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 // Gửi email
                 await emailRequest.SendEmailAsync(emailRequest.EmailSenderRequestModel);
 

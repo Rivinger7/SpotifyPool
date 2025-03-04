@@ -1,19 +1,17 @@
-﻿using CloudinaryDotNet.Actions;
+﻿using BusinessLogicLayer.Implement.CustomExceptions;
 using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
-using BusinessLogicLayer.Implement.CustomExceptions;
-using Utility.Coding;
-using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using System.Security.Claims;
+using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
 {
-    public class CloudinaryService(Cloudinary cloudinary, ICacheCustom cache, IHttpContextAccessor httpContextAccessor)
+    public class CloudinaryService(Cloudinary cloudinary, IHttpContextAccessor httpContextAccessor)
     {
         private readonly Cloudinary _cloudinary = cloudinary;
-        private readonly ICacheCustom _cache = cache;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public ImageUploadResult UploadImage(IFormFile imageFile, ImageTag imageTag, string rootFolder = "Image", int? height = null, int? width = null)
@@ -147,7 +145,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             };
 
             VideoUploadResult? uploadResult = _cloudinary.Upload(uploadParams);
-            
+
             if ((int)uploadResult.StatusCode != StatusCodes.Status200OK)
             {
                 throw new CustomException("Error", (int)uploadResult.StatusCode, uploadResult.Error.Message);
@@ -168,14 +166,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 ResourceType = ResourceType.Image,
             };
 
-            if (isCache)
-            {
-                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(getResourceParams));
-            }
-            else
-            {
-                getResult = _cloudinary.GetResource(getResourceParams);
-            }
+            getResult = _cloudinary.GetResource(getResourceParams);
 
             if ((int)getResult.StatusCode != StatusCodes.Status200OK)
             {
@@ -195,14 +186,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
                 ResourceType = ResourceType.Video  // Explicitly set the resource type to video
             };
 
-            if (isCache)
-            {
-                getResult = _cache.GetOrSet(publicID, () => _cloudinary.GetResource(getResourceParams));
-            }
-            else
-            {
-                getResult = _cloudinary.GetResource(getResourceParams);
-            }
+            getResult = _cloudinary.GetResource(getResourceParams);
 
             if ((int)getResult.StatusCode != StatusCodes.Status200OK)
             {
