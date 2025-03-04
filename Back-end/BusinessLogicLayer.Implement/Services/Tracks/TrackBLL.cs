@@ -593,7 +593,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
 
                 // Upload streaming files lên AWS S3
-                newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
+                //newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
+                newTrack.StreamingUrl = "";
 
                 // AWS chuyển file audio sang dạng streaming
                 //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
@@ -680,6 +681,12 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     {
                         Directory.Delete(outputPath, true);
                         //Console.WriteLine($"Deleted folder: {outputPath}");
+                    }
+
+                    if (Directory.Exists(inputFileTemp))
+                    {
+                        Directory.Delete(inputFileTemp, true);
+                        //Console.WriteLine($"Deleted folder: {inputFileTemp}");
                     }
 
                     if (Directory.Exists(inputFolderPath))

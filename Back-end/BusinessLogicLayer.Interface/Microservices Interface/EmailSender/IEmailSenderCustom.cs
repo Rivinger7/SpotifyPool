@@ -1,7 +1,4 @@
 ﻿using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
-using DataAccessLayer.Repository.Entities;
-using Utility.Coding;
 
 namespace BusinessLogicLayer.Interface.Microservices_Interface.EmailSender
 {
