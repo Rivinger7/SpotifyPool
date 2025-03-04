@@ -9,43 +9,33 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 {
     public class FFmpegService : IFFmpegService
     {
+        private static bool isFFmpegChecked = false;
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1); // Tránh chạy nhiều lần
+
         // Xác định hệ điều hành
         public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         public static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
         public FFmpegService()
         {
-            //_ = EnsureFFmpegExists(); // Đảm bảo FFmpeg đã có, nếu chưa có thì tải xuống
-            EnsureFFmpegExists().Wait();
+            EnsureFFmpegExists().ConfigureAwait(false);
         }
 
         private static async Task EnsureFFmpegExists()
         {
+            if(isFFmpegChecked)
+            {
+                return;
+            }
+
+            await semaphore.WaitAsync();
+
             // Đặt đường dẫn FFmpeg về thư mục chính của backend
             //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
 
             //string basePath;
             //string ffmpegFolder;
             string ffmpegPath;
-
-            //if (IsWindows)
-            //{
-            //    basePath = AppDomain.CurrentDomain.BaseDirectory;
-            //    ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
-            //}
-            //else if (IsLinux)
-            //{
-            //    basePath = "/var/data";
-            //    ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
-            //}
-            //else
-            //{
-            //    throw new PlatformNotSupportedException("This platform is not supported");
-            //}
-
-            //// Tạo thư mục nếu chưa tồn tại
-            //if (!Directory.Exists(ffmpegFolder))
-            //    Directory.CreateDirectory(ffmpegFolder);
 
             // Chuẩn hóa đường dẫn
             //ffmpegPath = Path.GetFullPath(ffmpegFolder);
@@ -57,15 +47,48 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             bool ffmpegExists = File.Exists(Path.Combine(ffmpegPath, "ffmpeg.exe")) ||
                                 File.Exists(Path.Combine(ffmpegPath, "ffmpeg"));
 
-            if (!ffmpegExists)
+            try
             {
-                Console.WriteLine("FFmpeg chưa tồn tại, đang tải xuống...");
-                await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official);
-                Console.WriteLine($"FFmpeg đã tải xuống thành công tại: {ffmpegPath}");
+                if (!ffmpegExists)
+                {
+                    Console.WriteLine("FFmpeg chưa tồn tại, đang tải xuống...");
+
+                    // Xóa phiên bản cũ trước khi tải
+                    DeleteOldFFmpegFiles(ffmpegPath);
+
+                    // Tải FFmpeg mới nhất
+                    await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official);
+                    Console.WriteLine($"FFmpeg đã tải xuống thành công tại: {ffmpegPath}");
+
+                    isFFmpegChecked = true;
+                }
+                else
+                {
+                    //Console.WriteLine($"FFmpeg đã tồn tại ở {ffmpegPath}, bỏ qua tải xuống.");
+                }
             }
-            else
+            finally
             {
-                //Console.WriteLine($"FFmpeg đã tồn tại ở {ffmpegPath}, bỏ qua tải xuống.");
+                semaphore.Release(); // Giải phóng semaphore để lần sau có thể chạy tiếp
+            }
+        }
+
+        private static void DeleteOldFFmpegFiles(string directory)
+        {
+            string[] oldFiles = Directory.GetFiles(directory, "ffmpeg*"); // Xóa ffmpeg.exe, ffmpeg-linux, ffmpeg-macos...
+            string[] oldProbes = Directory.GetFiles(directory, "ffprobe*"); // Xóa ffprobe.exe nếu có
+
+            foreach (var file in oldFiles.Concat(oldProbes))
+            {
+                try
+                {
+                    File.Delete(file);
+                    Console.WriteLine($"Đã xóa file cũ: {file}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Lỗi khi xóa file {file}: {ex.Message}");
+                }
             }
         }
 

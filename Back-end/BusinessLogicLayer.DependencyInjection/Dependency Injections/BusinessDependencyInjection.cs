@@ -570,10 +570,13 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSingleton(emailSenderSetting);
 
             // Register the EmailSender service
-            services.AddSingleton<IEmailSenderCustom, EmailSender>();
+            services.AddTransient<IEmailSenderCustom, EmailSender>();
 
             // Register the Channel<IEmailSenderCustom> service
-            services.AddSingleton(Channel.CreateUnbounded<IEmailSenderCustom>());
+            services.AddSingleton(Channel.CreateBounded<IEmailSenderCustom>(new BoundedChannelOptions(100)
+            {
+                FullMode = BoundedChannelFullMode.Wait // Nếu Channel đầy, đợi thay vì giữ mãi trong bộ nhớ
+            }));
 
             // Register the Background Email Sender service
             services.AddSingleton<IBackgroundEmailSender, BackgroundEmailSender>();

@@ -1,19 +1,16 @@
-﻿using System.Net.Mail;
-using System.Net;
-using Microsoft.Extensions.Logging;
-using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
-using Utility.Coding;
-using SetupLayer.Setting.Microservices.EmailSender;
+﻿using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
-using DataAccessLayer.Repository.Entities;
+using Microsoft.Extensions.Logging;
+using SetupLayer.Setting.Microservices.EmailSender;
+using System.Net;
+using System.Net.Mail;
 
 namespace BusinessLogicLayer.Implement.Microservices.EmailSender
 {
-    public class EmailSender(EmailSenderSetting emailSenderSetting, ILogger<EmailSender> logger) : IEmailSenderCustom
+    public class EmailSender(EmailSenderSetting emailSenderSetting) : IEmailSenderCustom
     {
         private readonly EmailSenderSetting _emailSenderSetting = emailSenderSetting;
-        private readonly ILogger<EmailSender> _logger = logger;
-
+        
         public required EmailSenderRequestModel EmailSenderRequestModel { get; set; }
         public required string TemplateBody { get; set; }
 
@@ -21,7 +18,7 @@ namespace BusinessLogicLayer.Implement.Microservices.EmailSender
         private async Task SendEmailClient(EmailSenderRequestModel emailSenderRequestModel)
         {
             // Tạo đối tượng SmtpClient với thông tin từ EmailSenderSetting
-            SmtpClient smtpClient = new(_emailSenderSetting.Smtp.Host)
+            using SmtpClient smtpClient = new(_emailSenderSetting.Smtp.Host)
             {
                 // Thiết lập cổng SMTP
                 Port = int.Parse(_emailSenderSetting.Smtp.Port),
@@ -34,7 +31,7 @@ namespace BusinessLogicLayer.Implement.Microservices.EmailSender
             };
 
             // Tạo đối tượng MailMessage với thông tin từ EmailSenderRequestModel
-            MailMessage mailMessage = new()
+            using MailMessage mailMessage = new()
             {
                 // Thiết lập địa chỉ email người gửi
                 From = new MailAddress(_emailSenderSetting.FromAddress, _emailSenderSetting.FromName),

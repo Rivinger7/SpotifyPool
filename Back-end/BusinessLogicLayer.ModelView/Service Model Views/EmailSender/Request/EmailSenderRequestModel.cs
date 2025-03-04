@@ -1,6 +1,4 @@
-﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
-
-namespace BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request
+﻿namespace BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request
 {
     public class EmailSenderRequestModel
     {
