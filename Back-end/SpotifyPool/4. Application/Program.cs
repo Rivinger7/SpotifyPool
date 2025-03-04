@@ -6,11 +6,10 @@ using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.HttpOverrides;
 using SpotifyPool.Infrastructure;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
-using System.Diagnostics;
 
 // Stopwatch Start
-var stopwatch = new Stopwatch();
-stopwatch.Start();
+//var stopwatch = new Stopwatch();
+//stopwatch.Start();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,11 +66,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddBusinessInfrastructure(builder.Configuration);
 
-
-
 var app = builder.Build();
-
-
 
 // Cấu hình IpAddressHelper với IHttpContextAccessor từ DI
 //Util.Configure(app.Services.GetRequiredService<IHttpContextAccessor>());
@@ -121,7 +116,7 @@ app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_P
 app.MapHub<PlaybackSyncHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYBACK_SYNC_URL")}");
 
 // Stopwatch End
-stopwatch.Stop();
-app.Logger.LogInformation($"Application startup completed in {stopwatch.ElapsedMilliseconds} ms");
+//stopwatch.Stop();
+//app.Logger.LogInformation($"Application startup completed in {stopwatch.ElapsedMilliseconds} ms");
 
 app.Run();

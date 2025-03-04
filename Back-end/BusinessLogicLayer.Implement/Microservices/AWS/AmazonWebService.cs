@@ -51,7 +51,7 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
                     Key = s3Key,
                     ContentType = "audio/mpeg"
                 };
-                TransferUtility fileTransferUtility = new(_s3Client);
+                using TransferUtility fileTransferUtility = new(_s3Client);
                 await fileTransferUtility.UploadAsync(uploadRequest);
             }
 
@@ -90,7 +90,10 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
             finally
             {
                 // Xóa thư mục output/trackIdName sau khi upload
-                Directory.Delete(localFolderPath, true);
+                if (Directory.Exists(localFolderPath))
+                {
+                    Directory.Delete(localFolderPath, true);
+                }
             }
 
             return $"https://{_aWSSettings.BucketName}.s3.{_aWSSettings.Region}.amazonaws.com/streaming-audio/{trackIdName}/{trackId}_output.m3u8";
@@ -273,7 +276,7 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
                     Key = s3Key,
                     ContentType = "audio/mpeg"
                 };
-                TransferUtility fileTransferUtility = new(_s3Client);
+                using TransferUtility fileTransferUtility = new(_s3Client);
                 await fileTransferUtility.UploadAsync(uploadRequest);
             }
 
@@ -281,7 +284,7 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
             string s3UrlPublic = $"https://{bucketName}.s3.{region}.amazonaws.com/{s3Key}";
 
             // Kiểm tra xem job MediaConvert đã chạy cho file này chưa (Tránh chạy lại)
-            AmazonMediaConvertClient mediaConvertClient = new(new AmazonMediaConvertConfig { ServiceURL = endpoint });
+            using AmazonMediaConvertClient mediaConvertClient = new(new AmazonMediaConvertConfig { ServiceURL = endpoint });
             ListJobsRequest jobCheckRequest = new()
             {
                 MaxResults = 10,

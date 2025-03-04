@@ -3,7 +3,6 @@ using Amazon;
 using Amazon.MediaConvert;
 using Amazon.Runtime;
 using Amazon.S3;
-using Business_Logic_Layer.Services_Interface.InMemoryCache;
 using Business_Logic_Layer.Services_Interface.Users;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.AWS;
@@ -18,10 +17,9 @@ using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
-using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
+using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.Files;
-using BusinessLogicLayer.Implement.Services.InMemoryCache;
 using BusinessLogicLayer.Implement.Services.JWTs;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Implement.Services.Recommendation;
@@ -79,7 +77,6 @@ using SetupLayer.Setting.Microservices.Geolocation;
 using SetupLayer.Setting.Microservices.Jira;
 using SetupLayer.Setting.Microservices.Spotify;
 using StackExchange.Redis;
-using System.Diagnostics;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -105,125 +102,128 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
         public static void AddBusinessInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
-            var stopwatch = new Stopwatch();
+            // Đảm bảo Logging đã được đăng ký
+            services.AddLogging();
+
+            //var stopwatch = new Stopwatch();
 
             // Register HttpClient
-            stopwatch.Start();
+            //stopwatch.Start();
             services.AddHttpClient();
-            stopwatch.Stop();
-            Console.WriteLine($"AddHttpClient took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddHttpClient took {stopwatch.ElapsedMilliseconds} ms");
 
             // Register IHttpContextAccessor
-            stopwatch.Start();
+            //stopwatch.Start();
             services.AddHttpContextAccessor();
-            stopwatch.Stop();
-            Console.WriteLine($"AddHttpContextAccessor took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddHttpContextAccessor took {stopwatch.ElapsedMilliseconds} ms");
 
             // Database
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddDatabase();
-            stopwatch.Stop();
-            Console.WriteLine($"AddDatabase took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddDatabase took {stopwatch.ElapsedMilliseconds} ms");
 
             // AutoMapper
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddAutoMapper();
-            stopwatch.Stop();
-            Console.WriteLine($"AddAutoMapper took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddAutoMapper took {stopwatch.ElapsedMilliseconds} ms");
 
             // Register other services...
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddServices(configuration);
-            stopwatch.Stop();
-            Console.WriteLine($"AddServices took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddServices took {stopwatch.ElapsedMilliseconds} ms");
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddEmailSender();
-            stopwatch.Stop();
-            Console.WriteLine($"AddEmailSender took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddEmailSender took {stopwatch.ElapsedMilliseconds} ms");
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddJWT();
-            stopwatch.Stop();
-            Console.WriteLine($"AddJWT took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddJWT took {stopwatch.ElapsedMilliseconds} ms");
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddAuthorization();
-            stopwatch.Stop();
-            Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddJiraClient();
-            stopwatch.Stop();
-            Console.WriteLine($"AddJiraClient took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddJiraClient took {stopwatch.ElapsedMilliseconds} ms");
 
             // Cloudinary
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddCloudinary(configuration);
-            stopwatch.Stop();
-            Console.WriteLine($"AddCloudinary took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddCloudinary took {stopwatch.ElapsedMilliseconds} ms");
 
             // AWS
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddAmazonWebService(configuration);
-            stopwatch.Stop();
-            Console.WriteLine($"AddAmazonWebService took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddAmazonWebService took {stopwatch.ElapsedMilliseconds} ms");
 
             // Spotify
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddSpotify();
-            stopwatch.Stop();
-            Console.WriteLine($"AddSpotify took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddSpotify took {stopwatch.ElapsedMilliseconds} ms");
 
             // Geolocation
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddGeolocation();
-            stopwatch.Stop();
-            Console.WriteLine($"AddGeolocation took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddGeolocation took {stopwatch.ElapsedMilliseconds} ms");
 
             // Genius
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddGenius();
-            stopwatch.Stop();
+            //stopwatch.Stop();
 
             // Hub (SignalR)
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddSignalR();
-            stopwatch.Stop();
-            Console.WriteLine($"AddSignalR took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddSignalR took {stopwatch.ElapsedMilliseconds} ms");
 
             // Caching (In-memory cache)
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddMemoryCache(configuration);
-            stopwatch.Stop();
-            Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
 
             // EnumMemberSerializer
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddEnumMemberSerializer();
-            stopwatch.Stop();
-            Console.WriteLine($"AddEnumMemberSerializer took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddEnumMemberSerializer took {stopwatch.ElapsedMilliseconds} ms");
 
             // Problem Details
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddProblemDetails();
-            stopwatch.Stop();
-            Console.WriteLine($"ProblemDetails took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"ProblemDetails took {stopwatch.ElapsedMilliseconds} ms");
 
             // Config Session HtppContext
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddDistributedMemoryCache();
-            stopwatch.Stop();
-            Console.WriteLine($"AddDistributedMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddDistributedMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
 
-	    // Redis Register
-            stopwatch.Restart();
+            // Redis Register
+            //stopwatch.Restart();
             services.AddRedis();
-            stopwatch.Stop();
-            Console.WriteLine($"AddRedis took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddRedis took {stopwatch.ElapsedMilliseconds} ms");
 
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddSession(options =>
             {
                 options.Cookie.HttpOnly = true;
@@ -233,18 +233,18 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 options.IdleTimeout = TimeSpan.FromDays(7);
                 //options.IdleTimeout = TimeSpan.FromMinutes(30);
             });
-            stopwatch.Stop();
-            Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddAuthentication();
-            stopwatch.Stop();
-            Console.WriteLine($"AddAuthentication took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddAuthentication took {stopwatch.ElapsedMilliseconds} ms");
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
             services.AddAuthorization();
-            stopwatch.Stop();
-            Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
+            //stopwatch.Stop();
+            //Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
 
             // Log an informational message
             _logger.LogInformation("Services have been configured.");
@@ -491,8 +491,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
         public static void AddMemoryCache(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddMemoryCache();
-            services.AddSingleton<ICacheCustom, CacheCustom>();
+            services.AddMemoryCache(options =>
+            {
+                options.SizeLimit = 10 * 1024 * 1024; // 10MB
+            });
         }
 
         public static void AddServices(this IServiceCollection services, IConfiguration configuration)
@@ -511,11 +513,11 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Artist
             services.AddScoped<IArtist, ArtistBLL>();
 
-			// Admin
-			services.AddScoped<IAccount, AccountBLL>();
+            // Admin
+            services.AddScoped<IAccount, AccountBLL>();
 
-			// Top Track
-			services.AddScoped<ITopTrack, TopTrackBLL>();
+            // Top Track
+            services.AddScoped<ITopTrack, TopTrackBLL>();
 
             // Track
             services.AddScoped<ITrack, TrackBLL>();
@@ -853,10 +855,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             RegionEndpoint awsRegion = RegionEndpoint.GetBySystemName(region);
 
             // Thêm S3 Client
-            services.AddSingleton<IAmazonS3>(new AmazonS3Client(awsCredentials, awsRegion));
+            services.AddSingleton<IAmazonS3>(provider => new AmazonS3Client(awsCredentials, awsRegion));
 
             // Thêm MediaConvert Client
-            services.AddSingleton<IAmazonMediaConvert>(new AmazonMediaConvertClient(awsCredentials, awsRegion));
+            services.AddSingleton<IAmazonMediaConvert>(provider => new AmazonMediaConvertClient(awsCredentials, awsRegion));
 
             // Config the AWS Client
             AWSSettings awsSetting = new()
@@ -940,6 +942,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         }
 
         // Config the database
+        private static readonly Lazy<IMongoClient> _lazyClient = new(() => new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")));
         public static void AddDatabase(this IServiceCollection services)
         {
             // Load MongoDB settings from environment variables
@@ -959,10 +962,11 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSingleton(mongoDbSettings);
 
             // Register MongoClient as singleton, sharing the connection across all usages
-            services.AddSingleton<IMongoClient>(sp =>
-            {
-                return new MongoClient(mongoDbSettings.ConnectionString);
-            });
+            //services.AddSingleton<IMongoClient>(sp =>
+            //{
+            //    return new MongoClient(mongoDbSettings.ConnectionString);
+            //});
+            services.AddSingleton<IMongoClient>(_lazyClient.Value);
 
             // Register IMongoDatabase as a scoped service
             services.AddScoped(sp =>
@@ -1017,7 +1021,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(Algorithm), new EnumMemberSerializer<Algorithm>());
         }
 
-	private static void AddRedis(this IServiceCollection services)
+        private static void AddRedis(this IServiceCollection services)
         {
             var option = new ConfigurationOptions
             {
