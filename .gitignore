@@ -1,2 +1,6 @@
 Back-end/SpotifyPool/4. Application/.env
 .idea/
+
+# Ignore ffmpeg file generated
+Back-end/SpotifyPool/ffmpeg.exe
+Back-end/SpotifyPool/ffprobe.exe
