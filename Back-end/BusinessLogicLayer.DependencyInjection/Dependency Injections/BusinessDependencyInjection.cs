@@ -218,7 +218,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Redis Register
             //stopwatch.Restart();
-            services.AddRedis();
+            //services.AddRedis();
             //stopwatch.Stop();
             //Console.WriteLine($"AddRedis took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -587,7 +587,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddHostedService<BackgroundEmailSender>();
 
             // Register the StreamCountBackgroundService as a hosted service
-            services.AddHostedService<StreamCountBackgroundService>();
+            //services.AddHostedService<StreamCountBackgroundService>();
         }
 
         public static void AddJWT(this IServiceCollection services)
@@ -1021,15 +1021,14 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(Algorithm), new EnumMemberSerializer<Algorithm>());
         }
 
-        private static void AddRedis(this IServiceCollection services)
-        {
-            var option = new ConfigurationOptions
-            {
-                EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
-                Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
-            };
-            services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
-        }
-
+        //private static void AddRedis(this IServiceCollection services)
+        //{
+        //    var option = new ConfigurationOptions
+        //    {
+        //        EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
+        //        Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
+        //    };
+        //    services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
+        //}
     }
 }
