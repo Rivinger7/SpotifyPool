@@ -669,8 +669,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // lấy refresh token từ cookie
             _httpContextAccessor.HttpContext.Request.Cookies.TryGetValue("SpotifyPool_RefreshToken", out string refreshTokenValue);
 
-            Console.WriteLine(refreshTokenValue);
-
 
             // gọi hàm để gen lại access token & refresh token 
             _jwtBLL.RefreshAccessToken(out string accessToken, out string RefreshToken, out ClaimsPrincipal principal, refreshTokenValue);
