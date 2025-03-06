@@ -10,6 +10,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
@@ -365,7 +366,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return authenticationModel;
         }
 
-        public async Task<AuthenticatedResponseModel> Authenticate(LoginRequestModel loginModel)
+        public async Task<AuthenticatedUserInfoResponseModel> Authenticate(LoginRequestModel loginModel)
         {
             string username = loginModel.Username;
             string password = loginModel.Password;
@@ -404,10 +405,29 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             //}
 
             // New object ModelView
-            AuthenticatedResponseModel authenticationModel = new()
+            //AuthenticatedResponseModel authenticationModel = new()
+            //{
+            //    AccessToken = accessToken,
+            //    RefreshToken = refreshToken
+            //};
+
+            CookieOptions cookieOptions = new()
+            {
+                Secure = true,
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                MaxAge = TimeSpan.FromDays(7)
+            };
+
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", refreshToken, cookieOptions);
+
+            AuthenticatedUserInfoResponseModel authenticatedUserInfoResponseModel = new()
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken
+                Id = retrieveUser.Id.ToString(),
+                Name = retrieveUser.DisplayName,
+                Role = [retrieveUser.Roles[0].ToString()],
+                Avatar = [retrieveUser.Images[0].URL]
             };
 
             // Update LastLoginTime
@@ -416,7 +436,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> lastLoginTimeUpdate = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, lastLoginTimeUpdate);
 
-            return authenticationModel;
+            return authenticatedUserInfoResponseModel;
         }
 
         public async Task<AuthenticatedResponseModel> SwitchProfile()
@@ -630,7 +650,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return otpCode;
         }
 
-        public async Task<AuthenticatedUserInfoResponseModel> GetUserInformation(string token)
+        public AuthenticatedUserInfoResponseModel GetUserInformation(string token)
         {
             List<Claim> info = _jwtBLL.ValidateToken(token).Claims.ToList();
 
@@ -642,6 +662,39 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Avatar = info.Where(c => c.Type == "Avatar").Select(c => c.Value).ToList()
             };
             return userinfo;
+        }
+
+        public AuthenticatedUserInfoResponseModel Relog()
+        {
+            // lấy refresh token từ cookie
+            _httpContextAccessor.HttpContext.Request.Cookies.TryGetValue("SpotifyPool_RefreshToken", out string refreshTokenValue);
+
+
+            // gọi hàm để gen lại access token & refresh token 
+            _jwtBLL.RefreshAccessToken(out string accessToken, out string RefreshToken, out ClaimsPrincipal principal, refreshTokenValue);
+
+            AuthenticatedUserInfoResponseModel authenticatedUserInfoResponseModel = new()
+            {
+                AccessToken = accessToken,
+                Id = principal.Identity?.Name,
+                Name = principal.FindFirst(ClaimTypes.Name)?.Value,
+                Role = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList(),
+                Avatar = principal.FindAll("Avatar").Select(c => c.Value).ToList()
+            };
+
+            CookieOptions cookieOptions = new()
+            {
+                Secure = true,
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                MaxAge = TimeSpan.FromDays(7)
+            };
+
+            // cập nhật lại refresh token mới vào cookie
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("SpotifyPool_RefreshToken");
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", RefreshToken, cookieOptions);
+
+            return authenticatedUserInfoResponseModel;
         }
     }
 }
