@@ -18,7 +18,6 @@ using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.JWTs;
-using BusinessLogicLayer.Implement.Services.MemoryUsage;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Implement.Services.Recommendation;
 using BusinessLogicLayer.Implement.Services.Tests;
@@ -570,8 +569,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Register the StreamCountBackgroundService as a hosted service
             //services.AddHostedService<StreamCountBackgroundService>();
-
-            services.AddHostedService<MemoryMonitor>();
         }
 
         public static void AddJWT(this IServiceCollection services)
