@@ -7,10 +7,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using SpotifyPool.Infrastructure;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
 
-// Stopwatch Start
-//var stopwatch = new Stopwatch();
-//stopwatch.Start();
-
 var builder = WebApplication.CreateBuilder(args);
 
 EnvironmentVariableLoader.LoadEnvironmentVariable();
@@ -35,19 +31,6 @@ EnvironmentVariableLoader.LoadEnvironmentVariable();
 //{
 //    builder.WebHost.UseUrls($"{protocol}://localhost:{port}"); // Sử dụng cổng từ biến môi trường
 //}
-
-
-// Real-time IP Address
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-
-    // Uncomment and set your trusted proxies if your app is behind a proxy
-    // options.KnownProxies.Add(IPAddress.Parse("::ffff:127.0.0.1"));
-    // Or use KnownNetworks for trusted network ranges if you use multiple proxies
-    // options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("192.168.1.0"), 24));
-});
-
 
 // Config appsettings by env
 builder.Configuration
@@ -95,9 +78,6 @@ app.UseSwaggerUI(c =>
 
 app.UseForwardedHeaders();
 
-// Đăng ký middleware lấy địa chỉ IP
-//app.UseMiddleware<IpAddressMiddleware>();
-
 app.UseHttpsRedirection();
 
 app.UseSession();
@@ -114,9 +94,5 @@ app.MapControllers();
 app.MapHub<StreamCountingHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL")}");
 app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL")}");
 app.MapHub<PlaybackSyncHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYBACK_SYNC_URL")}");
-
-// Stopwatch End
-//stopwatch.Stop();
-//app.Logger.LogInformation($"Application startup completed in {stopwatch.ElapsedMilliseconds} ms");
 
 app.Run();

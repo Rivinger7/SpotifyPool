@@ -10,7 +10,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
     public class FFmpegService : IFFmpegService
     {
         private static bool isFFmpegChecked = false;
-        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1); // Tránh chạy nhiều lần
+        private static readonly SemaphoreSlim semaphore = new(1, 1); // Tránh chạy nhiều lần
 
         // Xác định hệ điều hành
         public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -18,12 +18,12 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 
         public FFmpegService()
         {
-            EnsureFFmpegExists().ConfigureAwait(false);
+            EnsureFFmpegExists().GetAwaiter().GetResult();
         }
 
         private static async Task EnsureFFmpegExists()
         {
-            if(isFFmpegChecked)
+            if (isFFmpegChecked)
             {
                 return;
             }
@@ -103,17 +103,8 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 if (audioFile == null || audioFile.Length == 0)
                     throw new ArgumentException("File âm thanh không hợp lệ.");
 
-                // Lấy đường dẫn gốc của dự án (Back-end)
-                //string basePath = AppDomain.CurrentDomain.BaseDirectory;
-                //string basePath = Directory.GetCurrentDirectory();
-
-                //// Định nghĩa đường dẫn tương đối từ thư mục Back-end
-                //string inputFolder = Path.Combine(basePath, "Commons", "temp", "input_audio");
-                //outputFolder = Path.Combine(basePath, "Commons", "temp", "output_audio", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
-
-                //string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+                // Tạo thư mục chứa file input và output
                 string basePath = string.Empty;
-                
 
                 if (IsWindows)
                 {
@@ -186,15 +177,15 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 //if (!string.IsNullOrEmpty(inputFileTemp) && File.Exists(inputFileTemp))
                 //    File.Delete(inputFileTemp);
 
-                    //if (Directory.Exists(inputFolder))
-                    //{
-                    //    Directory.Delete(inputFolder, true); // Xóa cả file bên trong
-                    //}
+                //if (Directory.Exists(inputFolder))
+                //{
+                //    Directory.Delete(inputFolder, true); // Xóa cả file bên trong
+                //}
 
-                    //if (Directory.Exists(outputFolder))
-                    //{
-                    //    Directory.Delete(outputFolder, true); // Xóa cả file bên trong
-                    //}
+                //if (Directory.Exists(outputFolder))
+                //{
+                //    Directory.Delete(outputFolder, true); // Xóa cả file bên trong
+                //}
             }
 
             return (inputFileTemp, inputFolder, outputFolder);

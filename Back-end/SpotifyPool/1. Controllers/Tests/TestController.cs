@@ -1,12 +1,7 @@
-﻿using BusinessLogicLayer.Implement.Services.Files;
-using BusinessLogicLayer.Implement.Services.Tests;
-using BusinessLogicLayer.Interface.Services_Interface.Files;
-using Flurl.Http;
+﻿using BusinessLogicLayer.Implement.Services.Tests;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SetupLayer.Enum.Services.User;
-using SharpCompress.Common;
 
 namespace SpotifyPool._1._Controllers.Tests
 {
@@ -15,13 +10,6 @@ namespace SpotifyPool._1._Controllers.Tests
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
 	public class TestController(TestBLL testBLL) : ControllerBase
 	{
-		[AllowAnonymous, HttpPost("test-naudio")]
-        public async Task<IActionResult> TestNAudio(IFormFile audioFile)
-        {
-            await testBLL.TestNAudioService(audioFile);
-            return Ok();
-        }
-
         //       private readonly IFiles _fileService = new FilesBLL();
         //	//[AllowAnonymous, HttpPatch("Testing-Set-Artist-Account")]
         //	//public async Task<IActionResult> TestingSetArtistAccount()

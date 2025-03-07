@@ -1,15 +1,7 @@
-﻿using Amazon.Runtime.Internal;
-using BusinessLogicLayer.Implement.Microservices.NAudio;
-using DataAccessLayer.Interface.MongoDB.UOW;
+﻿using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using HtmlAgilityPack;
-using Microsoft.AspNetCore.Http;
-using Microsoft.ML.OnnxRuntime;
-using Microsoft.ML.OnnxRuntime.Tensors;
-using Microsoft.ML.Tokenizers;
 using MongoDB.Driver;
-using Org.BouncyCastle.Asn1.Ocsp;
-using Org.BouncyCastle.Crypto;
 using System.Drawing;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -21,33 +13,6 @@ namespace BusinessLogicLayer.Implement.Services.Tests
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly HttpClient _httpClient = httpClient;
-
-        public async Task TestNAudioService(IFormFile audioFile)
-        {
-            //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads trong wwwroot
-            string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", audioFile.FileName);
-
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", audioFile.FileName);
-
-            try
-            {
-                // lưu tạm thời file upload vào thư mục input
-                using (var stream = new FileStream(inputPath, FileMode.Create))
-                {
-                    await audioFile.CopyToAsync(stream);
-                }
-
-                // Convert file mp3 sang wav for nothing
-                // Lấy duration của file mp3
-                NAudioService.TrimAudioFile(out int duration, inputPath, outputPath, TimeSpan.FromSeconds(30));
-            }
-            finally
-            {
-                //xóa các file tạm không cần nữa trong wwwroot
-                File.Delete(inputPath);
-                File.Delete(outputPath);
-            }
-        }
 
         public async Task SetArtistAccount()
         {
