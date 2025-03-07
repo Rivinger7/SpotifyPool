@@ -8,8 +8,6 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.AWS;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.EmailSender;
-using BusinessLogicLayer.Implement.Microservices.Genius;
-using BusinessLogicLayer.Implement.Microservices.Geolocation;
 using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
 using BusinessLogicLayer.Implement.Microservices.OpenAI;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
@@ -17,10 +15,10 @@ using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
-using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
 using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.JWTs;
+using BusinessLogicLayer.Implement.Services.MemoryUsage;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Implement.Services.Recommendation;
 using BusinessLogicLayer.Implement.Services.Tests;
@@ -29,8 +27,6 @@ using BusinessLogicLayer.Implement.Services.Tracks;
 using BusinessLogicLayer.Implement.Services.Users;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
-using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
-using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Interface.Services_Interface.Account;
@@ -72,11 +68,8 @@ using SetupLayer.Enum.Services.User;
 using SetupLayer.Setting.Database;
 using SetupLayer.Setting.Microservices.AWS;
 using SetupLayer.Setting.Microservices.EmailSender;
-using SetupLayer.Setting.Microservices.Genius;
-using SetupLayer.Setting.Microservices.Geolocation;
 using SetupLayer.Setting.Microservices.Jira;
 using SetupLayer.Setting.Microservices.Spotify;
-using StackExchange.Redis;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -174,17 +167,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSpotify();
             //stopwatch.Stop();
             //Console.WriteLine($"AddSpotify took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Geolocation
-            //stopwatch.Restart();
-            services.AddGeolocation();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddGeolocation took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Genius
-            //stopwatch.Restart();
-            services.AddGenius();
-            //stopwatch.Stop();
 
             // Hub (SignalR)
             //stopwatch.Restart();
@@ -588,6 +570,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Register the StreamCountBackgroundService as a hosted service
             //services.AddHostedService<StreamCountBackgroundService>();
+
+            services.AddHostedService<MemoryMonitor>();
         }
 
         public static void AddJWT(this IServiceCollection services)
@@ -876,27 +860,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // AWS
             services.AddScoped<IAmazonWebService, AmazonWebService>();
         }
-        public static void AddGeolocation(this IServiceCollection services)
-        {
-            string? geolocationApiKey = Environment.GetEnvironmentVariable("IPGEOLOCATION_API_KEY");
-            if (string.IsNullOrEmpty(geolocationApiKey))
-            {
-                throw new DataNotFoundCustomException("Geolocation API Mode is not set in the environment variables");
-            }
-
-            // Initialize Cloudinary instance
-            GeolocationSettings geolocationSettings = new()
-            {
-                ApiKey = geolocationApiKey
-            };
-
-            // Register the Geolocation with DI
-            services.AddScoped(provider => geolocationSettings);
-
-            // Register Geolocation in DI container as a scoped service
-            services.AddScoped<IGeolocation, GeolocationService>();
-
-        }
 
         public static void AddSpotify(this IServiceCollection services)
         {
@@ -916,29 +879,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSingleton(spotifySettings);
 
             services.AddScoped<ISpotify, SpotifyService>();
-        }
-
-        public static void AddGenius(this IServiceCollection services)
-        {
-            string clientId = Environment.GetEnvironmentVariable("GENIUS_CLIENT_ID") ?? throw new DataNotFoundCustomException("Genius Client ID property is not set in environment or not found");
-            string clientSecret = Environment.GetEnvironmentVariable("GENIUS_CLIENT_SECRET") ?? throw new DataNotFoundCustomException("Genius Client Secret property is not set in environment or not found");
-            string redicrectUri = Environment.GetEnvironmentVariable("GENIUS_REDIRECT_URI") ?? throw new DataNotFoundCustomException("Genius Redirect URI property is not set in environment or not found");
-            string state = Environment.GetEnvironmentVariable("GENIUS_STATE") ?? throw new DataNotFoundCustomException("Genius State property is not set in environment or not found");
-
-            // Initialize GeniusSettings properties
-            GeniusSettings geniusSettings = new()
-            {
-                ClientId = clientId,
-                ClientSecret = clientSecret,
-                RedirectUri = redicrectUri,
-                State = state
-            };
-
-            // Register the GeniusSettings with DI
-            services.AddSingleton(geniusSettings);
-
-            // Register the Genius service
-            services.AddScoped<IGenius, GeniusService>();
         }
 
         // Config the database

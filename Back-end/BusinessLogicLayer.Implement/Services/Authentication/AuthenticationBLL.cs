@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
@@ -10,7 +9,6 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
-using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
@@ -27,13 +25,12 @@ using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation, IBackgroundEmailSender backgroundEmailSender) : IAuthentication
+    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IBackgroundEmailSender backgroundEmailSender) : IAuthentication
     {
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IGeolocation _geolocation = geolocation;
         private readonly IBackgroundEmailSender _backgroundEmailSender = backgroundEmailSender;
 
         public async Task CreateAccount(RegisterRequestModel registerModel)
@@ -60,9 +57,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";
 
-            // Lấy thông tin IP Address
-            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
-
             // Avatar mặc định
             string avatarUrl = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730097883/60d5dc467b950c5ccc8ced95_spotify-for-artists_on4me9.jpg";
 
@@ -77,7 +71,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Roles = [UserRole.Customer],
                 Product = UserProduct.Free,
                 IsLinkedWithGoogle = false,
-                CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
+                CountryId = "VN",
                 Status = UserStatus.Inactive,
                 CreatedTime = Util.GetUtcPlus7Time(),
                 TokenEmailConfirm = encryptedToken,
@@ -232,9 +226,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Lấy thông tin ảnh từ URL
             (int? imageHeight, int? imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
 
-            // Lấy thông tin IP Address
-            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
-
             // Chỉ khi nào chạy deploy thì mới sử dụng hàm này
             //GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromHeaderAsync();
 
@@ -257,7 +248,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     ],
                     Roles = [UserRole.Customer],
                     Product = UserProduct.Free,
-                    CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
+                    CountryId = "VN",
                     Status = UserStatus.Active,
                     CreatedTime = Util.GetUtcPlus7Time()
                 };

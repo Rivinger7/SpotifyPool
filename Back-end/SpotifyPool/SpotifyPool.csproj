@@ -53,6 +53,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="3. Middleware\" />
 	  <Folder Include="AudioTemp\input\" />
 	  <Folder Include="AudioTemp\output\" />
 	</ItemGroup>

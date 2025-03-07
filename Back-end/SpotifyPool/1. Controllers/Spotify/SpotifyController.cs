@@ -102,23 +102,6 @@ namespace SpotifyPool._1._Controllers.Spotify
         }
 
         /// <summary>
-        /// Fetch lyrics từ Genius API
-        /// </summary>
-        /// <param name="accessToken">Access Token lấy từ Genius API</param>
-        /// <returns></returns>
-        [AllowAnonymous, HttpGet("fetch/lyrics")]
-        public async Task<IActionResult> FetchLyrics([FromQuery] string accessToken)
-        {
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                return BadRequest("Access token is required.");
-            }
-
-            await _spotifyService.FetchLyricsAsync(accessToken);
-            return Ok(new { message = "Fetched Data Successfully" });
-        }
-
-        /// <summary>
         /// Lấy top tracks từ Spotify API
         /// </summary>
         /// <param name="accessToken"></param>
