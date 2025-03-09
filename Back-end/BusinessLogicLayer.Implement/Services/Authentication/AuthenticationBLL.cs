@@ -1,10 +1,8 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
-using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView;
-using BusinessLogicLayer.ModelView.Microservice_Model_Views.Geolocation.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
@@ -15,23 +13,20 @@ using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Utility.Coding;
-using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IBackgroundEmailSender backgroundEmailSender) : IAuthentication
+    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor) : IAuthentication
     {
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IBackgroundEmailSender _backgroundEmailSender = backgroundEmailSender;
 
         public async Task CreateAccount(RegisterRequestModel registerModel)
         {
@@ -111,7 +106,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             // Gửi email
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailConfirmTemplate(userResponseModel.DisplayName, confirmationLink));
 
             // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
 
@@ -546,7 +540,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Subject = "Xác nhận Email"
             };
 
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailConfirmTemplate(retrieveUser.DisplayName, confirmationLink));
 
             return;
         }
@@ -563,7 +556,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             // Gửi email
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailForgotPasswordTemplate(otpToEmail));
         }
 
 
@@ -596,8 +588,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             // Gửi email
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailForgotPasswordTemplate(password));
-
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequestModel model)

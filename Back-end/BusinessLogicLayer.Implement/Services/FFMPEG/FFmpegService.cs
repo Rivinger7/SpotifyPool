@@ -1,7 +1,7 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
-using System.Runtime.InteropServices;
+using Utility.Coding;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 
@@ -11,10 +11,6 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
     {
         private static bool isFFmpegChecked = false;
         private static readonly SemaphoreSlim semaphore = new(1, 1); // Tránh chạy nhiều lần
-
-        // Xác định hệ điều hành
-        public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
         public FFmpegService()
         {
@@ -106,16 +102,17 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 // Tạo thư mục chứa file input và output
                 string basePath = string.Empty;
 
-                if (IsWindows)
+                if (Util.IsWindows())
                 {
                     basePath = AppDomain.CurrentDomain.BaseDirectory;
 
                     inputFolder = Path.Combine(basePath, "Commons", "input_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
                     outputFolder = Path.Combine(basePath, "Commons", "output_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
                 }
-                else if (IsLinux)
+                else if (Util.IsLinux())
                 {
-                    basePath = "/var/data";
+                    //basePath = "/var/data";
+                    basePath = "/tmp";
 
                     inputFolder = Path.Combine(basePath, "input_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
                     outputFolder = Path.Combine(basePath, "output_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");

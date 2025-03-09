@@ -1,9 +1,7 @@
 ﻿using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
-using BusinessLogicLayer.Implement.Services.SignalR.PlaybackSync;
 using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
 using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
 using Hellang.Middleware.ProblemDetails;
-using Microsoft.AspNetCore.HttpOverrides;
 using SpotifyPool.Infrastructure;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
 
@@ -93,6 +91,5 @@ app.MapControllers();
 
 app.MapHub<StreamCountingHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL")}");
 app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL")}");
-app.MapHub<PlaybackSyncHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYBACK_SYNC_URL")}");
 
 app.Run();

@@ -8,13 +8,10 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.AWS;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.EmailSender;
-using BusinessLogicLayer.Implement.Microservices.JIRA_REST_API.Issues;
-using BusinessLogicLayer.Implement.Microservices.OpenAI;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
 using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
-using BusinessLogicLayer.Implement.Services.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.JWTs;
@@ -26,12 +23,10 @@ using BusinessLogicLayer.Implement.Services.Tracks;
 using BusinessLogicLayer.Implement.Services.Users;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
-using BusinessLogicLayer.Interface.Microservices_Interface.OpenAI;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
-using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using BusinessLogicLayer.Interface.Services_Interface.Files;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
@@ -40,9 +35,7 @@ using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
 using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using CloudinaryDotNet;
-using DataAccessLayer.Implement.MongoDB.Generic_Repository;
 using DataAccessLayer.Implement.MongoDB.UOW;
-using DataAccessLayer.Interface.MongoDB.Generic_Repository;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Database_Context.MongoDB.SpotifyPool;
 using Hellang.Middleware.ProblemDetails;
@@ -72,7 +65,6 @@ using SetupLayer.Setting.Microservices.Spotify;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Channels;
 using Utility.Coding;
 #endregion
 
@@ -509,11 +501,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             // Data Reccomendation
             services.AddScoped<IRecommendation, RecommendationBLL>();
 
-            //services.AddScoped<NAudioService>();
-
-            // OpenApi
-            services.AddScoped<IOpenAIService, OpenAIService>();
-
             // Files
             services.AddScoped<IFiles, FilesBLL>();
 
@@ -556,16 +543,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddTransient<IEmailSenderCustom, EmailSender>();
 
             // Register the Channel<IEmailSenderCustom> service
-            services.AddSingleton(Channel.CreateBounded<IEmailSenderCustom>(new BoundedChannelOptions(100)
-            {
-                FullMode = BoundedChannelFullMode.Wait // Nếu Channel đầy, đợi thay vì giữ mãi trong bộ nhớ
-            }));
-
-            // Register the Background Email Sender service
-            services.AddSingleton<IBackgroundEmailSender, BackgroundEmailSender>();
-
-            // Register the BackgroundEmailSender as a hosted service
-            services.AddHostedService<BackgroundEmailSender>();
 
             // Register the StreamCountBackgroundService as a hosted service
             //services.AddHostedService<StreamCountBackgroundService>();
@@ -595,20 +572,23 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     },
                 });
 
-                // Include the XML comments (path to the XML file)
-                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                c.IncludeXmlComments(xmlPath);
+                if (Util.IsWindows())
+                {
+                    // Include the XML comments (path to the XML file)
+                    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                    c.IncludeXmlComments(xmlPath);
 
+                    // Path to XML documentation file for the controller project
+                    var controllerXmlFile = Path.Combine(AppContext.BaseDirectory, "SpotifyPool.xml");
+                    if (File.Exists(controllerXmlFile))
+                    {
+                        c.IncludeXmlComments(controllerXmlFile);
+                    }
+                }
+                
                 // Schema Filter
                 c.SchemaFilter<EnumSchemaFilter>();
-
-                // Path to XML documentation file for the controller project
-                var controllerXmlFile = Path.Combine(AppContext.BaseDirectory, "SpotifyPool.xml");
-                if (File.Exists(controllerXmlFile))
-                {
-                    c.IncludeXmlComments(controllerXmlFile);
-                }
 
                 #region Add JWT Authentication
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -801,7 +781,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSingleton(jiraSetting);
 
             // Register Jira Cloud REST API Client
-            services.AddSingleton<IssueClient>();
         }
 
         public static void AddCloudinary(this IServiceCollection services, IConfiguration configuration)
@@ -914,7 +893,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Register the MongoDB context (or client)
             services.AddSingleton<SpotifyPoolDBContext>();
-            services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
         }
 

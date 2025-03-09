@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Services Interface\BackgroundJobs\" />
     <Folder Include="Services Interface\Playlists\Favorites\" />
   </ItemGroup>
 
