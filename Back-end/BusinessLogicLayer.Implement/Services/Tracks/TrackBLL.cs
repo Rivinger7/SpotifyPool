@@ -38,10 +38,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         private readonly IAmazonWebService _amazonWebService = amazonWebService;
         private readonly IFFmpegService _fFmpegService = fFmpegService;
 
-        // Xác định hệ điều hành
-        public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-
         public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
         {
             if (csvFile is null || csvFile.Length == 0)
@@ -506,16 +502,17 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             string inputPath = string.Empty;
             string outputPath = string.Empty;
 
-            if (IsWindows)
+            if (Util.IsWindows())
             {
                 basePath = AppDomain.CurrentDomain.BaseDirectory;
 
                 inputPath = Path.Combine(basePath, "Commons", "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
                 outputPath = Path.Combine(basePath, "Commons", "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
             }
-            else if (IsLinux)
+            else if (Util.IsLinux())
             {
-                basePath = "/var/data";
+                //basePath = "/var/data";
+                basePath = "/tmp";
 
                 inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
                 outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));

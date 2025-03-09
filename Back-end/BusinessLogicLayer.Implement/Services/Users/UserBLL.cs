@@ -125,7 +125,6 @@ namespace BusinessLogicLayer.Implement.Services.Users
             // nếu không điền dữ liệu mới thì báo lỗi
             //string displayName = requestModel.DisplayName ?? throw new BadRequestCustomException("Display name is required!");
 
-
             //map từ model qua artist
             //_mapper.Map<EditProfileRequestModel, User>(requestModel, artist);
 
@@ -133,12 +132,11 @@ namespace BusinessLogicLayer.Implement.Services.Users
             UpdateDefinitionBuilder<User> updateBuilder = Builders<User>.Update;
 
             // Cập nhật các field sẵn có
-            // Cập nhật các field sẵn có
-            List<UpdateDefinition<User>> updates =
-            [
+            List<UpdateDefinition<User>> updates = new()
+            {
                 updateBuilder.Set(user => user.DisplayName, requestModel.DisplayName),
                 updateBuilder.Set(user => user.LastUpdatedTime, Util.GetUtcPlus7Time())
-            ];
+            };
 
             // Cập nhật Image Field nếu có
             if (requestModel.Image is not null)
@@ -155,7 +153,10 @@ namespace BusinessLogicLayer.Implement.Services.Users
 
             UpdateDefinition<User> updateDefinition = updateBuilder.Combine(updates);
 
-            await _unitOfWork.GetRepository<User>().UpdateAsync(user.Id, updateDefinition);
+            await _unitOfWork.GetCollection<User>().UpdateOneAsync(
+                Builders<User>.Filter.Eq(u => u.Id, user.Id),
+                updateDefinition
+            );
         }
 
         public async Task<AuthenticatedResponseModel> SwitchToArtistProfile()
@@ -196,26 +197,5 @@ namespace BusinessLogicLayer.Implement.Services.Users
         }
 
         //test method
-        public async Task<IEnumerable<UserResponseModel>> TestPaging(int offset, int limit)
-        {
-
-            IMongoCollection<User> collection = _unitOfWork.GetCollection<User>();
-
-            FilterDefinition<User> filter = Builders<User>.Filter.Eq(user => user.Status, UserStatus.Active);
-
-            ////BONUS thêm cách dùng điều kiện
-            //FilterDefinitionBuilder<User> builder = Builders<User>.Filter;
-
-            //FilterDefinition<User> filter = builder.Empty;
-
-            //builder.Or(builder.Eq(artist => artist.FullName, "DuyHoang"), builder.Eq(artist => artist.UserName, "phuchoa"));
-
-
-            ////*** nếu muốn có sort thì thêm SortDefinition, như lày
-            // SortDefinition<User> sort = Builders<User>.Sort.Descending(artist => artist.FullName);
-
-            IEnumerable<User> result = await _unitOfWork.GetRepository<User>().Paging(offset, limit);
-            return _mapper.Map<IReadOnlyCollection<UserResponseModel>>(result);
-        }
     }
 }

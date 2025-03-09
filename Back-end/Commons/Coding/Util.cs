@@ -10,6 +10,16 @@ namespace Utility.Coding
 {
     public static class Util
     {
+        public static bool IsLinux()
+        {
+            return System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux);
+        }
+
+        public static bool IsWindows()
+        {
+            return System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+        }
+
         public static string ConvertVnString(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
