@@ -72,18 +72,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 {
     public static class BusinessDependencyInjection
     {
-        private static readonly ILogger _logger;
-
-        static BusinessDependencyInjection()
-        {
-            // Initialize the logger
-            var loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder.AddConsole(); // You can add other logging providers like file, etc.
-            });
-            _logger = loggerFactory.CreateLogger("BusinessDependencyInjectionLogger");
-        }
-
         public static void AddBusinessInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             // Đảm bảo Logging đã được đăng ký
@@ -165,12 +153,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             //stopwatch.Stop();
             //Console.WriteLine($"AddSignalR took {stopwatch.ElapsedMilliseconds} ms");
 
-            // Caching (In-memory cache)
-            //stopwatch.Restart();
-            services.AddMemoryCache(configuration);
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
-
             // EnumMemberSerializer
             //stopwatch.Restart();
             services.AddEnumMemberSerializer();
@@ -179,7 +161,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Problem Details
             //stopwatch.Restart();
-            services.AddProblemDetails();
+            services.AddCustomProblemDetails();
             //stopwatch.Stop();
             //Console.WriteLine($"ProblemDetails took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -220,10 +202,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             //Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
 
             // Log an informational message
-            _logger.LogInformation("Services have been configured.");
+            //_logger.LogInformation("Services have been configured.");
         }
 
-        public static void AddProblemDetails(this IServiceCollection services)
+        public static void AddCustomProblemDetails(this IServiceCollection services)
         {
             services.AddProblemDetails(options =>
             {
@@ -240,16 +222,19 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     //var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
 
                     // Tạo TraceId
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices); // Lấy logger từ RequestServices
                     var traceId = ctx.TraceIdentifier;
                     details.Extensions["traceId"] = traceId;
 
-                    // Log thông tin chi tiết của lỗi
-                    _logger.LogError($"Error occurred. TraceId: {traceId}, StatusCode: {details.Status}, Title: {details.Title}, Error: {details.Detail}");
+                    logger.LogError($"Error occurred. TraceId: {traceId}, StatusCode: {details.Status}, Title: {details.Title}, Error: {details.Detail}");
                 };
 
                 // Map các lỗi cụ thể từ custom exception
-                options.Map<ArgumentNullCustomException>(ex =>
+                options.Map<ArgumentNullCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = Util.GetTitleCustomException(ex.ParamName, "Null Reference"),
@@ -258,13 +243,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<CustomException>(ex =>
+                options.Map<CustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = ex.Title,
@@ -273,13 +261,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<BadRequestCustomException>(ex =>
+                options.Map<BadRequestCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = Util.GetTitleCustomException(ex.Title, "Bad Rquest"),
@@ -288,13 +279,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<BusinessRuleViolationCustomException>(ex =>
+                options.Map<BusinessRuleViolationCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Business Rule Violation",
@@ -303,13 +297,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<ConcurrencyCustomException>(ex =>
+                options.Map<ConcurrencyCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Concurrency",
@@ -318,13 +315,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<DataExistCustomException>(ex =>
+                options.Map<DataExistCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Conflict",
@@ -333,13 +333,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<DataNotFoundCustomException>(ex =>
+                options.Map<DataNotFoundCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Data Not Found",
@@ -348,13 +351,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<ForbbidenCustomException>(ex =>
+                options.Map<ForbbidenCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Forbbiden",
@@ -363,13 +369,15 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<InternalServerErrorCustomException>(ex =>
+                options.Map<InternalServerErrorCustomException>((ctx, ex) =>
                 {
+                    
+
                     ProblemDetails details = new()
                     {
                         Title = "Internal Server Error",
@@ -377,14 +385,20 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                         Detail = ex.Message
                     };
 
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<InvalidDataCustomException>(ex =>
+                options.Map<InvalidDataCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Invalid Data",
@@ -393,13 +407,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<RequestTimeoutCustomException>(ex =>
+                options.Map<RequestTimeoutCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Request Timeout",
@@ -408,13 +425,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<ServiceUnavailableCustomException>(ex =>
+                options.Map<ServiceUnavailableCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Service Unavailable",
@@ -423,13 +443,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
-                options.Map<UnAuthorizedCustomException>(ex =>
+                options.Map<UnAuthorizedCustomException>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = Util.GetTitleCustomException(ex.Title, "Unauthorized"),
@@ -438,15 +461,18 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
 
                 // Xử lý lỗi chung chung, không bắt được loại lỗi cụ thể
                 //options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
-                options.Map<Exception>(ex =>
+                options.Map<Exception>((ctx, ex) =>
                 {
+                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    logger.LogError($"Full error details: {ex}");
+
                     ProblemDetails details = new()
                     {
                         Title = "Internal Server Error",
@@ -455,18 +481,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     };
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
-                    _logger.LogError($"Full error details: {ex}");
+                    //_logger.LogError($"Full error details: {ex}");
 
                     return details;
                 });
-            });
-        }
-
-        public static void AddMemoryCache(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddMemoryCache(options =>
-            {
-                options.SizeLimit = 10 * 1024 * 1024; // 10MB
             });
         }
 
