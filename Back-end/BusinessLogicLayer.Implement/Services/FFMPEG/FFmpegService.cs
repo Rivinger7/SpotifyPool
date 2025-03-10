@@ -9,7 +9,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 {
     public class FFmpegService : IFFmpegService
     {
-        private static bool isFFmpegChecked = false;
+        private bool isFFmpegChecked = false;
         private static readonly SemaphoreSlim semaphore = new(1, 1); // Tránh chạy nhiều lần
 
         public FFmpegService()
@@ -17,7 +17,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             EnsureFFmpegExists().GetAwaiter().GetResult();
         }
 
-        private static async Task EnsureFFmpegExists()
+        private async Task EnsureFFmpegExists()
         {
             if (isFFmpegChecked)
             {
