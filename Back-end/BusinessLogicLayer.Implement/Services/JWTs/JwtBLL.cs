@@ -47,9 +47,9 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var tokenDescriptor = new JwtSecurityToken(
-                issuer: "https://localhost:7018", //set issuer is localhost
+                //issuer: "https://localhost:7018", //set issuer is localhost
 
-                audience: "https://localhost:7018", //set audience is localhost
+                //audience: "https://localhost:7018", //set audience is localhost
 
                 claims: claims,
 

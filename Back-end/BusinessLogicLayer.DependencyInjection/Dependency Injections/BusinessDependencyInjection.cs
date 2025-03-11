@@ -75,7 +75,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         public static void AddBusinessInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             // Đảm bảo Logging đã được đăng ký
-            services.AddLogging();
+            //services.AddLogging();
             services.AddHttpClient();
             services.AddHttpContextAccessor();
             services.AddDatabase();
@@ -89,16 +89,16 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSignalR();
             services.AddEnumMemberSerializer();
             services.AddCustomProblemDetails();
-            services.AddDistributedMemoryCache();
-            services.AddSession(options =>
-            {
-                options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true;
-                options.Cookie.SameSite = SameSiteMode.None; // Cần thiết cho cross-origin
-                options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Hoặc Always nếu dùng HTTPS
-                options.IdleTimeout = TimeSpan.FromDays(7);
-                //options.IdleTimeout = TimeSpan.FromMinutes(30);
-            });
+            //services.AddDistributedMemoryCache();
+            //services.AddSession(options =>
+            //{
+            //    options.Cookie.HttpOnly = true;
+            //    options.Cookie.IsEssential = true;
+            //    options.Cookie.SameSite = SameSiteMode.None; // Cần thiết cho cross-origin
+            //    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Hoặc Always nếu dùng HTTPS
+            //    options.IdleTimeout = TimeSpan.FromDays(7);
+            //    //options.IdleTimeout = TimeSpan.FromMinutes(30);
+            //});
             services.AddAuthentication();
             services.AddAuthorization();
         }
