@@ -55,24 +55,34 @@ var app = builder.Build();
 app.UseProblemDetails();
 
 // Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    // Đặt tiêu đề
-    c.DocumentTitle = "SpotifyPool API";
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        // Đặt tiêu đề
+            options.DocumentTitle = "SpotifyPool API";
 
-    // Đường dẫn đến file JSON của Swagger
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
+        //    // Đường dẫn đến file JSON của Swagger
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
 
-    // Inject JavaScript để chuyển đổi theme
-    c.InjectJavascript("/theme-switcher.js");
-});
+        //    // Inject JavaScript để chuyển đổi theme
+            options.InjectJavascript("/theme-switcher.js");
+    });
+}
+
+//app.UseSwagger();
+//app.UseSwaggerUI(c =>
+//{
+//    // Đặt tiêu đề
+//    c.DocumentTitle = "SpotifyPool API";
+
+//    // Đường dẫn đến file JSON của Swagger
+//    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
+
+//    // Inject JavaScript để chuyển đổi theme
+//    c.InjectJavascript("/theme-switcher.js");
+//});
 
 app.UseForwardedHeaders();
 

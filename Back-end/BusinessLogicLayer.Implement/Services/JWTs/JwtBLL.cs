@@ -11,9 +11,22 @@ using System.Text;
 
 namespace BusinessLogicLayer.Implement.Services.JWTs
 {
-    public class JwtBLL(IUnitOfWork unitOfWork) : IJwtBLL
+    public class JwtBLL(IUnitOfWork unitOfWork) : IJwtBLL, IDisposable
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private bool _disposed = false;
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                (_unitOfWork as IDisposable)?.Dispose();
+                _disposed = true;
+
+                // Ngăn Garbage Collector gọi Finalizer nếu có
+                GC.SuppressFinalize(this);
+            }
+        }
 
         /// <summary>
         /// Generate access token with claims (user's informations)
@@ -172,7 +185,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         /// </summary>
         /// <param name="Id"></param>
         /// <exception cref="ErrorException"></exception>
-        public async void RevokeToken(string Id)
+        public async Task RevokeToken(string Id)
         {
             // Retrieve an user from the database
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Id.ToString() == Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any available user");

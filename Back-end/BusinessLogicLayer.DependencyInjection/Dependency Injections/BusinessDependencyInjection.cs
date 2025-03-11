@@ -76,109 +76,20 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         {
             // Đảm bảo Logging đã được đăng ký
             services.AddLogging();
-
-            //var stopwatch = new Stopwatch();
-
-            // Register HttpClient
-            //stopwatch.Start();
             services.AddHttpClient();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddHttpClient took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Register IHttpContextAccessor
-            //stopwatch.Start();
             services.AddHttpContextAccessor();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddHttpContextAccessor took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Database
-            //stopwatch.Restart();
             services.AddDatabase();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddDatabase took {stopwatch.ElapsedMilliseconds} ms");
-
-            // AutoMapper
-            //stopwatch.Restart();
             services.AddAutoMapper();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddAutoMapper took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Register other services...
-            //stopwatch.Restart();
             services.AddServices(configuration);
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddServices took {stopwatch.ElapsedMilliseconds} ms");
-
-            //stopwatch.Restart();
             services.AddEmailSender();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddEmailSender took {stopwatch.ElapsedMilliseconds} ms");
-
-            //stopwatch.Restart();
             services.AddJWT();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddJWT took {stopwatch.ElapsedMilliseconds} ms");
-
-            //stopwatch.Restart();
-            services.AddAuthorization();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
-
-            //stopwatch.Restart();
-            services.AddJiraClient();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddJiraClient took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Cloudinary
-            //stopwatch.Restart();
             services.AddCloudinary(configuration);
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddCloudinary took {stopwatch.ElapsedMilliseconds} ms");
-
-            // AWS
-            //stopwatch.Restart();
             services.AddAmazonWebService(configuration);
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddAmazonWebService took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Spotify
-            //stopwatch.Restart();
             services.AddSpotify();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddSpotify took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Hub (SignalR)
-            //stopwatch.Restart();
             services.AddSignalR();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddSignalR took {stopwatch.ElapsedMilliseconds} ms");
-
-            // EnumMemberSerializer
-            //stopwatch.Restart();
             services.AddEnumMemberSerializer();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddEnumMemberSerializer took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Problem Details
-            //stopwatch.Restart();
             services.AddCustomProblemDetails();
-            //stopwatch.Stop();
-            //Console.WriteLine($"ProblemDetails took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Config Session HtppContext
-            //stopwatch.Restart();
             services.AddDistributedMemoryCache();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddDistributedMemoryCache took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Redis Register
-            //stopwatch.Restart();
-            //services.AddRedis();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddRedis took {stopwatch.ElapsedMilliseconds} ms");
-
-
-            //stopwatch.Restart();
             services.AddSession(options =>
             {
                 options.Cookie.HttpOnly = true;
@@ -188,21 +99,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 options.IdleTimeout = TimeSpan.FromDays(7);
                 //options.IdleTimeout = TimeSpan.FromMinutes(30);
             });
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddSession took {stopwatch.ElapsedMilliseconds} ms");
-
-            //stopwatch.Restart();
             services.AddAuthentication();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddAuthentication took {stopwatch.ElapsedMilliseconds} ms");
-
-            //stopwatch.Restart();
             services.AddAuthorization();
-            //stopwatch.Stop();
-            //Console.WriteLine($"AddAuthorization took {stopwatch.ElapsedMilliseconds} ms");
-
-            // Log an informational message
-            //_logger.LogInformation("Services have been configured.");
         }
 
         public static void AddCustomProblemDetails(this IServiceCollection services)
@@ -222,7 +120,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     //var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
 
                     // Tạo TraceId
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices); // Lấy logger từ RequestServices
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices); // Lấy logger từ RequestServices
                     var traceId = ctx.TraceIdentifier;
                     details.Extensions["traceId"] = traceId;
 
@@ -232,7 +130,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 // Map các lỗi cụ thể từ custom exception
                 options.Map<ArgumentNullCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -250,7 +148,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<CustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -268,7 +166,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<BadRequestCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -286,7 +184,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<BusinessRuleViolationCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -304,7 +202,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<ConcurrencyCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -322,7 +220,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<DataExistCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -340,7 +238,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<DataNotFoundCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -358,7 +256,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<ForbbidenCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -385,7 +283,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                         Detail = ex.Message
                     };
 
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     // Hiển thị chi tiết lỗi đầy đủ trong môi trường Development
@@ -396,7 +294,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<InvalidDataCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -414,7 +312,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<RequestTimeoutCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -432,7 +330,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<ServiceUnavailableCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -450,7 +348,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
                 options.Map<UnAuthorizedCustomException>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -470,7 +368,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 //options.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
                 options.Map<Exception>((ctx, ex) =>
                 {
-                    var logger = LoggingHelper.GetLogger(ctx.RequestServices);
+                    ILogger logger = LoggingHelper.GetLogger(ctx.RequestServices);
                     logger.LogError($"Full error details: {ex}");
 
                     ProblemDetails details = new()
@@ -595,7 +493,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     // Include the XML comments (path to the XML file)
                     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                    c.IncludeXmlComments(xmlPath);
+                    if (File.Exists(xmlPath))
+                    {
+                        c.IncludeXmlComments(xmlPath);
+                    }
 
                     // Path to XML documentation file for the controller project
                     var controllerXmlFile = Path.Combine(AppContext.BaseDirectory, "SpotifyPool.xml");
@@ -673,7 +574,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 #endregion
             });
 
-            services.AddTransient<IJwtBLL, JwtBLL>();
+            services.AddScoped<IJwtBLL, JwtBLL>();
         }
 
         public static void AddAuthorization(this IServiceCollection services, IConfiguration configuration)
@@ -707,8 +608,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                     ValidateLifetime = true,
 
                     // Các issuer và audience hợp lệ
-                    ValidIssuers = [Environment.GetEnvironmentVariable("JWT_ISSUER_PRODUCTION"), "https://localhost:7018"],
-                    ValidAudiences = [Environment.GetEnvironmentVariable("JWT_AUDIENCE_PRODUCTION"), Environment.GetEnvironmentVariable("JWT_AUDIENCE_PRODUCTION_BE"), "https://localhost:7018"],
+                    //ValidIssuers = [Environment.GetEnvironmentVariable("JWT_ISSUER_PRODUCTION"), "https://localhost:7018"],
+                    //ValidAudiences = [Environment.GetEnvironmentVariable("JWT_AUDIENCE_PRODUCTION"), Environment.GetEnvironmentVariable("JWT_AUDIENCE_PRODUCTION_BE"), "https://localhost:7018"],
 
                     //ký vào token
                     ValidateIssuerSigningKey = true,
@@ -783,22 +684,6 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 //    }
                 //};
             });
-        }
-
-        public static void AddJiraClient(this IServiceCollection services)
-        {
-            // Config the Jira Client (REST API)
-            var jiraSetting = new JiraSetting()
-            {
-                UserName = Environment.GetEnvironmentVariable("JiraSettings_AtlassianUsername"),
-                ApiKey = Environment.GetEnvironmentVariable("JiraSettings_AtlassianApiKey"),
-                Domain = Environment.GetEnvironmentVariable("JiraSettings_Domain")
-            };
-
-            // Register the JiraSetting with DI
-            services.AddSingleton(jiraSetting);
-
-            // Register Jira Cloud REST API Client
         }
 
         public static void AddCloudinary(this IServiceCollection services, IConfiguration configuration)
@@ -876,7 +761,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         }
 
         // Config the database
-        private static readonly Lazy<IMongoClient> _lazyClient = new(() => new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")));
+        //private static readonly Lazy<IMongoClient> _lazyClient = new(() => new MongoClient(Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")));
         public static void AddDatabase(this IServiceCollection services)
         {
             // Load MongoDB settings from environment variables
@@ -896,11 +781,11 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSingleton(mongoDbSettings);
 
             // Register MongoClient as singleton, sharing the connection across all usages
-            //services.AddSingleton<IMongoClient>(sp =>
-            //{
-            //    return new MongoClient(mongoDbSettings.ConnectionString);
-            //});
-            services.AddSingleton<IMongoClient>(_lazyClient.Value);
+            services.AddSingleton<IMongoClient>(sp =>
+            {
+                return new MongoClient(mongoDbSettings.ConnectionString);
+            });
+            //services.AddSingleton<IMongoClient>(_lazyClient.Value);
 
             // Register IMongoDatabase as a scoped service
             services.AddScoped(sp =>
