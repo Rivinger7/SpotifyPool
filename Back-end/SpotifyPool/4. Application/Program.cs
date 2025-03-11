@@ -84,11 +84,11 @@ if (app.Environment.IsDevelopment())
 //    c.InjectJavascript("/theme-switcher.js");
 //});
 
-app.UseForwardedHeaders();
+//app.UseForwardedHeaders();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
-app.UseSession();
+//app.UseSession();
 
 app.UseStaticFiles();
 
