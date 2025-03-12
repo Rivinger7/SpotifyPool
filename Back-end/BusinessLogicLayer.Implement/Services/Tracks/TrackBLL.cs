@@ -22,8 +22,8 @@ using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Utility.Coding;
 using Xabe.FFmpeg;
 
@@ -37,6 +37,131 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         private readonly ISpotify _spotifyService = spotifyService;
         private readonly IAmazonWebService _amazonWebService = amazonWebService;
         private readonly IFFmpegService _fFmpegService = fFmpegService;
+
+        #region Chỉ dùng cho mục đích sửa cdn thành streamingUrl
+        //public async Task ChangeStreamUrl()
+        //{
+        //    string urlPrefix = "https://p.scdn.co/mp3-preview";
+
+        //    // Tạo filter để kiểm tra StreamingUrl khác null
+        //    var notNullFilter = Builders<Track>.Filter.Ne(t => t.StreamingUrl, null);
+
+        //    // Tạo filter để kiểm tra StreamingUrl bắt đầu với urlPrefix
+        //    var regexFilter = Builders<Track>.Filter.Regex(
+        //        t => t.StreamingUrl,
+        //        new BsonRegularExpression($"^{Regex.Escape(urlPrefix)}", "i") // "i" để không phân biệt hoa thường
+        //    );
+
+        //    // Kết hợp cả hai điều kiện
+        //    var filter = Builders<Track>.Filter.And(notNullFilter, regexFilter);
+
+        //    // Lấy tất cả track có streamUrl != null
+        //    IList<Track> tracks = await _unitOfWork.GetCollection<Track>()
+        //        .Find(filter)
+        //        .Project<Track>(Builders<Track>.Projection.Include(t => t.StreamingUrl).Include(t => t.Id).Include(t => t.Name))
+        //        .ToListAsync();
+
+        //    // Folder từ ConvertToHls
+        //    string inputFileTemp = string.Empty;
+        //    string inputFolderPath = string.Empty;
+        //    string outputFolderPath = string.Empty;
+
+        //    using HttpClient httpClient = new();
+
+        //    // Danh sách update hàng loạt
+        //    List<WriteModel<Track>> updates = [];
+
+        //    // Download file từ streamUrl về local
+        //    foreach (Track track in tracks)
+        //    {
+        //        try
+        //        {
+        //            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+        //            // Lấy tên file từ streamUrl
+        //            string fileName = track.Id + ".mp3";
+
+        //            // Tạo đường dẫn file
+        //            string filePath = Path.Combine(basePath, "Commons", "input_temp_audio", fileName);
+
+        //            // Tải file về local
+        //            using (HttpResponseMessage response = await httpClient.GetAsync(track.StreamingUrl))
+        //            {
+        //                response.EnsureSuccessStatusCode();
+        //                await using (FileStream fileStream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        //                {
+        //                    await response.Content.CopyToAsync(fileStream);
+        //                }
+        //            }
+
+        //            // Chuyển file thành IFormFile
+        //            IFormFile formFile = ConvertToIFormFile(filePath, fileName);
+
+        //            // Convert audio file sang dạng streaming
+        //            (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(formFile, track.Id);
+
+        //            // Upload streaming files lên AWS S3
+        //            string streamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, track.Id, track.Name);
+
+        //            // Upload file lên AWS S3
+        //            string publicUrl = await _amazonWebService.UploadFileAsync(formFile, track.Id);
+
+        //            // Tạo update để cập nhật hàng loạt
+        //            UpdateOneModel<Track> update = new(
+        //                Builders<Track>.Filter.Eq(t => t.Id, track.Id),
+        //                Builders<Track>.Update.Set(t => t.StreamingUrl, streamingUrl)
+        //            );
+
+        //            updates.Add(update);
+
+        //            // Xóa file sau khi upload để giải phóng bộ nhớ
+        //            File.Delete(filePath);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Console.WriteLine($"Lỗi khi xử lý track {track.Id}: {ex.Message}");
+        //        }
+        //        finally {
+        //            if (Directory.Exists(inputFileTemp))
+        //            {
+        //                Directory.Delete(inputFileTemp, true);
+        //                //Console.WriteLine($"Deleted folder: {inputFileTemp}");
+        //            }
+
+        //            if (Directory.Exists(inputFolderPath))
+        //            {
+        //                Directory.Delete(inputFolderPath, true);
+        //                //Console.WriteLine($"Deleted folder: {inputFolderPath}");
+        //            }
+
+        //            if (Directory.Exists(outputFolderPath))
+        //            {
+        //                Directory.Delete(outputFolderPath, true);
+        //                //Console.WriteLine($"Deleted folder: {outputFolderPath}");
+        //            }
+        //        }
+        //    }
+
+        //    // Cập nhật hàng loạt nếu có dữ liệu
+        //    if (updates.Count > 0)
+        //    {
+        //        await _unitOfWork.GetCollection<Track>().BulkWriteAsync(updates);
+        //    }
+        //}
+
+        //// Cập nhật hàm ConvertToIFormFile để tránh giữ file mở
+        //private static IFormFile ConvertToIFormFile(string filePath, string fileName)
+        //{
+        //    byte[] fileBytes = File.ReadAllBytes(filePath); // Đọc file vào bộ nhớ
+        //    var memoryStream = new MemoryStream(fileBytes); // Chuyển thành MemoryStream
+
+        //    return new FormFile(memoryStream, 0, fileBytes.Length, "file", fileName)
+        //    {
+        //        Headers = new HeaderDictionary(),
+        //        ContentType = "audio/mpeg" // Cập nhật kiểu MIME nếu cần
+        //    };
+        //}
+        #endregion
 
         public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
         {
@@ -289,7 +414,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
                 );
             }
-            else if(!string.IsNullOrEmpty(filterModel.Mood.ToString()))
+            else if (!string.IsNullOrEmpty(filterModel.Mood.ToString()))
             {
                 trackFilter = filterModel.Mood switch
                 {
@@ -572,7 +697,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                 // Lấy thông tin file audio
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputFilePath);
-                
+
                 // lấy tổng thời gian nhạc trên file mp3
                 newTrack.Duration = (int)mediaInfo.Duration.TotalMilliseconds;
 
@@ -590,8 +715,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
 
                 // Upload streaming files lên AWS S3
-                //newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
-                newTrack.StreamingUrl = "";
+                newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
+                //newTrack.StreamingUrl = "";
 
                 // AWS chuyển file audio sang dạng streaming
                 //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);

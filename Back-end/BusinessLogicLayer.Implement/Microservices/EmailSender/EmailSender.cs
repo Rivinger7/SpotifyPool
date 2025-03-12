@@ -1,6 +1,5 @@
 ﻿using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
-using Microsoft.Extensions.Logging;
 using SetupLayer.Setting.Microservices.EmailSender;
 using System.Net;
 using System.Net.Mail;

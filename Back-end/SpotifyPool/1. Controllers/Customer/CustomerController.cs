@@ -42,24 +42,11 @@ namespace SpotifyPool._1._Controllers.Customer
             return Ok(new { Message = "Switch Profile Successfully", authenticatedResponseModel });
         }
 
-        [Authorize(Roles = nameof(UserRole.Customer)), HttpPost("me/playlists")]
+        [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("me/playlists")]
 		public async Task<IActionResult> GetPlaylistAsync()
 		{
             var result = await _playlistService.GetPlaylistsAsync();
             return Ok(result);
         }
-
-  //      /// <summary>
-  //      /// Phân trang cho Users
-  //      /// </summary>
-  //      /// <param name="offset">Trang thứ n</param>
-  //      /// <param name="limit">Số lượng phần tử</param>
-  //      /// <returns></returns>
-  //      [Authorize(Roles = nameof(UserRole.Admin)), HttpGet("get-user-paging")]
-		//public async Task<IActionResult> GetUserPagingAsync([FromQuery] int offset = 1, [FromQuery] int limit = 5)
-		//{
-		//	var users = await _userBLL.TestPaging(offset, limit);
-		//	return Ok(users);
-		//}
     }
 }
