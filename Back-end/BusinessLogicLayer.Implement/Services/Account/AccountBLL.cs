@@ -22,7 +22,7 @@ namespace BusinessLogicLayer.Implement.Services.Account
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
         #region Hiển thị thông tin tất cả người dùng (GetPaging)
-        public async Task<IEnumerable<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model)
+        public async Task<PagedResult<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model)
         {
             //Tạo danh sách các đk lọc
             List<FilterDefinition<User>> filters = new List<FilterDefinition<User>>();
@@ -53,8 +53,13 @@ namespace BusinessLogicLayer.Implement.Services.Account
                 ? Builders<User>.Filter.And(filters)
                 : Builders<User>.Filter.Empty;
 
-            var query = _unitOfWork.GetCollection<User>()
-                .Find(combinedFilter);
+			IMongoCollection<User> collection = _unitOfWork.GetCollection<User>();
+
+			//Tổng số lượng trước khi phân trang
+			long totalCount = await collection.CountDocumentsAsync(combinedFilter);
+
+			var query = collection.Find(combinedFilter);
+			//var query = _unitOfWork.GetCollection<User>().Find(combinedFilter);
 
             //Sort theo DisplayName (Nếu có)
             if (model.DisplayName.HasValue)
@@ -74,7 +79,9 @@ namespace BusinessLogicLayer.Implement.Services.Account
                 .Limit(request.PageSize) //Giới hạn số lượng
                 .ToListAsync();
 
-            return _mapper.Map<IReadOnlyCollection<AccountResponse>>(result);
+			IReadOnlyCollection<AccountResponse> mappedResult = _mapper.Map<IReadOnlyCollection<AccountResponse>>(result);
+
+			return new PagedResult<AccountResponse>(mappedResult, request.PageNumber, request.PageSize, totalCount);
         }
         #endregion
 
@@ -138,6 +145,7 @@ namespace BusinessLogicLayer.Implement.Services.Account
                 Email = userRequest.Email,
                 PhoneNumber = userRequest.PhoneNumber,
                 Roles = userRequest.Roles,
+                CountryId = "VN",
                 Status = UserStatus.Active,
                 Images = images,
                 CreatedTime = Util.GetUtcPlus7Time()
@@ -185,8 +193,7 @@ namespace BusinessLogicLayer.Implement.Services.Account
         #region Cấm tài khoản người dùng (Delete)
         public async Task DeleteByIdAsync(string id)
         {
-            User user = await _unitOfWork
-                .GetCollection<User>()
+            User user = await _unitOfWork.GetCollection<User>()
                 .Find(u => u.Id == id)
                 .FirstOrDefaultAsync()
                 ?? throw new KeyNotFoundException($"User with ID {id} does not exist");
@@ -203,7 +210,25 @@ namespace BusinessLogicLayer.Implement.Services.Account
         }
         #endregion
 
+        #region Gỡ cấm tài khoản người dùng (Unban)
+        public async Task UnbanUserByIdAsync(string id)
+        {
+            User user = await _unitOfWork.GetCollection<User>()
+                .Find(u => u.Id == id)
+                .FirstOrDefaultAsync()
+                ?? throw new KeyNotFoundException($"User with ID {id} does not exist");
 
+            if(user.Status == UserStatus.Active)
+            {
+				throw new InvalidOperationException("User is not banned, so it cannot be unbanned");
+			}
 
-    }
+            FilterDefinition<User> filter = Builders<User>.Filter.Eq(u => u.Id, id);
+			UpdateDefinition<User> update = Builders<User>.Update.Set(u => u.Status, UserStatus.Active);
+
+            await _unitOfWork.GetCollection<User>().UpdateOneAsync(filter, update);
+		}
+		#endregion
+
+	}
 }
