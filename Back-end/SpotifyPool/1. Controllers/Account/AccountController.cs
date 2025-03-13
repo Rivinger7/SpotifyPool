@@ -78,5 +78,17 @@ namespace SpotifyPool._1._Controllers.Account
 			await _accountBLL.DeleteByIdAsync(id);
 			return Ok(new { Message = "Ban Account Successfully" });
 		}
+
+		/// <summary>
+		/// Gỡ cấm tài khoản người dùng
+		/// </summary>
+		/// <param name="id">Id người dùng</param>
+		/// <returns></returns>
+		[HttpPatch("{id}/unban")]
+		public async Task<IActionResult> UnbanAccount(string id)
+		{
+			await _accountBLL.UnbanUserByIdAsync(id);
+			return Ok(new { Message = "Unban Account Successfully" });
+		}
 	}
 }
