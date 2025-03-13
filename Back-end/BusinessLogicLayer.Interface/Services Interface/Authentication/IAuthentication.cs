@@ -10,7 +10,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
     {
         Task CreateAccount(RegisterRequestModel registerModel);
         Task ActivateAccountByToken(string token);
-        Task<string> Authenticate(LoginRequestModel loginModel);
+        Task<AuthenticatedUserInfoResponseModel> Authenticate(LoginRequestModel loginModel);
         Task ReActiveAccountByToken();
         Task<AuthenticatedResponseModel> LoginByGoogle(string googleToken);
         Task<AuthenticatedResponseModel> ConfirmLinkWithGoogleAccount(string email);
@@ -18,7 +18,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
         Task ConfirmOTP(string userId, string otpCode);
         Task ResetPasswordAsync(ResetPasswordRequestModel model);
         Task<AuthenticatedResponseModel> SwitchProfile();
-        Task<AuthenticatedUserInfoResponseModel> GetUserInformation(string token);
-        string Relog();
+        AuthenticatedUserInfoResponseModel GetUserInformation(string token);
+        public AuthenticatedUserInfoResponseModel Relog();
     }
 }

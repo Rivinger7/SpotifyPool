@@ -8,6 +8,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.TopTracks
     {
         Task<IEnumerable<TrackResponseModel>> GetTopTrackAsync();
         Task UpsertTopTrackAsync(TopTrackRequestModel topTrackRequestModel);
-        Task UpdateStreamCountAsync(string trackId);
+        //Task UpdateStreamCountAsync(string trackId);
     }
 }

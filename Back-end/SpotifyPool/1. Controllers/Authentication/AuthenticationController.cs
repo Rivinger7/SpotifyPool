@@ -115,20 +115,20 @@ namespace SpotifyPool.Controllers.Authentication
         /// </summary>
         /// <returns></returns>
         [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, , {nameof(UserRole.Admin)}"), HttpGet("authenticated-user-info")]
-        public async Task<IActionResult> GetAuthenticatedUserInfo()
+        public IActionResult GetAuthenticatedUserInfo()
         {
             var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-            var authenticatedUserInfoResponseModel = await authenticationBLL.GetUserInformation(token);
+            var authenticatedUserInfoResponseModel = authenticationBLL.GetUserInformation(token);
             return Ok(new { authenticatedUserInfoResponseModel });
         }
 
-
         [AllowAnonymous, HttpPost("refresh-token")]
-        public IActionResult RefreshToken()
+        public IActionResult Relog()
         {
-            var result = authenticationBLL.Relog();   
-            return Ok(new { result });
+            var authenticatedUserInfoResponseModel = authenticationBLL.Relog();
+            return Ok(new { authenticatedUserInfoResponseModel });
         }
+
     }
 }
 

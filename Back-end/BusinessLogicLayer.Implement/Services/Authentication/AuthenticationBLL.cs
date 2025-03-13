@@ -1,11 +1,8 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.Interface.Microservices_Interface.Geolocation;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
-using BusinessLogicLayer.Interface.Services_Interface.BackgroundJobs.EmailSender;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView;
-using BusinessLogicLayer.ModelView.Microservice_Model_Views.Geolocation.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
@@ -17,24 +14,20 @@ using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Utility.Coding;
-using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IGeolocation geolocation, IBackgroundEmailSender backgroundEmailSender) : IAuthentication
+    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor) : IAuthentication
     {
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IGeolocation _geolocation = geolocation;
-        private readonly IBackgroundEmailSender _backgroundEmailSender = backgroundEmailSender;
 
         public async Task CreateAccount(RegisterRequestModel registerModel)
         {
@@ -60,9 +53,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             string token = _jwtBLL.GenerateJWTTokenForConfirmEmail(email, encryptedToken);
             string confirmationLink = $"http://localhost:5173/spotifypool/confirm-email?token={token}";
 
-            // Lấy thông tin IP Address
-            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
-
             // Avatar mặc định
             string avatarUrl = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1730097883/60d5dc467b950c5ccc8ced95_spotify-for-artists_on4me9.jpg";
 
@@ -77,7 +67,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Roles = [UserRole.Customer],
                 Product = UserProduct.Free,
                 IsLinkedWithGoogle = false,
-                CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
+                CountryId = "VN",
                 Status = UserStatus.Inactive,
                 CreatedTime = Util.GetUtcPlus7Time(),
                 TokenEmailConfirm = encryptedToken,
@@ -117,7 +107,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             // Gửi email
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailConfirmTemplate(userResponseModel.DisplayName, confirmationLink));
 
             // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
 
@@ -232,9 +221,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Lấy thông tin ảnh từ URL
             (int? imageHeight, int? imageWidth) = await Util.GetImageInfoFromUrlSkiaSharp(avatar);
 
-            // Lấy thông tin IP Address
-            GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromApiAsync();
-
             // Chỉ khi nào chạy deploy thì mới sử dụng hàm này
             //GeolocationResponseModel geolocationResponseModel = await _geolocation.GetLocationFromHeaderAsync();
 
@@ -257,7 +243,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     ],
                     Roles = [UserRole.Customer],
                     Product = UserProduct.Free,
-                    CountryId = geolocationResponseModel.CountryCode2 ?? "Unknown",
+                    CountryId = "VN",
                     Status = UserStatus.Active,
                     CreatedTime = Util.GetUtcPlus7Time()
                 };
@@ -366,7 +352,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return authenticationModel;
         }
 
-        public async Task<string> Authenticate(LoginRequestModel loginModel)
+        public async Task<AuthenticatedUserInfoResponseModel> Authenticate(LoginRequestModel loginModel)
         {
             string username = loginModel.Username;
             string password = loginModel.Password;
@@ -411,24 +397,32 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             //    RefreshToken = refreshToken
             //};
 
+            CookieOptions cookieOptions = new()
+            {
+                Secure = true,
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                MaxAge = TimeSpan.FromDays(7)
+            };
+
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", refreshToken, cookieOptions);
+
+            AuthenticatedUserInfoResponseModel authenticatedUserInfoResponseModel = new()
+            {
+                AccessToken = accessToken,
+                Id = retrieveUser.Id.ToString(),
+                Name = retrieveUser.DisplayName,
+                Role = [retrieveUser.Roles[0].ToString()],
+                Avatar = [retrieveUser.Images[0].URL]
+            };
+
             // Update LastLoginTime
             // Chỗ này chưa cần phải kiểm tra Update Result
             // Nếu chỗ này throw exception thì người dùng sẽ không login được
             UpdateDefinition<User> lastLoginTimeUpdate = Builders<User>.Update.Set(user => user.LastLoginTime, Util.GetUtcPlus7Time());
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Id == retrieveUser.Id, lastLoginTimeUpdate);
 
-            //tạo Cookie chứa refresh token
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTime.Now.AddDays(7)
-            };
-
-            _httpContextAccessor?.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-
-            return accessToken;
+            return authenticatedUserInfoResponseModel;
         }
 
         public async Task<AuthenticatedResponseModel> SwitchProfile()
@@ -547,7 +541,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Subject = "Xác nhận Email"
             };
 
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailConfirmTemplate(retrieveUser.DisplayName, confirmationLink));
 
             return;
         }
@@ -564,7 +557,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             // Gửi email
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailForgotPasswordTemplate(otpToEmail));
         }
 
 
@@ -597,8 +589,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             };
 
             // Gửi email
-            await _backgroundEmailSender.QueueEmailAsync(emailSenderRequestModel, () => Template.BodyEmailForgotPasswordTemplate(password));
-
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
@@ -642,7 +632,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return otpCode;
         }
 
-        public async Task<AuthenticatedUserInfoResponseModel> GetUserInformation(string token)
+        public AuthenticatedUserInfoResponseModel GetUserInformation(string token)
         {
             List<Claim> info = _jwtBLL.ValidateToken(token).Claims.ToList();
 
@@ -657,24 +647,37 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return userinfo;
         }
 
-        public string Relog()
+        public AuthenticatedUserInfoResponseModel Relog()
         {
             // lấy refresh token từ cookie
-            _httpContextAccessor.HttpContext.Request.Cookies.TryGetValue("refreshToken", out string refreshTokenValue);
+            _httpContextAccessor.HttpContext.Request.Cookies.TryGetValue("SpotifyPool_RefreshToken", out string refreshTokenValue);
 
-            TokenApiRequestModel model = new()
-            {
-                AccessToken = _httpContextAccessor.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", ""),
-                RefreshToken = refreshTokenValue
-            };
+
             // gọi hàm để gen lại access token & refresh token 
-            _jwtBLL.RefreshAccessToken(out string accessToken, out string RefreshToken, model);
+            _jwtBLL.RefreshAccessToken(out string accessToken, out string RefreshToken, out ClaimsPrincipal principal, refreshTokenValue);
+
+            AuthenticatedUserInfoResponseModel authenticatedUserInfoResponseModel = new()
+            {
+                AccessToken = accessToken,
+                Id = principal.Identity?.Name,
+                Name = principal.FindFirst(ClaimTypes.Name)?.Value,
+                Role = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList(),
+                Avatar = principal.FindAll("Avatar").Select(c => c.Value).ToList()
+            };
+
+            CookieOptions cookieOptions = new()
+            {
+                Secure = true,
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                MaxAge = TimeSpan.FromDays(7)
+            };
 
             // cập nhật lại refresh token mới vào cookie
-            _httpContextAccessor.HttpContext.Response.Cookies.Delete("refreshToken");
-            _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", RefreshToken);
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("SpotifyPool_RefreshToken");
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", RefreshToken, cookieOptions);
 
-            return accessToken;
+            return authenticatedUserInfoResponseModel;
         }
     }
 }

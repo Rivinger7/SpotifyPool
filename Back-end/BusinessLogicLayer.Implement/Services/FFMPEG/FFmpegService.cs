@@ -1,7 +1,7 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
-using System.Runtime.InteropServices;
+using Utility.Coding;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 
@@ -9,43 +9,30 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 {
     public class FFmpegService : IFFmpegService
     {
-        // Xác định hệ điều hành
-        public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        private bool isFFmpegChecked = false;
+        private bool disposedValue;
+        private static readonly SemaphoreSlim semaphore = new(1, 1); // Tránh chạy nhiều lần
 
         public FFmpegService()
         {
-            //_ = EnsureFFmpegExists(); // Đảm bảo FFmpeg đã có, nếu chưa có thì tải xuống
-            EnsureFFmpegExists().Wait();
+            EnsureFFmpegExists().GetAwaiter().GetResult();
         }
 
-        private static async Task EnsureFFmpegExists()
+        private async Task EnsureFFmpegExists()
         {
+            if (isFFmpegChecked)
+            {
+                return;
+            }
+
+            await semaphore.WaitAsync();
+
             // Đặt đường dẫn FFmpeg về thư mục chính của backend
             //string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
 
             //string basePath;
             //string ffmpegFolder;
             string ffmpegPath;
-
-            //if (IsWindows)
-            //{
-            //    basePath = AppDomain.CurrentDomain.BaseDirectory;
-            //    ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
-            //}
-            //else if (IsLinux)
-            //{
-            //    basePath = "/var/data";
-            //    ffmpegFolder = Path.Combine(basePath, "ffmpegFolder");
-            //}
-            //else
-            //{
-            //    throw new PlatformNotSupportedException("This platform is not supported");
-            //}
-
-            //// Tạo thư mục nếu chưa tồn tại
-            //if (!Directory.Exists(ffmpegFolder))
-            //    Directory.CreateDirectory(ffmpegFolder);
 
             // Chuẩn hóa đường dẫn
             //ffmpegPath = Path.GetFullPath(ffmpegFolder);
@@ -57,15 +44,48 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             bool ffmpegExists = File.Exists(Path.Combine(ffmpegPath, "ffmpeg.exe")) ||
                                 File.Exists(Path.Combine(ffmpegPath, "ffmpeg"));
 
-            if (!ffmpegExists)
+            try
             {
-                Console.WriteLine("FFmpeg chưa tồn tại, đang tải xuống...");
-                await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official);
-                Console.WriteLine($"FFmpeg đã tải xuống thành công tại: {ffmpegPath}");
+                if (!ffmpegExists)
+                {
+                    Console.WriteLine("FFmpeg chưa tồn tại, đang tải xuống...");
+
+                    // Xóa phiên bản cũ trước khi tải
+                    DeleteOldFFmpegFiles(ffmpegPath);
+
+                    // Tải FFmpeg mới nhất
+                    await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official);
+                    Console.WriteLine($"FFmpeg đã tải xuống thành công tại: {ffmpegPath}");
+
+                    isFFmpegChecked = true;
+                }
+                else
+                {
+                    //Console.WriteLine($"FFmpeg đã tồn tại ở {ffmpegPath}, bỏ qua tải xuống.");
+                }
             }
-            else
+            finally
             {
-                //Console.WriteLine($"FFmpeg đã tồn tại ở {ffmpegPath}, bỏ qua tải xuống.");
+                semaphore.Release(); // Giải phóng semaphore để lần sau có thể chạy tiếp
+            }
+        }
+
+        private static void DeleteOldFFmpegFiles(string directory)
+        {
+            string[] oldFiles = Directory.GetFiles(directory, "ffmpeg*"); // Xóa ffmpeg.exe, ffmpeg-linux, ffmpeg-macos...
+            string[] oldProbes = Directory.GetFiles(directory, "ffprobe*"); // Xóa ffprobe.exe nếu có
+
+            foreach (var file in oldFiles.Concat(oldProbes))
+            {
+                try
+                {
+                    File.Delete(file);
+                    Console.WriteLine($"Đã xóa file cũ: {file}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Lỗi khi xóa file {file}: {ex.Message}");
+                }
             }
         }
 
@@ -80,28 +100,20 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 if (audioFile == null || audioFile.Length == 0)
                     throw new ArgumentException("File âm thanh không hợp lệ.");
 
-                // Lấy đường dẫn gốc của dự án (Back-end)
-                //string basePath = AppDomain.CurrentDomain.BaseDirectory;
-                //string basePath = Directory.GetCurrentDirectory();
-
-                //// Định nghĩa đường dẫn tương đối từ thư mục Back-end
-                //string inputFolder = Path.Combine(basePath, "Commons", "temp", "input_audio");
-                //outputFolder = Path.Combine(basePath, "Commons", "temp", "output_audio", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
-
-                //string basePath = "/tmp"; // Chỉ thư mục này có quyền ghi trên Render
+                // Tạo thư mục chứa file input và output
                 string basePath = string.Empty;
-                
 
-                if (IsWindows)
+                if (Util.IsWindows())
                 {
                     basePath = AppDomain.CurrentDomain.BaseDirectory;
 
                     inputFolder = Path.Combine(basePath, "Commons", "input_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
                     outputFolder = Path.Combine(basePath, "Commons", "output_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
                 }
-                else if (IsLinux)
+                else if (Util.IsLinux())
                 {
-                    basePath = "/var/data";
+                    //basePath = "/var/data";
+                    basePath = "/tmp";
 
                     inputFolder = Path.Combine(basePath, "input_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
                     outputFolder = Path.Combine(basePath, "output_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
@@ -163,18 +175,47 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 //if (!string.IsNullOrEmpty(inputFileTemp) && File.Exists(inputFileTemp))
                 //    File.Delete(inputFileTemp);
 
-                    //if (Directory.Exists(inputFolder))
-                    //{
-                    //    Directory.Delete(inputFolder, true); // Xóa cả file bên trong
-                    //}
+                //if (Directory.Exists(inputFolder))
+                //{
+                //    Directory.Delete(inputFolder, true); // Xóa cả file bên trong
+                //}
 
-                    //if (Directory.Exists(outputFolder))
-                    //{
-                    //    Directory.Delete(outputFolder, true); // Xóa cả file bên trong
-                    //}
+                //if (Directory.Exists(outputFolder))
+                //{
+                //    Directory.Delete(outputFolder, true); // Xóa cả file bên trong
+                //}
             }
 
             return (inputFileTemp, inputFolder, outputFolder);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~FFmpegService()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -1,19 +1,32 @@
 ﻿using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
-using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
+using DataAccessLayer.Interface.MongoDB.UOW;
+using DataAccessLayer.Repository.Entities;
 using Microsoft.IdentityModel.Tokens;
 using SetupLayer.Enum.Services.User;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace BusinessLogicLayer.Implement.Services.JWTs
 {
-    public class JwtBLL(IConnectionMultiplexer redis) : IJwtBLL
+    public class JwtBLL(IUnitOfWork unitOfWork) : IJwtBLL, IDisposable
     {
-        private readonly IDatabase _redis = redis.GetDatabase();
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private bool _disposed = false;
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                (_unitOfWork as IDisposable)?.Dispose();
+                _disposed = true;
+
+                // Ngăn Garbage Collector gọi Finalizer nếu có
+                GC.SuppressFinalize(this);
+            }
+        }
 
         /// <summary>
         /// Generate access token with claims (user's informations)
@@ -34,9 +47,9 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var tokenDescriptor = new JwtSecurityToken(
-                issuer: "https://localhost:7018", //set issuer is localhost
+                //issuer: "https://localhost:7018", //set issuer is localhost
 
-                audience: "https://localhost:7018", //set audience is localhost
+                //audience: "https://localhost:7018", //set audience is localhost
 
                 claims: claims,
 
@@ -55,16 +68,49 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         /// Refresh access token for expired token
         /// </summary>
         /// <returns></returns>
-        private static string GenerateRefreshToken()
+        private static string GenerateRefreshToken(IEnumerable<Claim>? claims, ClaimsPrincipal? principal)
         {
-            //generate random number for refresh token
-            var randomNumber = new byte[32];
+            ////generate random number for refresh token
+            //var randomNumber = new byte[32];
 
-            //use RandomNumberGenerator to create random number
-            using var rng = RandomNumberGenerator.Create();
-            //get random number and convert to base64 string
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
+            ////use RandomNumberGenerator to create random number
+            //using var rng = RandomNumberGenerator.Create();
+            ////get random number and convert to base64 string
+            //rng.GetBytes(randomNumber);
+            //return Convert.ToBase64String(randomNumber);
+
+            if (claims is null)
+            {
+                claims =
+                [
+                    new Claim(ClaimTypes.Name, principal.Identity?.Name ?? throw new ArgumentException("User's ID is not found in any session")),
+                    new Claim(ClaimTypes.Role, principal.FindFirst(ClaimTypes.Role)?.Value ?? throw new ArgumentException("User's Role is not found in any session")),
+                    new Claim(ClaimTypes.NameIdentifier, principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new ArgumentException("User's ID is not found in any session")),
+                    new Claim("Avatar", principal.FindFirst("Avatar")?.Value ?? throw new ArgumentException("User's Avatar is not found in any session")),
+                ];
+            }
+
+            int expireDays = 7; //set default expire time is 60 minutes
+
+            string? refreshSecretKey = Environment.GetEnvironmentVariable("JWTSettings_RefreshTokenSecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found");
+
+            var symmetricKey = Encoding.UTF8.GetBytes(refreshSecretKey);
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var tokenDescriptor = new JwtSecurityToken(
+
+                claims: claims,
+
+                expires: DateTime.Now.Add(TimeSpan.FromMinutes(expireDays)),
+
+                signingCredentials: new SigningCredentials(
+                                    new SymmetricSecurityKey(symmetricKey),
+                                    SecurityAlgorithms.HmacSha256Signature) //use HmacSha256Signature algorithm to sign token
+            );
+
+            var token = tokenHandler.WriteToken(tokenDescriptor);
+            return token;
         }
 
         /// <summary>
@@ -84,7 +130,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
                 ValidateIssuerSigningKey = true,
 
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_SecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"))), //Sign with encoded secret key
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWTSettings_RefreshTokenSecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found"))), //Sign with encoded secret key
 
                 ValidateLifetime = false //this field not need to check validate because we just want to get principal from that token
             };
@@ -115,7 +161,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             //generate access token and refresh token
             accessToken = GenerateAccessToken(claims);
 
-            refreshToken = GenerateRefreshToken();
+            refreshToken = GenerateRefreshToken(claims, null);
 
             DateTime refreshTokenExpiryTime = DateTime.Now.AddDays(7);
 
@@ -130,10 +176,10 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         /// </summary>
         /// <param name="Id"></param>
         /// <exception cref="ErrorException"></exception>
-        //public async void RevokeToken(string Id)
-        //{
-        //    // Retrieve an user from the database
-        //    User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Id.ToString() == Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any available user");
+        public async Task RevokeToken(string Id)
+        {
+            // Retrieve an user from the database
+            User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Id.ToString() == Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any available user");
 
         //    // Update
         //    UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, null);
@@ -150,23 +196,25 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         /// <param name="newRefreshToken"></param>
         /// <param name="tokenApiModel"></param>
         /// <exception cref="ErrorException"></exception>
-        public void RefreshAccessToken(out string newAccessToken, out string newRefreshToken, TokenApiRequestModel tokenApiModel)
+        public void RefreshAccessToken(out string newAccessToken, out string newRefreshToken, out ClaimsPrincipal principal, string oldRefreshToken)
         {
+            string refreshSecretKey = Environment.GetEnvironmentVariable("JWTSettings_RefreshTokenSecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found");
+
             //Check if tokenApiModel is null or not
-            tokenApiModel = tokenApiModel ?? throw new ArgumentException("Please fill all of information");
+            //tokenApiModel = tokenApiModel ?? throw new ArgumentException("Please fill all of information");
 
-            string? accessToken = tokenApiModel.AccessToken;
-            string? refreshToken = tokenApiModel.RefreshToken;
+            //string? accessToken = tokenApiModel.AccessToken;
+            //string? refreshToken = tokenApiModel.RefreshToken;
 
-            var principal = GetPrincipalFromExpiredToken(tokenApiModel.AccessToken);
+            principal = GetPrincipalFromExpiredToken(oldRefreshToken);
 
-            string userIDString = principal.Identity?.Name ?? throw new ArgumentException("User's ID is not found in any session"); //this is mapped to the Name claim by default
+            string userIDString = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new ArgumentException("User's ID is not found in any session"); //this is mapped to the Name claim by default
 
 
             var expirationTime = _redis.SortedSetScore("refresh_tokens", refreshToken);
 
-            //check valid for refresh token and expiry time, create new and delete old token
-            if (expirationTime.HasValue)
+            //check valid for refresh token and expiry time
+            if (retrieveUser.RefreshToken == null || retrieveUser.RefreshToken != oldRefreshToken || retrieveUser.RefreshTokenExpiryTime <= DateTime.Now)
             {
                 if (expirationTime.Value > DateTime.UtcNow.Ticks)
                 {
@@ -180,7 +228,12 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
             }
 
-            throw new SecurityTokenException("Invalid token");
+            //generate new access token and refresh token
+            newAccessToken = GenerateAccessToken(principal.Claims);
+            newRefreshToken = GenerateRefreshToken(null, principal);
+
+            UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, newRefreshToken);
+            UpdateResult refeshTokenUpdateResult = _unitOfWork.GetCollection<User>().UpdateOne(user => user.Id == userID, refeshTokenUpdate);
         }
 
         public string GenerateJWTTokenForConfirmEmail(string email, string encrpytedToken)

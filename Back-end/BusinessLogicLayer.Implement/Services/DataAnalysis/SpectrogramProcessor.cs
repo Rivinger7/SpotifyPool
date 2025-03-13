@@ -4,7 +4,7 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using System.Runtime.InteropServices;
+using Utility.Coding;
 using Xabe.FFmpeg;
 using BitmapDrawing = System.Drawing.Bitmap;
 
@@ -12,10 +12,6 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 {
     public static class SpectrogramProcessor
     {
-        // Xác định hệ điều hành
-        public static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-
         //public static BitmapDrawing ConvertToSpectrogram(IFormFile audioFile)
         //{
         //    // Đọc audio từ URL hoặc file
@@ -191,14 +187,14 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             string basePath;
             string onnxModelPath;
 
-            if(IsWindows)
+            if(Util.IsWindows())
             {
                 basePath = Directory.GetCurrentDirectory();
                 onnxModelPath = Path.Combine(basePath, "TrainingModel", "audio_features_model.onnx");
             }
-            else if (IsLinux)
+            else if (Util.IsLinux())
             {
-                basePath = "/var/data/TrainingModel";
+                basePath = "/app";
                 onnxModelPath = Path.Combine(basePath, "audio_features_model.onnx");
             }
             else
@@ -207,8 +203,10 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             }
 
             // Chạy suy luận
-            using InferenceSession session = new(onnxModelPath);
-            var inputName = session.InputMetadata.Keys.First();
+            SessionOptions options = new();
+            //options.RegisterCustomOpLibraryV2("/usr/local/lib/onnxruntime/lib/libonnxruntime.so", out _);
+            using InferenceSession session = new(onnxModelPath, options);
+            string inputName = session.InputMetadata.Keys.First();
             List<NamedOnnxValue> inputs =
             [
                 NamedOnnxValue.CreateFromTensor(inputName, inputTensor)

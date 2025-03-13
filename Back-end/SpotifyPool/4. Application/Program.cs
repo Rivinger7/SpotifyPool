@@ -1,16 +1,9 @@
 ﻿using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
-using BusinessLogicLayer.Implement.Services.SignalR.PlaybackSync;
 using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
 using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
 using Hellang.Middleware.ProblemDetails;
-using Microsoft.AspNetCore.HttpOverrides;
 using SpotifyPool.Infrastructure;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
-using System.Diagnostics;
-
-// Stopwatch Start
-var stopwatch = new Stopwatch();
-stopwatch.Start();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,19 +30,6 @@ EnvironmentVariableLoader.LoadEnvironmentVariable();
 //    builder.WebHost.UseUrls($"{protocol}://localhost:{port}"); // Sử dụng cổng từ biến môi trường
 //}
 
-
-// Real-time IP Address
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-
-    // Uncomment and set your trusted proxies if your app is behind a proxy
-    // options.KnownProxies.Add(IPAddress.Parse("::ffff:127.0.0.1"));
-    // Or use KnownNetworks for trusted network ranges if you use multiple proxies
-    // options.KnownNetworks.Add(new IPNetwork(IPAddress.Parse("192.168.1.0"), 24));
-});
-
-
 // Config appsettings by env
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -67,11 +47,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddBusinessInfrastructure(builder.Configuration);
 
-
-
 var app = builder.Build();
-
-
 
 // Cấu hình IpAddressHelper với IHttpContextAccessor từ DI
 //Util.Configure(app.Services.GetRequiredService<IHttpContextAccessor>());
@@ -79,33 +55,40 @@ var app = builder.Build();
 app.UseProblemDetails();
 
 // Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    // Đặt tiêu đề
-    c.DocumentTitle = "SpotifyPool API";
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        // Đặt tiêu đề
+            options.DocumentTitle = "SpotifyPool API";
 
-    // Đường dẫn đến file JSON của Swagger
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
+        //    // Đường dẫn đến file JSON của Swagger
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
 
-    // Inject JavaScript để chuyển đổi theme
-    c.InjectJavascript("/theme-switcher.js");
-});
+        //    // Inject JavaScript để chuyển đổi theme
+            options.InjectJavascript("/theme-switcher.js");
+    });
+}
 
-app.UseForwardedHeaders();
+//app.UseSwagger();
+//app.UseSwaggerUI(c =>
+//{
+//    // Đặt tiêu đề
+//    c.DocumentTitle = "SpotifyPool API";
 
-// Đăng ký middleware lấy địa chỉ IP
-//app.UseMiddleware<IpAddressMiddleware>();
+//    // Đường dẫn đến file JSON của Swagger
+//    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
 
-app.UseHttpsRedirection();
+//    // Inject JavaScript để chuyển đổi theme
+//    c.InjectJavascript("/theme-switcher.js");
+//});
 
-app.UseSession();
+//app.UseForwardedHeaders();
+
+//app.UseHttpsRedirection();
+
+//app.UseSession();
 
 app.UseStaticFiles();
 
@@ -118,10 +101,5 @@ app.MapControllers();
 
 app.MapHub<StreamCountingHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL")}");
 app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL")}");
-app.MapHub<PlaybackSyncHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYBACK_SYNC_URL")}");
-
-// Stopwatch End
-stopwatch.Stop();
-app.Logger.LogInformation($"Application startup completed in {stopwatch.ElapsedMilliseconds} ms");
 
 app.Run();

@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.Interface.Microservices_Interface.Genius;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
-using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
@@ -19,7 +17,7 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Microservices.Spotify
 {
-    public class SpotifyService(SpotifySettings spotifySettings, IMapper mapper, IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, IGenius geniusService) : ISpotify
+    public class SpotifyService(SpotifySettings spotifySettings, IMapper mapper, IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor) : ISpotify
     {
         private readonly string CLIENT_ID = spotifySettings.ClientId;
         private readonly string CLIENT_SECRET = spotifySettings.ClientSecret;
@@ -28,7 +26,6 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IGenius _geniusService = geniusService;
 
         #region Spotify API Server-side
         public string Authorize()
@@ -809,43 +806,6 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         //        await _unitOfWork.GetCollection<Track>().UpdateOneAsync(t => t.SpotifyId == item.TrackSpotifyId, update);
         //    }
         //}
-        public async Task FetchLyricsAsync(string accessToken)
-        {
-            // Projection
-            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
-                .Include(track => track.Name)
-                .Include(track => track.Artists);
-
-            // Empty Pipeline  
-            IAggregateFluent<Track> pipeLine = _unitOfWork.GetCollection<Track>().Aggregate();
-
-            // Lookup  
-            IAggregateFluent<ASTrack> trackPipelines = pipeLine.Lookup<Track, Artist, ASTrack>
-                (_unitOfWork.GetCollection<Artist>(), // The foreign collection  
-                track => track.ArtistIds, // The field in Track that are joining on  
-                artist => artist.Id, // The field in Artist that are matching against  
-                result => result.Artists) // The field in ASTrack to hold the matched artists  
-                .Project(projectionDefinition)
-                .As<ASTrack>();
-
-            // Pipeline to list  
-            IEnumerable<ASTrack> tracks = await trackPipelines.ToListAsync();
-
-            // Map the aggregate result to TrackResponseModel  
-            IEnumerable<TrackResponseModel> responseModel = _mapper.Map<IEnumerable<TrackResponseModel>>(tracks);
-
-            // Fetch Lyrics
-            foreach (TrackResponseModel track in responseModel)
-            {
-                string? lyrics = await _geniusService.GetUrlLyricsAsync(accessToken, track.Name, track.Artists.Select(artist => artist.Name).First());
-
-                if (lyrics != null)
-                {
-                    UpdateDefinition<Track> update = Builders<Track>.Update.Set(t => t.Lyrics, lyrics);
-                    await _unitOfWork.GetCollection<Track>().UpdateOneAsync(t => t.Id == track.Id, update);
-                }
-            }
-        }
 
         private static async Task<string> GetResponseAsync(string uri, string accessToken, int maxRetries = 10)
         {
