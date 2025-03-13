@@ -9,7 +9,7 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Request
         public string? Description { get; set; } = string.Empty;
         public IFormFile? ImageFile { get; set; }
         public List<string> ArtistIds { get; set; } = [];
-        public DateTime? ReleasedTime { get; set; }
-        public ReleaseStatus Reason { get; set; }
+        //public DateTime? ReleasedTime { get; set; }
+        //public ReleaseStatus Reason { get; set; }
     }
 }

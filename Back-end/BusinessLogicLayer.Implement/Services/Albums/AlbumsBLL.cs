@@ -4,11 +4,16 @@ using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Response;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Paging;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
+using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
@@ -32,34 +37,194 @@ namespace BusinessLogicLayer.Implement.Services.Albums
             _mapper = mapper;
             _cloudinaryService = cloudinaryService;
         }
-        //public async Task<IEnumerable<AlbumResponseModel>> GetAlbumsAsync()
-        //{
-        //    // UserID lấy từ phiên người dùng có thể là FE hoặc BE
-        //    string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        public async Task<IEnumerable<AlbumResponseModel>> GetAlbumsAsync(PagingRequestModel paging, AlbumFilterModel model)
+        {
+            FilterDefinition<Album> filter = Builders<Album>.Filter.Where(a => !a.DeletedTime.HasValue);
 
-        //    // Kiểm tra UserId
-        //    if (string.IsNullOrEmpty(userID))
-        //    {
-        //        throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
-        //    }
+            if (!string.IsNullOrWhiteSpace(model.CreatedBy))
+            {
+                filter &= Builders<Album>.Filter.Eq(a => a.CreatedBy, model.CreatedBy);
+            }
 
-        //    // Projection
-        //    ProjectionDefinition<Playlist> playlistProjection = Builders<Playlist>.Projection
-        //        .Include(playlist => playlist.Id)
-        //        .Include(playlist => playlist.Name)
-        //        .Include(playlist => playlist.Images);
+            if (!string.IsNullOrWhiteSpace(model.Name))
+            {
+                filter &= Builders<Album>.Filter.Regex(a => a.Name, new BsonRegularExpression(model.Name, "i"));
+                //"i": Không phân biệt chữ hoa, chữ thường.
+                //MongoDB sẽ tìm tất cả các bản ghi mà Name chứa giá trị model.Name.
+                //Ví dụ: model.Name = "rock" sẽ tìm được "Rock Music", "Hard Rock"...
+            }
 
-        //    // Lấy thông tin Playlist
-        //    IEnumerable<Playlist> playlists = await _unitOfWork.GetCollection<Playlist>()
-        //        .Find(playlist => playlist.UserID == userID)
-        //        .Project<Playlist>(playlistProjection)
-        //        .ToListAsync();
+            if (model.ArtistIds.Any())
+            {
+                filter &= Builders<Album>.Filter.All(a => a.ArtistIds, model.ArtistIds);
+            }
+            if (model.ReleasedTime.HasValue)
+            {
+                filter &= Builders<Album>.Filter.Eq(a => a.ReleaseInfo.ReleasedTime, model.ReleasedTime);
+            }
+            if (model.Reason != null)
+            {
+                filter &= Builders<Album>.Filter.Eq(a => a.ReleaseInfo.Reason, model.Reason);
+            }
+            if (model.IsReleased.HasValue)
+            {
+                if (model.IsReleased.Value == true)
+                {
+                    filter &= Builders<Album>.Filter.Lte(a => a.ReleaseInfo.ReleasedTime, Util.GetUtcPlus7Time());
+                    filter &= Builders<Album>.Filter.Eq(a => a.ReleaseInfo.Reason, ReleaseStatus.Official);
+                } 
+                else
+                {
+                    filter &= Builders<Album>.Filter.Gt(a => a.ReleaseInfo.ReleasedTime, Util.GetUtcPlus7Time());
+                }
+                
+            }
+            IFindFluent<Album, Album> albums = _unitOfWork.GetCollection<Album>().Find(filter);
 
-        //    // Mapping
-        //    IEnumerable<PlaylistsResponseModel> playlistsResponse = _mapper.Map<IEnumerable<PlaylistsResponseModel>>(playlists);
+            //Sort theo Name (Nếu có)
+            if (model.IsSortByName.HasValue)
+            {
+                albums = model.IsSortByName.Value
+                ? albums.SortBy(a => a.Name)   //Tăng dần if true
+                    : albums.SortByDescending(a => a.Name); //Giảm dần if false
+            }
+            else
+            {
+                //Sort theo CreateTime giảm dần (albums mới tạo sẽ được đưa lên đầu)
+                albums = albums.SortByDescending(a => a.CreatedTime);
+            }
+            IEnumerable<Album> result = await albums
+                .Skip((paging.PageNumber - 1) * paging.PageSize) //Phân trang
+                .Limit(paging.PageSize) //Giới hạn số lượng
+                .ToListAsync();
 
-        //    return playlistsResponse;
-        //}
+            return _mapper.Map<IReadOnlyCollection<AlbumResponseModel>>(result);
+        }
+        public async Task<AlbumDetailResponseModel> GetAbumDetailByIdAsync(string albumId, bool? isSortByTrackName)
+        {
+            // Tạo SortDefinition trực tiếp dựa trên isSortByTrackName
+            SortDefinition<TrackResponseModel>? sortDefinitions = isSortByTrackName.HasValue
+                ? (isSortByTrackName.Value
+                    ? Builders<TrackResponseModel>.Sort.Ascending(track => track.Name)
+                    : Builders<TrackResponseModel>.Sort.Descending(track => track.Name))
+                : null;
+
+            //==============================================
+            //1. XỬ LÝ THÔNG TIN CƠ BẢN ALBUM VÀ ARTIST TẠO
+            //===============================================
+            // Projection
+            // Lấy tất cả field của Playlist nhưng chỉ một số field của User
+            //ProjectionDefinition<ASAlbum> albumProjection = Builders<ASAlbum>.Projection
+            //    .Exclude(a => a.Artist)
+            //    .Include(a => a.Artist.Id)
+            //    .Include(a => a.Artist.Name)
+            //    .Include(a => a.Artist.Followers)
+            //    .Include(a => a.Artist.Images);
+
+            ProjectionDefinition<ASAlbum, AlbumDetailResponseModel> albumProjection = Builders<ASAlbum>.Projection.Expression(a => new AlbumDetailResponseModel
+            {
+                Info = new AlbumResponseModel
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Description = a.Description,
+                    Images = a.Images.Select(image => new ImageResponseModel()
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    ReleaseInfo = new ReleaseMetadataResponse()
+                    {
+                        ReleasedTime = a.ReleaseInfo.ReleasedTime.HasValue? a.ReleaseInfo.ReleasedTime.Value.ToString("HH:mm:ss dd/MM/yyyy") : null,
+                        Reason = a.ReleaseInfo.Reason
+                    }
+                },
+                CreatedBy = new ArtistResponseModel()
+                {
+                    Id = a.Artist.Id,
+                    Name = a.Artist.Name,
+                    Followers = a.Artist.Followers,
+                    Images = a.Artist.Images.Select(image => new ImageResponseModel()
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    })
+                },
+                TrackIds = a.TrackIds
+            });
+
+            // Lookup
+            AlbumDetailResponseModel album = await _unitOfWork.GetCollection<Album>()
+                .Aggregate() //aggregation pipeline để thực hiện join dữ liệu giữa các collection.
+                .Match(a => a.Id == albumId && !a.DeletedTime.HasValue) // Lọc trước, kiểm tả tồn tại
+                .Lookup<Album, Artist, ASAlbum>(_unitOfWork.GetCollection<Artist>(),
+                album => album.CreatedBy, // Field trong Playlist để match
+                artist => artist.Id, // Field trong User để match
+                result => result.Artist) // Lưu vào field Artist của ASAlbum
+                .Unwind(result => result.Artist, new AggregateUnwindOptions<ASAlbum>()
+                {
+                    PreserveNullAndEmptyArrays = true
+                    //Nếu Album không có Artist, nó vẫn giữ lại dữ liệu Playlist thay vì bị loại bỏ.
+                }) //unwind để chuyển Artist từ dạng mảng sang object
+                   //Sau unwind, nếu Artist có nhiều kết quả, nó sẽ tạo ra nhiều bản ghi Album (duplicate) mỗi cái chứa một Artist khác nhau.
+                .Project(albumProjection) //Project: Chỉ lấy các thông tin cần thiết.
+                .FirstOrDefaultAsync()
+                ?? throw new KeyNotFoundException($"Album with ID {albumId} does not exist");
+            //==============================================
+            //2. XỬ LÝ THÔNG TIN TRACK TRONG ALBUM (lấy tư album.TrackIds trên)
+            //===============================================
+            FilterDefinition<Track> trackFilter = Builders<Track>.Filter.In(track => track.Id, album.TrackIds);
+            // Chỉ lấy những thông tin cần thiết từ ASTrack : Track và Mappping sang TrackResponseModel
+            // Mapping tracks to TrackResponseModel
+            ProjectionDefinition<ASTrack, TrackResponseModel> projectionDefinition = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    PreviewURL = track.StreamingUrl,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel()
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            IEnumerable<TrackResponseModel> tracks = await _unitOfWork.GetCollection<Track>()
+                .Aggregate()
+                .Match(trackFilter) // Match the pre custom filter
+                .Lookup<Track, Artist, ASTrack>(
+                    _unitOfWork.GetCollection<Artist>(), // The foreign collection
+                    track => track.ArtistIds, // The field in Track that are joining on
+                    artist => artist.Id, // The field in Artist that are matching against
+                    result => result.Artists) // The field in ASTrack to hold the matched artists
+                .Project(projectionDefinition)
+                .Sort(sortDefinitions)
+                .ToListAsync();
+
+            album.Tracks = tracks;
+
+            return album; 
+        }
+
+
         public async Task CreateAlbumAsync(AlbumRequestModel request)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
@@ -101,7 +266,7 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                 // Upload hình ảnh lên Cloudinary
                 uploadResult = _cloudinaryService.UploadImage(request.ImageFile, ImageTag.Album, rootFolder: "Image", fixedSize, fixedSize);
                 imageUrl = uploadResult.SecureUrl.AbsoluteUri;
-                
+
             }
             // Nếu không có thì sử dụng hình ảnh mặc định
             else
@@ -130,8 +295,8 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                 Images = images,
                 ReleaseInfo = new ReleaseMetadata()
                 {
-                    ReleasedTime = request.ReleasedTime,
-                    Reason = request.Reason
+                    ReleasedTime = null,
+                    Reason = ReleaseStatus.NotAnnounced
                 }
             };
 
@@ -160,8 +325,6 @@ namespace BusinessLogicLayer.Implement.Services.Albums
             existingAlbum.Name = request.Name;
             existingAlbum.Description = request.Description;
             existingAlbum.ArtistIds = request.ArtistIds;
-            existingAlbum.ReleaseInfo.ReleasedTime = request.ReleasedTime;
-            existingAlbum.ReleaseInfo.Reason = request.Reason;
             existingAlbum.LastUpdatedTime = Util.GetUtcPlus7Time();
             if (request.ImageFile != null)
             {
@@ -188,7 +351,7 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                 }
                 existingAlbum.Images = images;
             }
-            
+
 
             //Chuyển thành BsonDocument để cập nhật, loại bỏ _id
             BsonDocument bsonDoc = existingAlbum.ToBsonDocument();
@@ -205,7 +368,7 @@ namespace BusinessLogicLayer.Implement.Services.Albums
             }
         }
         public async Task DeleteAlbumAsync(string albumId)
-        { 
+        {
             // Lấy album hiện tại
             Album existingAlbum = await _unitOfWork.GetCollection<Album>()
                 .Find(a => a.Id == albumId && !a.DeletedTime.HasValue)
@@ -215,6 +378,95 @@ namespace BusinessLogicLayer.Implement.Services.Albums
             FilterDefinition<Album> filter = Builders<Album>.Filter.Eq(a => a.Id, albumId);
             UpdateDefinition<Album> update = Builders<Album>.Update.Set(a => a.DeletedTime,
                Util.GetUtcPlus7Time());
+
+            await _unitOfWork.GetCollection<Album>().UpdateOneAsync(filter, update);
+        }
+        public async Task AddTracksToAlbum(IEnumerable<string> trackIds, string albumId)
+        {
+            // Projection
+            ProjectionDefinition<Album> projectionDefinition = Builders<Album>.Projection
+                .Include(a => a.TrackIds);
+
+            // Lấy thông tin playlist
+            Album album = await _unitOfWork.GetCollection<Album>()
+                .Find(a => a.Id == albumId && !a.DeletedTime.HasValue)
+                .Project<Album>(projectionDefinition)
+                .FirstOrDefaultAsync() ?? throw new InvalidDataCustomException("The album does not exist");
+            IList<string> existTrackids = album.TrackIds;
+
+            // Thêm track vào album
+            foreach (var trackId in trackIds)
+            {
+                if (!existTrackids.Contains(trackId))
+                {
+                    album.TrackIds.Add(trackId);
+                }
+            }
+            
+            // Cập nhật album với danh sách TrackIds mới
+            UpdateDefinition<Album> updateDefinition = Builders<Album>.Update.Set(a => a.TrackIds, album.TrackIds);
+            await _unitOfWork.GetCollection<Album>().UpdateOneAsync(a => a.Id == albumId, updateDefinition);
+
+            return;
+        }
+        public async Task RemoveTracksFromAlbum(IEnumerable<string> trackIds, string albumId)
+        {
+            // Projection
+            ProjectionDefinition<Album> projectionDefinition = Builders<Album>.Projection
+                .Include(a => a.TrackIds);
+
+            // Lấy thông tin playlist
+            Album album = await _unitOfWork.GetCollection<Album>()
+                .Find(a => a.Id == albumId && !a.DeletedTime.HasValue)
+                .Project<Album>(projectionDefinition)
+                .FirstOrDefaultAsync() ?? throw new InvalidDataCustomException("The album does not exist");
+            foreach (var trackId in trackIds)
+            {
+                album.TrackIds.Remove(trackId);
+            }
+        }
+        public async Task ReleaseAlbumAsync(string albumId, DateTime releaseTime)
+        {
+            if (releaseTime < Util.GetUtcPlus7Time())
+            {
+                throw new InvalidDataCustomException("Released Time must be >= now.");
+            }
+
+            FilterDefinition<Album> filter = Builders<Album>.Filter.Eq(a => a.Id, albumId);
+            // Lấy album hiện tại
+            Album existingAlbum = await _unitOfWork.GetCollection<Album>()
+                .Find(a => a.Id == albumId && !a.DeletedTime.HasValue)
+                .FirstOrDefaultAsync()
+                ?? throw new KeyNotFoundException($"Album with ID {albumId} does not exist");
+
+            existingAlbum.ReleaseInfo.ReleasedTime = releaseTime;
+            existingAlbum.ReleaseInfo.Reason = ReleaseStatus.Official;
+
+
+            //Chuyển thành BsonDocument để cập nhật, loại bỏ _id
+            BsonDocument bsonDoc = existingAlbum.ToBsonDocument();
+            bsonDoc.Remove("_id");
+
+            //Tạo UpdateDefinition từ BsonDocument
+            BsonDocument update = new BsonDocument("$set", bsonDoc);
+            UpdateResult result = await _unitOfWork.GetCollection<Album>()
+                .UpdateOneAsync(filter, update);
+
+            if (result.MatchedCount == 0)
+            {
+                throw new KeyNotFoundException($"Album with ID {albumId} does not exist.");
+            }
+        }
+        public async Task ChangeAlbumStatusAsync(string albumId, ReleaseStatus status)
+        {
+            // Lấy album hiện tại
+            Album existingAlbum = await _unitOfWork.GetCollection<Album>()
+                .Find(a => a.Id == albumId && !a.DeletedTime.HasValue)
+                .FirstOrDefaultAsync()
+                ?? throw new KeyNotFoundException($"Album with ID {albumId} does not exist.");
+
+            FilterDefinition<Album> filter = Builders<Album>.Filter.Eq(a => a.Id, albumId);
+            UpdateDefinition<Album> update = Builders<Album>.Update.Set(a => a.ReleaseInfo.Reason, status);
 
             await _unitOfWork.GetCollection<Album>().UpdateOneAsync(filter, update);
         }
