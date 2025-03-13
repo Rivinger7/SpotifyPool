@@ -81,13 +81,13 @@ namespace SpotifyPool._1._Controllers.Playlist
         /// <summary>
         /// Xóa track khỏi playlist
         /// </summary>
-        /// <param name="trackID"></param>
+        /// <param name="trackId"></param>
         /// <param name="id"></param>
         /// <returns></returns>
         [Authorize(Roles = nameof(UserRole.Customer)), HttpDelete("{id}/tracks/{trackId}")]
-        public async Task<IActionResult> RemoveTrackFromCustomPlaylist(string trackID, string id)
+        public async Task<IActionResult> RemoveTrackFromCustomPlaylist(string trackId, string id)
         {
-            await _playlistService.RemoveFromPlaylistAsync(trackID, id);
+            await _playlistService.RemoveFromPlaylistAsync(trackId, id);
             return Ok(new { Message = "Remove Custom Playlist Successfully" });
         }
     }

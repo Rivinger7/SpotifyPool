@@ -551,8 +551,19 @@ namespace BusinessLogicLayer.Implement.Services.Playlists.Custom
                 .As<Playlist>()
                 .FirstOrDefaultAsync() ?? throw new InvalidDataCustomException("The playlist does not exist");
 
-            // Xóa track khỏi playlist
-            playlist.TrackIds.RemoveAll(track => track.TrackId == trackId);
+            // Xóa track khỏi playlist và Cập nhật playlist với danh sách TrackIds mới
+            UpdateDefinition<Playlist> updateDefinition = Builders<Playlist>.Update.PullFilter(playlist => playlist.TrackIds, track => track.TrackId == trackId);
+            UpdateResult updateResult = await _unitOfWork.GetCollection<Playlist>().UpdateOneAsync(playlist => playlist.Id == playlistId, updateDefinition);
+
+            // Kiểm tra nếu không tìm thấy playlist
+            if (updateResult.MatchedCount == 0)
+            {
+                throw new InvalidDataCustomException("The playlist does not exist.");
+            }
+            else if (updateResult.ModifiedCount == 0)
+            {
+                throw new InvalidDataCustomException("The track is not in the playlist.");
+            }
         }
     }
 }

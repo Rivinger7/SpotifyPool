@@ -35,7 +35,7 @@ namespace SpotifyPool._1._Controllers.Account
 		/// </summary>
 		/// <param name="id">Id người dùng</param>
 		/// <returns></returns>
-		[HttpGet("{id}")]
+		[AllowAnonymous, HttpGet("{id}")]
 		public async Task<IActionResult> GetAccountById(string id)
 		{
 			var account = await _accountBLL.GetByIdAsync(id);

@@ -36,6 +36,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+		<PackageReference Include="System.Text.Json" Version="9.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -52,6 +53,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="3. Middleware\NewFolder\" />
 	  <Folder Include="AudioTemp\input\" />
 	  <Folder Include="AudioTemp\output\" />
 	</ItemGroup>

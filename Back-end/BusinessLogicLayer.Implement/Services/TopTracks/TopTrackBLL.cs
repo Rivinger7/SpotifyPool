@@ -15,11 +15,11 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.TopTracks
 {
-    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, IConnectionMultiplexer redis) : ITopTrack
+    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork) : ITopTrack
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly IDatabase _redis = redis.GetDatabase();
+        //private readonly IDatabase _redis = redis.GetDatabase();
 
         public async Task UpsertTopTrackAsync(TopTrackRequestModel topTrackRequestModel)
         {
@@ -169,17 +169,17 @@ namespace BusinessLogicLayer.Implement.Services.TopTracks
             return tracksResponseModel;
         }
 
-        public async Task UpdateStreamCountAsync(string trackId)
-        {
-            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userID))
-            {
-                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");      
-            }
+        //public async Task UpdateStreamCountAsync(string trackId)
+        //{
+        //    string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //    if (string.IsNullOrEmpty(userID))
+        //    {
+        //        throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");      
+        //    }
 
-            string key = $"stream_count:{userID}";
-            await _redis.HashIncrementAsync(key, trackId, 1);
-            return;
-        }
+        //    string key = $"stream_count:{userID}";
+        //    await _redis.HashIncrementAsync(key, trackId, 1);
+        //    return;
+        //}
     }
 }

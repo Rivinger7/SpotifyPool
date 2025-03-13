@@ -13,7 +13,9 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Tracks
         Task<IEnumerable<TrackResponseModel>> GetTracksByMoodAsync(Mood mood);
         Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken);
 
-		//Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm);
-		//Task<IEnumerable<TrackResponseModel>> GetTracksWithArtistIsNull();
-	}
+        //Task ChangeStreamUrl();
+
+        //Task<IEnumerable<TrackResponseModel>> SearchTracksAsync(string searchTerm);
+        //Task<IEnumerable<TrackResponseModel>> GetTracksWithArtistIsNull();
+    }
 }

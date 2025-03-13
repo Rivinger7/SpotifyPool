@@ -1,9 +1,9 @@
 using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
-using BusinessLogicLayer.Implement.Microservices.NAudio;
 using BusinessLogicLayer.Implement.Services.DataAnalysis;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using BusinessLogicLayer.Interface.Services_Interface.Tracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
@@ -23,17 +23,145 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Utility.Coding;
+using Xabe.FFmpeg;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
-    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISpotify spotifyService, IAmazonWebService amazonWebService) : ITrack
+    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISpotify spotifyService, IAmazonWebService amazonWebService, IFFmpegService fFmpegService) : ITrack
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly ISpotify _spotifyService = spotifyService;
         private readonly IAmazonWebService _amazonWebService = amazonWebService;
+        private readonly IFFmpegService _fFmpegService = fFmpegService;
+
+        #region Chỉ dùng cho mục đích sửa cdn thành streamingUrl
+        //public async Task ChangeStreamUrl()
+        //{
+        //    string urlPrefix = "https://p.scdn.co/mp3-preview";
+
+        //    // Tạo filter để kiểm tra StreamingUrl khác null
+        //    var notNullFilter = Builders<Track>.Filter.Ne(t => t.StreamingUrl, null);
+
+        //    // Tạo filter để kiểm tra StreamingUrl bắt đầu với urlPrefix
+        //    var regexFilter = Builders<Track>.Filter.Regex(
+        //        t => t.StreamingUrl,
+        //        new BsonRegularExpression($"^{Regex.Escape(urlPrefix)}", "i") // "i" để không phân biệt hoa thường
+        //    );
+
+        //    // Kết hợp cả hai điều kiện
+        //    var filter = Builders<Track>.Filter.And(notNullFilter, regexFilter);
+
+        //    // Lấy tất cả track có streamUrl != null
+        //    IList<Track> tracks = await _unitOfWork.GetCollection<Track>()
+        //        .Find(filter)
+        //        .Project<Track>(Builders<Track>.Projection.Include(t => t.StreamingUrl).Include(t => t.Id).Include(t => t.Name))
+        //        .ToListAsync();
+
+        //    // Folder từ ConvertToHls
+        //    string inputFileTemp = string.Empty;
+        //    string inputFolderPath = string.Empty;
+        //    string outputFolderPath = string.Empty;
+
+        //    using HttpClient httpClient = new();
+
+        //    // Danh sách update hàng loạt
+        //    List<WriteModel<Track>> updates = [];
+
+        //    // Download file từ streamUrl về local
+        //    foreach (Track track in tracks)
+        //    {
+        //        try
+        //        {
+        //            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+        //            // Lấy tên file từ streamUrl
+        //            string fileName = track.Id + ".mp3";
+
+        //            // Tạo đường dẫn file
+        //            string filePath = Path.Combine(basePath, "Commons", "input_temp_audio", fileName);
+
+        //            // Tải file về local
+        //            using (HttpResponseMessage response = await httpClient.GetAsync(track.StreamingUrl))
+        //            {
+        //                response.EnsureSuccessStatusCode();
+        //                await using (FileStream fileStream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        //                {
+        //                    await response.Content.CopyToAsync(fileStream);
+        //                }
+        //            }
+
+        //            // Chuyển file thành IFormFile
+        //            IFormFile formFile = ConvertToIFormFile(filePath, fileName);
+
+        //            // Convert audio file sang dạng streaming
+        //            (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(formFile, track.Id);
+
+        //            // Upload streaming files lên AWS S3
+        //            string streamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, track.Id, track.Name);
+
+        //            // Upload file lên AWS S3
+        //            string publicUrl = await _amazonWebService.UploadFileAsync(formFile, track.Id);
+
+        //            // Tạo update để cập nhật hàng loạt
+        //            UpdateOneModel<Track> update = new(
+        //                Builders<Track>.Filter.Eq(t => t.Id, track.Id),
+        //                Builders<Track>.Update.Set(t => t.StreamingUrl, streamingUrl)
+        //            );
+
+        //            updates.Add(update);
+
+        //            // Xóa file sau khi upload để giải phóng bộ nhớ
+        //            File.Delete(filePath);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Console.WriteLine($"Lỗi khi xử lý track {track.Id}: {ex.Message}");
+        //        }
+        //        finally {
+        //            if (Directory.Exists(inputFileTemp))
+        //            {
+        //                Directory.Delete(inputFileTemp, true);
+        //                //Console.WriteLine($"Deleted folder: {inputFileTemp}");
+        //            }
+
+        //            if (Directory.Exists(inputFolderPath))
+        //            {
+        //                Directory.Delete(inputFolderPath, true);
+        //                //Console.WriteLine($"Deleted folder: {inputFolderPath}");
+        //            }
+
+        //            if (Directory.Exists(outputFolderPath))
+        //            {
+        //                Directory.Delete(outputFolderPath, true);
+        //                //Console.WriteLine($"Deleted folder: {outputFolderPath}");
+        //            }
+        //        }
+        //    }
+
+        //    // Cập nhật hàng loạt nếu có dữ liệu
+        //    if (updates.Count > 0)
+        //    {
+        //        await _unitOfWork.GetCollection<Track>().BulkWriteAsync(updates);
+        //    }
+        //}
+
+        //// Cập nhật hàm ConvertToIFormFile để tránh giữ file mở
+        //private static IFormFile ConvertToIFormFile(string filePath, string fileName)
+        //{
+        //    byte[] fileBytes = File.ReadAllBytes(filePath); // Đọc file vào bộ nhớ
+        //    var memoryStream = new MemoryStream(fileBytes); // Chuyển thành MemoryStream
+
+        //    return new FormFile(memoryStream, 0, fileBytes.Length, "file", fileName)
+        //    {
+        //        Headers = new HeaderDictionary(),
+        //        ContentType = "audio/mpeg" // Cập nhật kiểu MIME nếu cần
+        //    };
+        //}
+        #endregion
 
         public async Task FetchTracksByCsvAsync(IFormFile csvFile, string accessToken)
         {
@@ -242,13 +370,13 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         public async Task<IEnumerable<TrackResponseModel>> GetAllTracksAsync(int offset, int limit, TrackFilterModel filterModel)
         {
-			//Xử lý các ký tự đặc biệt trong search term
-			string searchTermEscaped = filterModel.SearchTerm != null 
-                ? Util.EscapeSpecialCharacters(filterModel.SearchTerm) 
+            //Xử lý các ký tự đặc biệt trong search term
+            string searchTermEscaped = filterModel.SearchTerm != null
+                ? Util.EscapeSpecialCharacters(filterModel.SearchTerm)
                 : string.Empty;
 
-			// Projection
-			ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
                 new TrackResponseModel
                 {
                     Id = track.Id,
@@ -277,38 +405,76 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     })
                 });
 
-			//Search
-			FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
-			if (!string.IsNullOrEmpty(searchTermEscaped))
-			{
-				trackFilter = Builders<Track>.Filter.Or(
-					Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
-					Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
-				);
-			}
+            //Search
+            FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
+            if (!string.IsNullOrEmpty(searchTermEscaped))
+            {
+                trackFilter = Builders<Track>.Filter.Or(
+                    Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
+                    Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
+                );
+            }
+            else if (!string.IsNullOrEmpty(filterModel.Mood.ToString()))
+            {
+                trackFilter = filterModel.Mood switch
+                {
+                    Mood.Sad => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 0),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 100),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.4)),
 
-			// Empty Pipeline
-			IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+                    Mood.Neutral => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 100) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 120),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.4) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.6)),
 
-			//Sorting
-			if (filterModel.SortById.HasValue)
-			{
-				aggregateFluent = filterModel.SortById.Value
-					? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Id))
-					: aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Id));
-			}
-			else if (filterModel.SortByName.HasValue)
-			{
-				aggregateFluent = filterModel.SortByName.Value
-					? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Name))
-					: aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Name));
-			}
+                    Mood.Happy => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 120) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 160),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.6) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.8)),
 
-			// Lấy thông tin Tracks với Artist
-			// Lookup
-			IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
-				.Match(trackFilter)
-				.Skip((offset - 1) * limit)
+                    Mood.Blisfull => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 140) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 180),
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.8) &
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 1)),
+
+                    Mood.Focus => Builders<Track>.Filter.And(
+                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Instrumentalness, 0.7),
+                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Energy, 0.5)),
+
+                    Mood.Random => Builders<Track>.Filter.Empty,
+                    _ => throw new InvalidDataCustomException("The mood is not supported"),
+                };
+            }
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            //Sorting
+            if (filterModel.SortById.HasValue)
+            {
+                aggregateFluent = filterModel.SortById.Value
+                    ? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Id))
+                    : aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Id));
+            }
+            else if (filterModel.SortByName.HasValue)
+            {
+                aggregateFluent = filterModel.SortByName.Value
+                    ? aggregateFluent.Sort(Builders<Track>.Sort.Ascending(track => track.Name))
+                    : aggregateFluent.Sort(Builders<Track>.Sort.Descending(track => track.Name));
+            }
+
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Match(trackFilter)
+                .Skip((offset - 1) * limit)
                 .Limit(limit)
                 .Lookup<Track, Artist, ASTrack>(
                     _unitOfWork.GetCollection<Artist>(),
@@ -436,9 +602,9 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
         //    return tracksResponseModel;
         //}
-		#endregion
+        #endregion
 
-		public async Task UploadTrackAsync(UploadTrackRequestModel request)
+        public async Task UploadTrackAsync(UploadTrackRequestModel request)
         {
             string userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
 
@@ -456,34 +622,84 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             newTrack.UploadBy = artistId ?? throw new ArgumentNullCustomException($"{artistId}");
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
 
-            //string fileNameUnique = $"{Path.GetFileNameWithoutExtension(request.File.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmssfff")}{Path.GetExtension(request.File.FileName)}";
-            //Console.WriteLine(fileNameUnique);
+            // Đường dẫn thư mục lưu trữ audio file tạm thời
+            string basePath = string.Empty;
+            string inputPath = string.Empty;
+            string outputPath = string.Empty;
 
-            //lấy đường dẫn tuyệt đối của file upload - đã tạo sẵn thư mục temp_uploads trong wwwroot
-            string inputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "input", request.File.FileName);
+            if (Util.IsWindows())
+            {
+                basePath = AppDomain.CurrentDomain.BaseDirectory;
 
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "AudioTemp", "output", request.File.FileName);
+                inputPath = Path.Combine(basePath, "Commons", "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+                outputPath = Path.Combine(basePath, "Commons", "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+            }
+            else if (Util.IsLinux())
+            {
+                //basePath = "/var/data";
+                basePath = "/tmp";
+
+                inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+                outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("This platform is not supported");
+            }
+
+            // Tạo thư mục nếu chưa tồn tại
+            if (!Directory.Exists(inputPath))
+            {
+                Directory.CreateDirectory(inputPath);
+            }
+
+            if (!Directory.Exists(outputPath))
+            {
+                Directory.CreateDirectory(outputPath);
+            }
+
+            #region Kiểm tra quyền ghi trong môi trường Production (Linux)
+            //try
+            //{
+            //    // Kiểm tra quyền ghi
+            //    string testFile = Path.Combine(inputPath, "test.txt");
+            //    File.WriteAllText(testFile, "Test write permission.");
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"❌ Write test failed: {ex.Message}");
+            //    throw new UnauthorizedAccessException("Write permission denied on `/var/data/input_temp_audio`.");
+            //}
+            #endregion
+
+
+            // Cấp quyền cho thư mục
+            //Syscall.chmod(inputPath, FilePermissions.ALLPERMS);
+            //Syscall.chmod(outputPath, FilePermissions.ALLPERMS);
+
+            // Tạo đường dẫn file
+            string fileName = Path.GetFileName(request.File.FileName);
+            string inputFilePath = Path.Combine(inputPath, fileName);
+            string outputFilePath = Path.Combine(outputPath, fileName);
+
+            // Folder từ ConvertToHls
+            string inputFileTemp = string.Empty;
+            string inputFolderPath = string.Empty;
+            string outputFolderPath = string.Empty;
 
             try
             {
                 // lưu tạm thời file upload vào thư mục input
-                using (var stream = new FileStream(inputPath, FileMode.Create))
+                using (var stream = new FileStream(inputFilePath, FileMode.Create))
                 {
                     await request.File.CopyToAsync(stream);
                 }
 
-                //cắt vid từ giây 0:00 đến giây thứ 30
-                NAudioService.TrimAudioFile(out int duration, inputPath, outputPath, TimeSpan.FromSeconds(30));
+                // Lấy thông tin file audio
+                IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputFilePath);
 
-                newTrack.Duration = duration;
-
-                //lấy file audio đã cắt từ folder output rồi chuyển nó sang dạng IFormFile, tận dụng hàm UploadTrack của CloudinaryService
-                using var outputStream = new FileStream(outputPath, FileMode.Open);
-                IFormFile outputFile = new FormFile(outputStream, 0, outputStream.Length, "preview_audio", Path.GetFileName(outputPath))
-                {
-                    Headers = new HeaderDictionary(),
-                    ContentType = "audio/wav"
-                };
+                // lấy tổng thời gian nhạc trên file mp3
+                newTrack.Duration = (int)mediaInfo.Duration.TotalMilliseconds;
 
                 // upload lên cloudinary
                 //VideoUploadResult result = _cloudinaryService.UploadTrack(outputFile, AudioTagParent.Tracks, AudioTagChild.Preview);
@@ -493,12 +709,20 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 string trackIdName = $"{newTrack.Id}_{newTrack.Name}";
 
                 // url mp3 public của file audio
-                string publicUrl;
+                string publicUrl = await _amazonWebService.UploadFileAsync(request.File, trackIdName);
 
-                (publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
+                // Convert audio file sang dạng streaming
+                (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
+
+                // Upload streaming files lên AWS S3
+                newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
+                //newTrack.StreamingUrl = "";
+
+                // AWS chuyển file audio sang dạng streaming
+                //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
 
                 //chuyển file audio thành spectrogram và dự đoán audio features
-                Bitmap spectrogram = SpectrogramProcessor.ConvertToSpectrogram(publicUrl);
+                Bitmap spectrogram = await SpectrogramProcessor.ConvertToSpectrogram(inputFileTemp);
 
                 // Lưu bitmap vào MemoryStream thay vì ổ cứng
                 using MemoryStream memoryStream = new();
@@ -563,8 +787,74 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             finally
             {
                 //xóa các file tạm không cần nữa trong wwwroot
-                File.Delete(inputPath);
-                File.Delete(outputPath);
+                //File.Delete(inputFilePath);
+                //File.Delete(outputPath);
+
+                // Xóa folder tạm, đảm bảo file không bị lock trước khi xóa
+                try
+                {
+                    if (Directory.Exists(inputPath))
+                    {
+                        Directory.Delete(inputPath, true); // Tham số 'true' để xóa cả thư mục con và file bên trong
+                        //Console.WriteLine($"Deleted folder: {inputPath}");
+                    }
+
+                    if (Directory.Exists(outputPath))
+                    {
+                        Directory.Delete(outputPath, true);
+                        //Console.WriteLine($"Deleted folder: {outputPath}");
+                    }
+
+                    if (Directory.Exists(inputFileTemp))
+                    {
+                        Directory.Delete(inputFileTemp, true);
+                        //Console.WriteLine($"Deleted folder: {inputFileTemp}");
+                    }
+
+                    if (Directory.Exists(inputFolderPath))
+                    {
+                        Directory.Delete(inputFolderPath, true);
+                        //Console.WriteLine($"Deleted folder: {inputFolderPath}");
+                    }
+
+                    if (Directory.Exists(outputFolderPath))
+                    {
+                        Directory.Delete(outputFolderPath, true);
+                        //Console.WriteLine($"Deleted folder: {outputFolderPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error deleting folders: {ex.Message}");
+                }
+
+                // Xóa file tạm, đảm bảo file không bị lock trước khi xóa
+                //try
+                //{
+                //    if (File.Exists(inputFilePath))
+                //    {
+                //        using (var fs = new FileStream(inputFilePath, FileMode.Open))
+                //        {
+                //            fs.Close();
+                //        }
+                //        File.Delete(inputFilePath);
+                //        Console.WriteLine($"🗑️ Deleted: {inputFilePath}");
+                //    }
+
+                //    if (File.Exists(outputFilePath))
+                //    {
+                //        using (var fs = new FileStream(outputFilePath, FileMode.Open))
+                //        {
+                //            fs.Close();
+                //        }
+                //        File.Delete(outputFilePath);
+                //        Console.WriteLine($"🗑️ Deleted: {outputFilePath}");
+                //    }
+                //}
+                //catch (Exception ex)
+                //{
+                //    Console.WriteLine($"❌ Error deleting files: {ex.Message}");
+                //}
             }
         }
 

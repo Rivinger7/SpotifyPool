@@ -1,11 +1,12 @@
-﻿using Microsoft.ML.OnnxRuntime;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp;
-using BitmapDrawing = System.Drawing.Bitmap;
+using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Microsoft.AspNetCore.Http;
-using NAudio.Wave;
+using Utility.Coding;
+using Xabe.FFmpeg;
+using BitmapDrawing = System.Drawing.Bitmap;
 
 namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 {
@@ -34,10 +35,10 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
         //    return bitmap;
         //}
 
-        public static BitmapDrawing ConvertToSpectrogram(string previewAudio)
+        public static async Task<BitmapDrawing> ConvertToSpectrogram(string previewAudio)
         {
             // Đọc audio từ URL hoặc file
-            (double[] audioData, int sampleRateData) = ReadMono(previewAudio);
+            (double[] audioData, int sampleRateData) = await ReadMono(previewAudio);
 
             // Khởi tạo dữ liệu spectrogram
             int fftSize = 16384;
@@ -87,18 +88,43 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
         //    return (audio.ToArray(), sampleRate);
         //}
 
-        private static (double[] audio, int sampleRate) ReadMono(string filePath, double multiplier = 16_000)
+        private static async Task<(double[] audio, int sampleRate)> ReadMono(string filePath, double multiplier = 16_000)
         {
-            using var afr = new NAudio.Wave.AudioFileReader(filePath);
-            int sampleRate = afr.WaveFormat.SampleRate;
-            int bytesPerSample = afr.WaveFormat.BitsPerSample / 8;
-            int sampleCount = (int)(afr.Length / bytesPerSample);
-            int channelCount = afr.WaveFormat.Channels;
-            var audio = new List<double>(sampleCount);
-            var buffer = new float[sampleRate * channelCount];
-            int samplesRead = 0;
-            while ((samplesRead = afr.Read(buffer, 0, buffer.Length)) > 0)
-                audio.AddRange(buffer.Take(samplesRead).Select(x => x * multiplier));
+            //using var afr = new NAudio.Wave.AudioFileReader(filePath);
+            //int sampleRate = afr.WaveFormat.SampleRate;
+            //int bytesPerSample = afr.WaveFormat.BitsPerSample / 8;
+            //int sampleCount = (int)(afr.Length / bytesPerSample);
+            //int channelCount = afr.WaveFormat.Channels;
+            //var audio = new List<double>(sampleCount);
+            //var buffer = new float[sampleRate * channelCount];
+            //int samplesRead = 0;
+            //while ((samplesRead = afr.Read(buffer, 0, buffer.Length)) > 0)
+            //    audio.AddRange(buffer.Take(samplesRead).Select(x => x * multiplier));
+            //return (audio.ToArray(), sampleRate);
+
+            string outputWavPath = Path.ChangeExtension(filePath, ".wav");
+
+            // Chuyển file sang WAV bằng FFmpeg
+            await FFmpeg.Conversions.New()
+                .AddParameter($"-i \"{filePath}\" -ac 1 -ar 16000 \"{outputWavPath}\"")
+                .Start();
+
+            // Đọc dữ liệu WAV đã convert
+            using var afr = new FileStream(outputWavPath, FileMode.Open, FileAccess.Read);
+            var waveBytes = new byte[afr.Length];
+            await afr.ReadAsync(waveBytes, 0, waveBytes.Length);
+
+            // Giả lập đọc sampleRate, bạn có thể cải thiện bằng cách đọc header WAV
+            int sampleRate = 16000;
+
+            // Chuyển đổi byte thành float samples
+            List<double> audio = [];
+            for (int i = 44; i < waveBytes.Length; i += 2) // WAV header có 44 bytes
+            {
+                short sample = BitConverter.ToInt16(waveBytes, i);
+                audio.Add(sample * multiplier / short.MaxValue);
+            }
+
             return (audio.ToArray(), sampleRate);
         }
 
@@ -158,12 +184,29 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
         public static float[] Predict(Tensor<float> inputTensor)
         {
             // Đường dẫn tới mô hình ONNX
-            string currentDirectory = Directory.GetCurrentDirectory();
-            string onnxModelPath = Path.Combine(currentDirectory, "4. Application", "audio_features_model.onnx");
+            string basePath;
+            string onnxModelPath;
+
+            if(Util.IsWindows())
+            {
+                basePath = Directory.GetCurrentDirectory();
+                onnxModelPath = Path.Combine(basePath, "TrainingModel", "audio_features_model.onnx");
+            }
+            else if (Util.IsLinux())
+            {
+                basePath = "/app";
+                onnxModelPath = Path.Combine(basePath, "audio_features_model.onnx");
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("This platform is not supported");
+            }
 
             // Chạy suy luận
-            using InferenceSession session = new(onnxModelPath);
-            var inputName = session.InputMetadata.Keys.First();
+            SessionOptions options = new();
+            //options.RegisterCustomOpLibraryV2("/usr/local/lib/onnxruntime/lib/libonnxruntime.so", out _);
+            using InferenceSession session = new(onnxModelPath, options);
+            string inputName = session.InputMetadata.Keys.First();
             List<NamedOnnxValue> inputs =
             [
                 NamedOnnxValue.CreateFromTensor(inputName, inputTensor)
