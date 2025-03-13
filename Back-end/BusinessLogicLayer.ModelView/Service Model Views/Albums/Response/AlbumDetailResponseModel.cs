@@ -14,7 +14,8 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Response
         public ArtistResponseModel CreatedBy { get; set; } = null!;
 
         // List Artists tag in this album
-        public List<ArtistResponseModel> Artists { get; set; } = [];
+        public IEnumerable<string> ArtistIds { get; set; } = [];
+        public IEnumerable<ArtistResponseModel> Artists { get; set; } = [];
 
         // Album items
         public IEnumerable<string> TrackIds { get; set; } = [];

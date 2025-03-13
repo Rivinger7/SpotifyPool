@@ -152,6 +152,7 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                         Width = image.Width
                     })
                 },
+                ArtistIds = a.ArtistIds,
                 TrackIds = a.TrackIds
             });
 
@@ -173,7 +174,30 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                 .FirstOrDefaultAsync()
                 ?? throw new KeyNotFoundException($"Album with ID {albumId} does not exist");
             //==============================================
-            //2. XỬ LÝ THÔNG TIN TRACK TRONG ALBUM (lấy tư album.TrackIds trên)
+            //2. XỬ LÝ THÔNG TIN list Artist đc tag vô album
+            //===============================================
+            FilterDefinition<Artist> artistFilter = Builders<Artist>.Filter.In(a => a.Id, album.ArtistIds);
+            // Chỉ lấy những thông tin cần thiết từ ASTrack : Track và Mappping sang TrackResponseModel
+            // Mapping tracks to TrackResponseModel
+            ProjectionDefinition<Artist, ArtistResponseModel> artistProjection = Builders<Artist>.Projection.Expression(a =>
+                new ArtistResponseModel
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Followers = a.Followers,
+                    Images = a.Images.Select(image => new ImageResponseModel()
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    })
+                });
+            IEnumerable<ArtistResponseModel> artists = await _unitOfWork.GetCollection<Artist>()
+                .Find(artistFilter).Project(artistProjection).ToListAsync();
+            // Lấy danh sách vô response
+            album.Artists = artists;
+            //==============================================
+            //3. XỬ LÝ THÔNG TIN TRACK TRONG ALBUM (lấy tư album.TrackIds trên)
             //===============================================
             FilterDefinition<Track> trackFilter = Builders<Track>.Filter.In(track => track.Id, album.TrackIds);
             // Chỉ lấy những thông tin cần thiết từ ASTrack : Track và Mappping sang TrackResponseModel
@@ -207,7 +231,7 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                 });
             // Lấy thông tin Tracks với Artist
             // Lookup
-            IEnumerable<TrackResponseModel> tracks = await _unitOfWork.GetCollection<Track>()
+           IAggregateFluent<TrackResponseModel> query = _unitOfWork.GetCollection<Track>()
                 .Aggregate()
                 .Match(trackFilter) // Match the pre custom filter
                 .Lookup<Track, Artist, ASTrack>(
@@ -215,11 +239,14 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                     track => track.ArtistIds, // The field in Track that are joining on
                     artist => artist.Id, // The field in Artist that are matching against
                     result => result.Artists) // The field in ASTrack to hold the matched artists
-                .Project(projectionDefinition)
-                .Sort(sortDefinitions)
-                .ToListAsync();
-
-            album.Tracks = tracks;
+                .Project(projectionDefinition);
+            // Chỉ gọi .Sort() nếu sortDefinitions không bị null và có giá trị
+            if (sortDefinitions != null)
+            {
+                query = query.Sort(sortDefinitions);
+            }
+            // Lấy danh sách vô response
+            album.Tracks = await query.ToListAsync();
 
             return album; 
         }
@@ -242,6 +269,8 @@ namespace BusinessLogicLayer.Implement.Services.Albums
             {
                 throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
             }
+            Artist artist = await _unitOfWork.GetCollection<Artist>().Find(a => !a.DeletedTime.HasValue && a.UserId == userID).FirstOrDefaultAsync();
+            string createBy = artist.Id;
 
             // Kiểm tra xem album đã tồn tại chưa
             if (await _unitOfWork.GetCollection<Album>()
@@ -290,7 +319,7 @@ namespace BusinessLogicLayer.Implement.Services.Albums
                 Name = request.Name,
                 Description = request.Description,
                 CreatedTime = Util.GetUtcPlus7Time(),
-                CreatedBy = userID,
+                CreatedBy = createBy,
                 ArtistIds = request.ArtistIds,
                 Images = images,
                 ReleaseInfo = new ReleaseMetadata()
@@ -424,6 +453,11 @@ namespace BusinessLogicLayer.Implement.Services.Albums
             {
                 album.TrackIds.Remove(trackId);
             }
+            FilterDefinition<Album> filter = Builders<Album>.Filter.Eq(a => a.Id, albumId);
+            UpdateDefinition<Album> update = Builders<Album>.Update.Set(a => a.TrackIds,
+               album.TrackIds);
+
+            await _unitOfWork.GetCollection<Album>().UpdateOneAsync(filter, update);
         }
         public async Task ReleaseAlbumAsync(string albumId, DateTime releaseTime)
         {

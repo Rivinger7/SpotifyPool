@@ -32,7 +32,7 @@ namespace SpotifyPool._1._Controllers.Album
         }
 
         /// <summary>
-		/// Lấy thông tin chi tiết album (bao gồm list tarck của nó)
+		/// Lấy thông tin chi tiết album (bao gồm list tracks)
 		/// </summary>
 		/// <param name="id">Id của clbum cần xem</param>
 		/// <param name="isSortByTrackName">Sắp xếp list tracks theo tên. true: tăng dần, false: giảm dần.</param>
@@ -57,7 +57,7 @@ namespace SpotifyPool._1._Controllers.Album
         }
 
         /// <summary>
-        /// Cập nhật thông album
+        /// Cập nhật thông tin cơ bản album
         /// </summary>
         /// <param name="id"> Id album cần chỉnh sửa</param>
         /// <param name="albumRequestModel"></param>
@@ -72,7 +72,7 @@ namespace SpotifyPool._1._Controllers.Album
         /// <summary>
         /// Xóa album
         /// </summary>
-        /// <param name="id"> Id album cần chỉnh sửa</param>
+        /// <param name="id"> Id album cần xóa</param>
         /// <returns></returns>
         [Authorize(Roles = nameof(UserRole.Artist)), HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAlbumAsync(string id)
@@ -95,10 +95,10 @@ namespace SpotifyPool._1._Controllers.Album
         }
 
         /// <summary>
-        /// Xóa track vào album
+        /// Xóa track khỏi album
         /// </summary>
         /// <param name="id">Id của album cần thêm track</param>
-        /// <param name="trackIds">list track đc thêm vào album, tự động bỏ qua những track đã tồn tại</param>
+        /// <param name="trackIds">list track bị xóa khỏi album</param>
         /// <returns></returns>
         [Authorize(Roles = nameof(UserRole.Artist)), HttpDelete("{id}/tracks")]
         public async Task<IActionResult> RemoveTracksFromAlbum(string id, [FromForm] IEnumerable<string> trackIds)
@@ -108,7 +108,7 @@ namespace SpotifyPool._1._Controllers.Album
         }
 
         /// <summary>
-        /// Đặt lịch phát hành của album (set time và set Reason thành Oficial)
+        /// Đặt lịch phát hành của album (set time và set Reason thành Official)
         /// </summary>
         /// <param name="id"> Id album cần đặt lịch phát hành </param>
         /// <param name="releaseTime">Phát hành ngay (time now) OR hẹn time > now</param>
