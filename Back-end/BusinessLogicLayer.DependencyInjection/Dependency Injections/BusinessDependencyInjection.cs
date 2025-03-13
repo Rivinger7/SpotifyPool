@@ -10,6 +10,7 @@ using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.EmailSender;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
 using BusinessLogicLayer.Implement.Services.Account;
+using BusinessLogicLayer.Implement.Services.Albums;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.FFMPEG;
@@ -23,6 +24,7 @@ using BusinessLogicLayer.Implement.Services.Users;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
@@ -419,6 +421,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // Files
             //services.AddScoped<IFiles, FilesBLL>();
+
+            // Albums
+            services.AddScoped<IAlbums, AlbumsBLL>();
 
             // FFmpeg
             services.AddScoped<IFFmpegService, FFmpegService>();

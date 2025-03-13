@@ -48,7 +48,7 @@ namespace SpotifyPool._1._Controllers.Account
 		/// <param name="model">Thông tin người dùng cần tạo</param>
 		/// <returns></returns>
 		[HttpPost()]
-		public async Task<IActionResult> CreateAccount([FromQuery] CreateRequestModel model)
+		public async Task<IActionResult> CreateAccount([FromForm] CreateRequestModel model)
 		{
 			await _accountBLL.CreateAsync(model);
 			return Ok(new { Message = "Create Account Successfully" });
@@ -61,7 +61,7 @@ namespace SpotifyPool._1._Controllers.Account
 		/// <param name="accountRequest">Thông tin cần chỉnh sửa</param>
 		/// <returns></returns>
 		[HttpPut("{id}")]
-		public async Task<IActionResult> UpdateAccountById(string id, [FromQuery] UpdateRequestModel accountRequest)
+		public async Task<IActionResult> UpdateAccountById(string id, [FromForm] UpdateRequestModel accountRequest)
 		{
 			await _accountBLL.UpdateByIdAsync(id, accountRequest);
 			return Ok(new { Message = "Update Account Successfully" });
