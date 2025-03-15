@@ -244,6 +244,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     Product = UserProduct.Free,
                     CountryId = "VN",
                     Status = UserStatus.Active,
+                    IsLinkedWithGoogle = true,
                     CreatedTime = Util.GetUtcPlus7Time()
                 };
                 await _unitOfWork.GetCollection<User>().InsertOneAsync(retrieveUser);
