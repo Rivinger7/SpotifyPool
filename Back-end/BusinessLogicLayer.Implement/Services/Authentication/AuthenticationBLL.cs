@@ -303,7 +303,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return authenticationModel;
         }
 
-        private static async Task<GoogleJsonWebSignature.Payload> VerifyGoogleToken(string googleToken)
+        private async Task<GoogleJsonWebSignature.Payload> VerifyGoogleToken(string googleToken)
         {
             GoogleJsonWebSignature.ValidationSettings settings = new()
             {

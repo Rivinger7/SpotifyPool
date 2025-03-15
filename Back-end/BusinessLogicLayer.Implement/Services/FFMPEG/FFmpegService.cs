@@ -70,7 +70,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             }
         }
 
-        private static void DeleteOldFFmpegFiles(string directory)
+        private void DeleteOldFFmpegFiles(string directory)
         {
             string[] oldFiles = Directory.GetFiles(directory, "ffmpeg*"); // Xóa ffmpeg.exe, ffmpeg-linux, ffmpeg-macos...
             string[] oldProbes = Directory.GetFiles(directory, "ffprobe*"); // Xóa ffprobe.exe nếu có

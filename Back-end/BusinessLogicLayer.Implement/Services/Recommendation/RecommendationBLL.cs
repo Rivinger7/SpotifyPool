@@ -9,6 +9,7 @@ using DataAccessLayer.Repository.Entities;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using SetupLayer.Enum.Services.AudioFeature;
+using SetupLayer.Enum.Services.Reccomendation;
 
 namespace BusinessLogicLayer.Implement.Services.Recommendation
 {
@@ -17,8 +18,17 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<IEnumerable<TrackResponseModel>> GetRecommendations(AudioFeaturesRequest audioFeaturesRequest, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 1)
+        public async Task<IEnumerable<TrackResponseModel>> GetRecommendations(AudioFeaturesRequest audioFeaturesRequest, Algorithm algorithm, int k = 1)
         {
+            // Chọn thuật toán dựa trên enum Algorithm
+            Func<AudioFeatures, AudioFeatures, double> similarityScore = algorithm switch
+            {
+                Algorithm.CosineSimilarity => CalculateCosineSimilarity,
+                Algorithm.WeightedEuclideanDistance => CalculateWeightedEulideanDisctance,
+                _ => throw new InvalidDataCustomException("Invalid algorithm")
+            };
+
+
             AudioFeatures matchedAudioFeatures = _mapper.Map<AudioFeatures>(audioFeaturesRequest);
 
             // Lấy danh sách Track có AudioFeatures trùng Mode để giảm số lượng cần so sánh
@@ -73,8 +83,16 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         }
 
 
-        public async Task<IEnumerable<TrackResponseModel>> GetRecommendations(string trackId, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 1)
+        public async Task<IEnumerable<TrackResponseModel>> GetRecommendations(string trackId, Algorithm algorithm, int k = 1)
         {
+            // Chọn thuật toán dựa trên enum Algorithm
+            Func<AudioFeatures, AudioFeatures, double> similarityScore = algorithm switch
+            {
+                Algorithm.CosineSimilarity => CalculateCosineSimilarity,
+                Algorithm.WeightedEuclideanDistance => CalculateWeightedEulideanDisctance,
+                _ => throw new InvalidDataCustomException("Invalid algorithm")
+            };
+
             // Lấy AudioFeatures của track đầu vào
             Track matchedTrack = await _unitOfWork.GetCollection<Track>()
                 .Find(t => t.Id == trackId)
@@ -135,8 +153,16 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         }
 
 
-        public async Task<IEnumerable<TrackResponseModel>> GetManyRecommendations(IEnumerable<string> trackIds, Func<AudioFeatures, AudioFeatures, double> similarityScore, int k = 1)
+        public async Task<IEnumerable<TrackResponseModel>> GetManyRecommendations(IEnumerable<string> trackIds, Algorithm algorithm, int k = 1)
         {
+            // Chọn thuật toán dựa trên enum Algorithm
+            Func<AudioFeatures, AudioFeatures, double> similarityScore = algorithm switch
+            {
+                Algorithm.CosineSimilarity => CalculateCosineSimilarity,
+                Algorithm.WeightedEuclideanDistance => CalculateWeightedEulideanDisctance,
+                _ => throw new InvalidDataCustomException("Invalid algorithm")
+            };
+
             // Lấy danh sách AudioFeatures của các track đầu vào
             IEnumerable<AudioFeatures> matchedAudioFeaturesList = await _unitOfWork.GetCollection<Track>()
                 .Find(track => trackIds.Contains(track.Id))
@@ -206,7 +232,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
 
 
         #region Sử dụng thuật toán Weighted Euclidean Distance
-        public static double CalculateWeightedEulideanDisctance(AudioFeatures song1, AudioFeatures song2)
+        public double CalculateWeightedEulideanDisctance(AudioFeatures song1, AudioFeatures song2)
         {
             // Valence,         [0, 1]
             // Energy,          [0, 1]
@@ -296,7 +322,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         #region Sử dụng thuật toán Cosine Similarity
         // https://en.wikipedia.org/wiki/Cosine_similarity
         // Để tính toán Cosine Similarity, cần chuẩn hóa các đặc trưng về cùng một range
-        public static double CalculateCosineSimilarity(AudioFeatures song1, AudioFeatures song2)
+        public double CalculateCosineSimilarity(AudioFeatures song1, AudioFeatures song2)
         {
             double keyStandardization1 = Standardize(song1.Key, (double)Key.C, (double)Key.B);
             double keyStandardization2 = Standardize(song2.Key, (double)Key.C, (double)Key.B);
@@ -362,7 +388,7 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
         }
         #endregion
 
-        private static double Standardize(double value, double min = 0, double max = 0)
+        private double Standardize(double value, double min = 0, double max = 0)
         {
             bool isValidMinMax = min < max;
             bool isValidMinValue = value >= min;
