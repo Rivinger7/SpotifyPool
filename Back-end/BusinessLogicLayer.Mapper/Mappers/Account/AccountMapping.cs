@@ -24,10 +24,10 @@ namespace BusinessLogicLayer.Mapper.Mappers.Account
 					: null))
 				.ReverseMap();
 
-			CreateMap<UpdateRequestModel, User>()
-				.ForMember(dest => dest.Id, opt => opt.Ignore())
-				.ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
-				.ReverseMap();
+			//CreateMap<UpdateRequestModel, User>()
+			//	.ForMember(dest => dest.Id, opt => opt.Ignore())
+			//	.ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+			//	.ReverseMap();
 		}
 	}
 }

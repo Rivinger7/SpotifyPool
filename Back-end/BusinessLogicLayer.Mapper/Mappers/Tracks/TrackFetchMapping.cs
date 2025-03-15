@@ -1,11 +1,10 @@
 ﻿using AutoMapper;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Repository.Entities;
 
 namespace BusinessLogicLayer.Mapper.Mappers.Tracks
 {
-    public class TrackFetchMapping : Profile
+	public class TrackFetchMapping : Profile
     {
         public TrackFetchMapping()
         {

@@ -1,7 +1,6 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Paging;
-using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +9,7 @@ using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.Album
 {
-    [Route("api/v1/albums")]
+	[Route("api/v1/albums")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     [Authorize(Roles = nameof(UserRole.Artist))]
