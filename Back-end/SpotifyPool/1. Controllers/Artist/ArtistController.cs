@@ -27,5 +27,12 @@ namespace SpotifyPool._1._Controllers.Artist
             var authenticatedResponseModel = await _artistService.SwitchToUserProfile();
             return Ok(new { Message = "Switch Profile Successfully", authenticatedResponseModel });
         }
+
+        [Authorize(Roles = nameof(UserRole.Artist)), HttpGet("me/tracks")]
+        public async Task<IActionResult> GetOwnTracks([FromQuery] int offset = 1, [FromQuery] int limit = 10)
+        {
+            var trackResponseModels = await _artistService.GetOwnTracks(offset, limit);
+            return Ok(new { Message = "Get Own Tracks Successfully", trackResponseModels });
+        }
     }
 }

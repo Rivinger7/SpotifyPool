@@ -11,6 +11,6 @@ namespace Business_Logic_Layer.Services_Interface.Users
         Task<IEnumerable<UserResponseModel>> GetAllUsersAsync(string? fullname, UserGender? gender, string? email, bool isCache = false);
         Task<UserProfileResponseModel> GetProfileAsync();
         Task EditProfileAsync(EditProfileRequestModel requestModel);
-        Task<AuthenticatedResponseModel> SwitchToArtistProfile();
+        Task<AuthenticatedUserInfoResponseModel> SwitchToArtistProfile();
     }
 }
