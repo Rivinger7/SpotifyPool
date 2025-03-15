@@ -2,6 +2,7 @@
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 
 namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
 {
@@ -18,6 +19,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
         Task ResetPasswordAsync(ResetPasswordRequestModel model);
         Task<AuthenticatedResponseModel> SwitchProfile();
         AuthenticatedUserInfoResponseModel GetUserInformation(string token);
-        public AuthenticatedUserInfoResponseModel Relog();
+        AuthenticatedUserInfoResponseModel Relog();
+        Task LogoutAsync();
     }
 }

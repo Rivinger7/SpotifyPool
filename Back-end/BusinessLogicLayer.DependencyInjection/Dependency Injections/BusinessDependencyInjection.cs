@@ -13,6 +13,7 @@ using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Albums;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
+using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
 using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.JWTs;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
@@ -61,6 +62,7 @@ using SetupLayer.Setting.Database;
 using SetupLayer.Setting.Microservices.AWS;
 using SetupLayer.Setting.Microservices.EmailSender;
 using SetupLayer.Setting.Microservices.Spotify;
+using StackExchange.Redis;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -81,6 +83,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddAutoMapper();
             services.AddServices(configuration);
             services.AddEmailSender();
+            services.AddStreamCountServices();
             services.AddJWT();
             services.AddCloudinary(configuration);
             services.AddAmazonWebService(configuration);
@@ -100,6 +103,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             //});
             services.AddAuthentication();
             services.AddAuthorization();
+            services.AddRedis();
         }
 
         #region Custom Problem Details
@@ -465,7 +469,10 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IEmailSenderCustom, EmailSender>();
 
             // Register the Channel<IEmailSenderCustom> service
+        }
 
+        public static void AddStreamCountServices(this IServiceCollection services)
+        {
             // Register the StreamCountBackgroundService as a hosted service
             //services.AddHostedService<StreamCountBackgroundService>();
         }
@@ -845,14 +852,14 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(Algorithm), new EnumMemberSerializer<Algorithm>());
         }
 
-        //private static void AddRedis(this IServiceCollection services)
-        //{
-        //    var option = new ConfigurationOptions
-        //    {
-        //        EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
-        //        Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
-        //    };
-        //    services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
-        //}
+        private static void AddRedis(this IServiceCollection services)
+        {
+            var option = new ConfigurationOptions
+            {
+                EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
+                Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
+            };
+            services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
+        }
     }
 }

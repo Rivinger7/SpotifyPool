@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.TopTrack
 {
@@ -28,7 +29,7 @@ namespace SpotifyPool._1._Controllers.TopTrack
             return Ok(result);
         }
 
-        //[AllowAnonymous, HttpPost()]
+        //[Authorize(Roles = $"{nameof(UserRole.Customer)}"), HttpPost()]
         //public async Task<IActionResult> UpdateStreamCountAsync([FromBody] string trackId)
         //{
         //    await _topTrackService.UpdateStreamCountAsync(trackId);

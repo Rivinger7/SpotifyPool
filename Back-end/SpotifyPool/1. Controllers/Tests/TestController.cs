@@ -156,5 +156,13 @@ namespace SpotifyPool._1._Controllers.Tests
         //    {
         //        return StatusCode(500, $"Lỗi khi tải file: {ex.Message}");
         //    }
+
+        //[Authorize(Roles = nameof(UserRole.Admin)), HttpGet("user-info")]
+        //public async Task<IActionResult> TestingDate()
+        //{
+        //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //    var userName = User.FindFirst(ClaimTypes.Name)?.Value;
+        //    return Ok(new { userId, userName });
+        //}
     }
 }
