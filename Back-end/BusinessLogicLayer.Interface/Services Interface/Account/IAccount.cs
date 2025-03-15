@@ -6,7 +6,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Account
 {
 	public interface IAccount
 	{
-		Task<IEnumerable<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model);
+		Task<PagedResult<AccountResponse>> GetPaggingAsync(PagingRequestModel request, AccountFilterModel model);
 
 		Task<AccountDetailResponse> GetByIdAsync(string id);
 
@@ -15,5 +15,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Account
 		Task UpdateByIdAsync(string id, UpdateRequestModel accountRequest);
 
 		Task DeleteByIdAsync(string id);
+
+		Task UnbanUserByIdAsync(string id);
 	}
 }

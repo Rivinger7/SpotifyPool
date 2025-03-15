@@ -9,11 +9,11 @@ namespace SpotifyPool._1._Controllers.FFmpeg
     {
         private readonly IFFmpegService _fFmpegService = fFmpegService;
 
-        //[HttpPost("convert")]
-        //public async Task<IActionResult> Convert(IFormFile audioFile)
-        //{
-        //    var result = await _fFmpegService.ConvertToHls(audioFile);
-        //    return Ok(result);
-        //}
+        [HttpPost("convert")]
+        public async Task<IActionResult> Convert(IFormFile audioFile, [FromQuery] string trackId)
+        {
+            var result = await _fFmpegService.ConvertToHlsTemp(audioFile, trackId);
+            return Ok(result);
+        }
     }
 }

@@ -278,11 +278,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             [
                 new Claim(JwtRegisteredClaimNames.NameId, retrieveUser.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, payload.Email),
-                new Claim(JwtRegisteredClaimNames.GivenName, payload.GivenName),
-                new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName),
+                new Claim(JwtRegisteredClaimNames.GivenName, payload.GivenName ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Name, payload.Name),
                 new Claim(JwtRegisteredClaimNames.Picture, payload.Picture),
-                new Claim(ClaimTypes.Role, retrieveUser.Roles.ToString())
+                new Claim(ClaimTypes.Role, "Customer")
             ];
 
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng

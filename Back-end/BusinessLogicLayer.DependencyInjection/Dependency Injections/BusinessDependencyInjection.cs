@@ -10,10 +10,10 @@ using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Microservices.EmailSender;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
 using BusinessLogicLayer.Implement.Services.Account;
+using BusinessLogicLayer.Implement.Services.Albums;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
 using BusinessLogicLayer.Implement.Services.FFMPEG;
-using BusinessLogicLayer.Implement.Services.Files;
 using BusinessLogicLayer.Implement.Services.JWTs;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
 using BusinessLogicLayer.Implement.Services.Recommendation;
@@ -24,11 +24,11 @@ using BusinessLogicLayer.Implement.Services.Users;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
+using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.Interface.Services_Interface.Account;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
-using BusinessLogicLayer.Interface.Services_Interface.Files;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.Interface.Services_Interface.Playlists.Custom;
 using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
@@ -60,7 +60,6 @@ using SetupLayer.Enum.Services.User;
 using SetupLayer.Setting.Database;
 using SetupLayer.Setting.Microservices.AWS;
 using SetupLayer.Setting.Microservices.EmailSender;
-using SetupLayer.Setting.Microservices.Jira;
 using SetupLayer.Setting.Microservices.Spotify;
 using System.Reflection;
 using System.Security.Claims;
@@ -103,6 +102,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddAuthorization();
         }
 
+        #region Custom Problem Details
         public static void AddCustomProblemDetails(this IServiceCollection services)
         {
             services.AddProblemDetails(options =>
@@ -385,7 +385,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
                 });
             });
         }
+        #endregion
 
+        #region Add Services
         public static void AddServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Test
@@ -418,11 +420,15 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IRecommendation, RecommendationBLL>();
 
             // Files
-            services.AddScoped<IFiles, FilesBLL>();
+            //services.AddScoped<IFiles, FilesBLL>();
+
+            // Albums
+            services.AddScoped<IAlbums, AlbumsBLL>();
 
             // FFmpeg
             services.AddScoped<IFFmpegService, FFmpegService>();
         }
+        #endregion
 
         //public static void AddRepositories(this IServiceCollection services)
         //{
@@ -456,7 +462,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddSingleton(emailSenderSetting);
 
             // Register the EmailSender service
-            services.AddTransient<IEmailSenderCustom, EmailSender>();
+            services.AddScoped<IEmailSenderCustom, EmailSender>();
 
             // Register the Channel<IEmailSenderCustom> service
 
@@ -702,7 +708,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             };
 
             // Register the Cloudinary with DI
-            services.AddScoped(provider => cloudinary);
+            services.AddSingleton(provider => cloudinary);
 
             // Register Cloudinary in DI container as a scoped service
             services.AddScoped<CloudinaryService>();
