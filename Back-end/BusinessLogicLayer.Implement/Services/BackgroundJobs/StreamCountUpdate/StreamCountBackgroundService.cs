@@ -9,7 +9,7 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate
 {
-    public class StreamCountBackgroundService //(IServiceScopeFactory factory, IConnectionMultiplexer redis) : BackgroundService
+    public class StreamCountBackgroundService(IServiceScopeFactory factory, IConnectionMultiplexer redis) : BackgroundService
     {
         private readonly IServiceScopeFactory _factory = factory;
         private readonly IDatabase _redis = redis.GetDatabase();
