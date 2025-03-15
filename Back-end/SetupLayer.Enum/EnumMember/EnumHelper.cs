@@ -34,7 +34,6 @@ namespace SetupLayer.Enum.EnumMember
 		}
 
 
-
 		[AttributeUsage(AttributeTargets.Field)]
 		public class CustomNameAttribute : Attribute
 		{
