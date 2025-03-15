@@ -407,50 +407,64 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             //Search
             FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
+
+            // Lấy tracks có streamingUrl != null và isPlayable = true
+            trackFilter = Builders<Track>.Filter.And(
+                Builders<Track>.Filter.Ne(t => t.StreamingUrl, null),
+                Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true)
+            );
+
+            // Tìm kiếm theo tên hoặc mô tả
             if (!string.IsNullOrEmpty(searchTermEscaped))
             {
-                trackFilter = Builders<Track>.Filter.Or(
-                    Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
-                    Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
+                trackFilter = Builders<Track>.Filter.And(
+                    trackFilter, // Giữ điều kiện StreamingUrl != null và IsPlayable = true
+                        Builders<Track>.Filter.Or(
+                        Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
+                        Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
+                    )
                 );
             }
             else if (!string.IsNullOrEmpty(filterModel.Mood.ToString()))
             {
-                trackFilter = filterModel.Mood switch
-                {
-                    Mood.Sad => Builders<Track>.Filter.And(
-                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 0),
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 100),
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.4)),
+                trackFilter = Builders<Track>.Filter.And(
+                    trackFilter, // Giữ điều kiện StreamingUrl != null và IsPlayable = true
+                    filterModel.Mood switch
+                    {
+                        Mood.Sad => Builders<Track>.Filter.And(
+                                        Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 0),
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 100),
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.4)),
 
-                    Mood.Neutral => Builders<Track>.Filter.And(
-                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
-                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 100) &
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 120),
-                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.4) &
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.6)),
+                        Mood.Neutral => Builders<Track>.Filter.And(
+                                        Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                        Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 100) &
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 120),
+                                        Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.4) &
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.6)),
 
-                    Mood.Happy => Builders<Track>.Filter.And(
-                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
-                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 120) &
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 160),
-                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.6) &
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.8)),
+                        Mood.Happy => Builders<Track>.Filter.And(
+                                        Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                        Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 120) &
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 160),
+                                        Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.6) &
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 0.8)),
 
-                    Mood.Blisfull => Builders<Track>.Filter.And(
-                                    Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
-                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 140) &
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 180),
-                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.8) &
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 1)),
+                        Mood.Blisfull => Builders<Track>.Filter.And(
+                                        Builders<Track>.Filter.Eq(t => t.AudioFeatures.Mode, 1),
+                                        Builders<Track>.Filter.Gte(t => t.AudioFeatures.Tempo, 140) &
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Tempo, 180),
+                                        Builders<Track>.Filter.Gte(t => t.AudioFeatures.Valence, 0.8) &
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Valence, 1)),
 
-                    Mood.Focus => Builders<Track>.Filter.And(
-                                    Builders<Track>.Filter.Gte(t => t.AudioFeatures.Instrumentalness, 0.7),
-                                    Builders<Track>.Filter.Lte(t => t.AudioFeatures.Energy, 0.5)),
+                        Mood.Focus => Builders<Track>.Filter.And(
+                                        Builders<Track>.Filter.Gte(t => t.AudioFeatures.Instrumentalness, 0.7),
+                                        Builders<Track>.Filter.Lte(t => t.AudioFeatures.Energy, 0.5)),
 
-                    Mood.Random => Builders<Track>.Filter.Empty,
-                    _ => throw new InvalidDataCustomException("The mood is not supported"),
-                };
+                        Mood.Random => Builders<Track>.Filter.Empty,
+                        _ => throw new InvalidDataCustomException("The mood is not supported"),
+                    }
+                );
             }
 
             // Empty Pipeline
