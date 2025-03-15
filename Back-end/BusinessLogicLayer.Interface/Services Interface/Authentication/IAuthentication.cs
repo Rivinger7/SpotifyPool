@@ -20,5 +20,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Authentication
         Task<AuthenticatedResponseModel> SwitchProfile();
         AuthenticatedUserInfoResponseModel GetUserInformation(string token);
         public AuthenticatedUserInfoResponseModel Relog();
+        Task LogoutAsync();
     }
 }

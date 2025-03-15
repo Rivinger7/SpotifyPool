@@ -114,7 +114,7 @@ namespace SpotifyPool.Controllers.Authentication
         /// Lấy thông tin đăng nhập của người dùng từ jwt ở header
         /// </summary>
         /// <returns></returns>
-        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, , {nameof(UserRole.Admin)}"), HttpGet("authenticated-user-info")]
+        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, {nameof(UserRole.Admin)}"), HttpGet("authenticated-user-info")]
         public IActionResult GetAuthenticatedUserInfo()
         {
             var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
@@ -122,11 +122,28 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { authenticatedUserInfoResponseModel });
         }
 
+
+        /// <summary>
+        /// Cấp lại access và refresh token mới khi access token cũ hết hạn
+        /// </summary>
+        /// <returns></returns>
         [AllowAnonymous, HttpPost("refresh-token")]
         public IActionResult Relog()
         {
             var authenticatedUserInfoResponseModel = authenticationBLL.Relog();
             return Ok(new { authenticatedUserInfoResponseModel });
+        }
+
+
+        /// <summary>
+        /// Đăng xuất, cần FE xóa accessToken ra khỏi localStorage
+        /// </summary>
+        /// <returns></returns>
+        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, {nameof(UserRole.Admin)}"), HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await authenticationBLL.LogoutAsync();
+            return Ok(new { message = "Logout Successfully" });
         }
 
     }

@@ -15,15 +15,18 @@ using DataAccessLayer.Repository.Entities;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
+using Org.BouncyCastle.Asn1.Ocsp;
 using SetupLayer.Enum.Services.User;
+using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor) : IAuthentication
+    public class AuthenticationBLL(IConnectionMultiplexer connectionMultiplexer, IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor) : IAuthentication
     {
+        private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
@@ -678,6 +681,22 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", RefreshToken, cookieOptions);
 
             return authenticatedUserInfoResponseModel;
+        }
+
+        public async Task LogoutAsync()
+        {
+            //xóa refresh token trong cookie
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("SpotifyPool_RefreshToken");
+
+            //chỗ này nếu logout đúng lúc hết hạn thì không cần xóa key refresh trong redis
+            string? userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if(userId is not null)
+            {
+                //xóa key refresh trong redis để dọn dẹp tài nguyên ko cần thiết vì token 7 ngày lận
+                await _redis.KeyDeleteAsync(userId);
+            }
+            return;
         }
     }
 }
