@@ -12,10 +12,8 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
-using System.Collections.Generic;
 using System.Security.Claims;
 using Utility.Coding;
 
