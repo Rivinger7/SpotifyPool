@@ -244,6 +244,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     Product = UserProduct.Free,
                     CountryId = "VN",
                     Status = UserStatus.Active,
+                    IsLinkedWithGoogle = true,
                     CreatedTime = Util.GetUtcPlus7Time()
                 };
                 await _unitOfWork.GetCollection<User>().InsertOneAsync(retrieveUser);
@@ -276,12 +277,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
             IEnumerable<Claim> claimsList =
             [
-                new Claim(JwtRegisteredClaimNames.NameId, retrieveUser.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, payload.Email),
                 new Claim(JwtRegisteredClaimNames.GivenName, payload.GivenName ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Name, payload.Name),
-                new Claim(JwtRegisteredClaimNames.Picture, payload.Picture),
+                new Claim("Avatar", payload.Picture),
                 new Claim(ClaimTypes.Role, "Customer")
             ];
 
