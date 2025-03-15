@@ -159,7 +159,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             );
         }
 
-        public async Task<AuthenticatedResponseModel> SwitchToArtistProfile()
+        public async Task<AuthenticatedUserInfoResponseModel> SwitchToArtistProfile()
         {
             // Lấy UserId từ phiên người dùng
             string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -186,14 +186,30 @@ namespace BusinessLogicLayer.Implement.Services.Users
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
             _jwtBLL.GenerateAccessToken(claims, userID, out string accessToken, out string refreshToken);
 
-            // Tạo access token và refresh token
-            AuthenticatedResponseModel authenticationModel = new()
+            // Tạo cookie
+            CookieOptions cookieOptions = new()
             {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
+                Secure = true,
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                MaxAge = TimeSpan.FromDays(7)
             };
 
-            return authenticationModel;
+            // Thêm refresh token vào cookie
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", refreshToken, cookieOptions);
+
+            // Tạo thông tin người dùng đã xác thực
+            AuthenticatedUserInfoResponseModel authenticatedUserInfoResponseModel = new()
+            {
+                AccessToken = accessToken,
+                Id = userID,
+                ArtistId = artist.Id,
+                Name = artist.Name,
+                Role = [UserRole.Artist.ToString()],
+                Avatar = [artist.Images[0].URL]
+            };
+
+            return authenticatedUserInfoResponseModel;
         }
 
         //test method
