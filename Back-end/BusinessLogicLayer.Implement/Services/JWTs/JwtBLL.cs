@@ -3,6 +3,7 @@ using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,9 +12,10 @@ using System.Text;
 
 namespace BusinessLogicLayer.Implement.Services.JWTs
 {
-    public class JwtBLL(IUnitOfWork unitOfWork) : IJwtBLL, IDisposable
+    public class JwtBLL(IUnitOfWork unitOfWork, IConnectionMultiplexer redis) : IJwtBLL, IDisposable
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IDatabase _redis = redis.GetDatabase();
         private bool _disposed = false;
 
         public void Dispose()
@@ -70,15 +72,6 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         /// <returns></returns>
         private static string GenerateRefreshToken(IEnumerable<Claim>? claims, ClaimsPrincipal? principal)
         {
-            ////generate random number for refresh token
-            //var randomNumber = new byte[32];
-
-            ////use RandomNumberGenerator to create random number
-            //using var rng = RandomNumberGenerator.Create();
-            ////get random number and convert to base64 string
-            //rng.GetBytes(randomNumber);
-            //return Convert.ToBase64String(randomNumber);
-
             if (claims is null)
             {
                 claims =
@@ -90,9 +83,9 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
                 ];
             }
 
-            int expireDays = 7; //set default expire time is 60 minutes
+            int expireDays = 7; //set default expire time is 7 days
 
-            string? refreshSecretKey = Environment.GetEnvironmentVariable("JWTSettings_RefreshTokenSecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found");
+            string? refreshSecretKey = Environment.GetEnvironmentVariable("JWTSettings_RefreshTokenSecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret refresh token is not set in environment or not found");
 
             var symmetricKey = Encoding.UTF8.GetBytes(refreshSecretKey);
 
@@ -149,6 +142,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         }
 
 
+
         /// <summary>
         /// Generate token Method in Service for API
         /// </summary>
@@ -163,13 +157,14 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
             refreshToken = GenerateRefreshToken(claims, null);
 
-            DateTime refreshTokenExpiryTime = DateTime.Now.AddDays(7);
-
             //store refresh token to Redis
-            _redis.SortedSetAdd("refresh_tokens", refreshToken, refreshTokenExpiryTime.Ticks);
+            _redis.StringSet(userId, refreshToken, TimeSpan.FromDays(7));
 
             return;
         }
+
+
+
 
         /// <summary>
         /// Revoke token Method in Service for API
@@ -180,6 +175,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         {
             // Retrieve an user from the database
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Id.ToString() == Id).FirstOrDefaultAsync() ?? throw new ArgumentException("Not found any available user");
+        }
 
         //    // Update
         //    UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, null);
@@ -189,52 +185,42 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
         //}
 
 
+
+
         /// <summary>
-        /// Refresh token Method in Service for API
+        /// Generate new access token and refresh token for user
         /// </summary>
-        /// <param name="newAccessToken"></param>
-        /// <param name="newRefreshToken"></param>
-        /// <param name="tokenApiModel"></param>
-        /// <exception cref="ErrorException"></exception>
+        /// <param name="newAccessToken">out: put in argument</param>
+        /// <param name="newRefreshToken">out: put in argument</param>
+        /// <param name="principal">out: put in argument</param>
+        /// <param name="oldRefreshToken">The refresh token which is store before</param>
+        /// <exception cref="DataNotFoundCustomException"></exception>
+        /// <exception cref="BadRequestCustomException"></exception>
         public void RefreshAccessToken(out string newAccessToken, out string newRefreshToken, out ClaimsPrincipal principal, string oldRefreshToken)
         {
-            string refreshSecretKey = Environment.GetEnvironmentVariable("JWTSettings_RefreshTokenSecretKey") ?? throw new DataNotFoundCustomException("JWT's Secret Mode property is not set in environment or not found");
+            string refreshSecretKey = Environment.GetEnvironmentVariable("JWTSettings_RefreshTokenSecretKey") ?? throw new DataNotFoundCustomException("JWT refresh secret key is not set in environment or not found");
 
-            //Check if tokenApiModel is null or not
-            //tokenApiModel = tokenApiModel ?? throw new ArgumentException("Please fill all of information");
-
-            //string? accessToken = tokenApiModel.AccessToken;
-            //string? refreshToken = tokenApiModel.RefreshToken;
 
             principal = GetPrincipalFromExpiredToken(oldRefreshToken);
 
-            string userIDString = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new ArgumentException("User's ID is not found in any session"); //this is mapped to the Name claim by default
+            string userID = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+            RedisValue? tokenInRedis = _redis.StringGet(userID);
 
-            var expirationTime = _redis.SortedSetScore("refresh_tokens", refreshToken);
-
-            //check valid for refresh token and expiry time
-            if (retrieveUser.RefreshToken == null || retrieveUser.RefreshToken != oldRefreshToken || retrieveUser.RefreshTokenExpiryTime <= DateTime.Now)
+            if (tokenInRedis is null || tokenInRedis != oldRefreshToken)
             {
-                if (expirationTime.Value > DateTime.UtcNow.Ticks)
-                {
-                    Console.WriteLine(DateTime.UtcNow.Ticks);
-                    newAccessToken = GenerateAccessToken(principal.Claims);
-                    newRefreshToken = GenerateRefreshToken();
-                    _redis.SortedSetRemove("refresh_tokens", refreshToken);
-                    _redis.SortedSetAdd("refresh_tokens", newRefreshToken, DateTime.Now.AddDays(7).Ticks);
-                    return;
-                }
-
+                throw new BadRequestCustomException("Invalid, refresh token is not available in cache! Please log in again.");
             }
 
-            //generate new access token and refresh token
             newAccessToken = GenerateAccessToken(principal.Claims);
             newRefreshToken = GenerateRefreshToken(null, principal);
 
-            UpdateDefinition<User> refeshTokenUpdate = Builders<User>.Update.Set(user => user.RefreshToken, newRefreshToken);
-            UpdateResult refeshTokenUpdateResult = _unitOfWork.GetCollection<User>().UpdateOne(user => user.Id == userID, refeshTokenUpdate);
+            //set lại refresh token và thời gian hết hạn mới
+            _redis.StringSet(userID, newRefreshToken, TimeSpan.FromDays(7));
+            return;
         }
+
+
 
         public string GenerateJWTTokenForConfirmEmail(string email, string encrpytedToken)
         {
@@ -285,8 +271,8 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
                 ValidateLifetime = false
             };
-            
-            
+
+
 
             //var tokenReader = tokenHadler.ReadJwtToken(token);
             //nếu secret key hợp lệ thì trả về claims chứa thông tin đã encode trong lúc tạo accesstoken
