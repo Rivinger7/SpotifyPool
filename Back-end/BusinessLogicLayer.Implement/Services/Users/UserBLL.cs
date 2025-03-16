@@ -145,10 +145,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
                 ImageUploadResult result = _cloudinaryService.UploadImage(requestModel.Image, ImageTag.Users_Profile);
 
                 // Cập nhật URL cho ảnh
-                for (int i = 0; i < user.Images.Count; i++)
-                {
-                    updates.Add(updateBuilder.Set(user => user.Images[i].URL, result.SecureUrl.AbsoluteUri));
-                }
+                updates.Add(updateBuilder.Set(user => user.Images, user.Images.Select(img => new Image { URL = result.SecureUrl.AbsoluteUri }).ToList()));
             }
 
             UpdateDefinition<User> updateDefinition = updateBuilder.Combine(updates);

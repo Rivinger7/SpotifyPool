@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Interface.Microservices_Interface.EmailService;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView;
+using BusinessLogicLayer.ModelView.Microservice_Model_Views.EmailService;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
@@ -19,16 +21,18 @@ using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Utility.Coding;
+using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IConnectionMultiplexer connectionMultiplexer, IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor) : IAuthentication
+    public class AuthenticationBLL(IConnectionMultiplexer connectionMultiplexer, IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IEmailService emailService) : IAuthentication
     {
         private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly IEmailService _emailService = emailService;
 
         public async Task CreateAccount(RegisterRequestModel registerModel)
         {
@@ -101,13 +105,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(newUser);
 
             // Tạo request model để gửi email
-            EmailSenderRequestModel emailSenderRequestModel = new()
-            {
-                EmailTo = [email],
-                Subject = "Xác nhận Email"
-            };
+            EmailMetadata emailMetadata = new(newUser.Email, "Email confirmation", confirmationLink);
 
             // Gửi email
+            await _emailService.SendAsync(emailMetadata, 1);
 
             // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
 
@@ -558,11 +559,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Subject = "OTP forgot password"
             };
 
+            //tạo model chứa thông tin cần thiết để gửi email
+            EmailMetadata emailMetadata = new(retrieveUser.Email, "OTP forgot password", otpToEmail);
+
             // Gửi email
+            await _emailService.SendAsync(emailMetadata, 2);
         }
 
-
-        public async Task ConfirmOTP(string email, string otpCode)
+        public async Task ValidateOTPPassword(string email, string otpCode)
         {
             OTP otp = await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email && otp.OTPCode == otpCode)
                                          .FirstOrDefaultAsync()
@@ -584,13 +588,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> updatePassword = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(password));
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Email == email, updatePassword);
 
-            EmailSenderRequestModel emailSenderRequestModel = new()
-            {
-                EmailTo = [retrieveUser.Email],
-                Subject = "Reset Password"
-            };
+
+            //tạo model chứa thông tin cần thiết để gửi email
+            EmailMetadata emailMetadata = new(retrieveUser.Email, "Reset Password", password);
 
             // Gửi email
+            await _emailService.SendAsync(emailMetadata, 3);
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
@@ -606,8 +609,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> update = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(model.NewPassword));
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.UserName == userName, update);
         }
-
-
 
         private async Task<string> CreateOTPAsync(string email)
         {

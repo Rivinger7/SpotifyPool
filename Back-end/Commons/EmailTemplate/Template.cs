@@ -2,7 +2,7 @@
 
 namespace Utility.EmailTemplate
 {
-    public class Template
+    public static class Template
     {
         public static string BodyEmailConfirmTemplate(string displayName, string message)
         {
