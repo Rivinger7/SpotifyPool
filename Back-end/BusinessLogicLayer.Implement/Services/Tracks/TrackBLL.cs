@@ -728,8 +728,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
 
                 // Upload streaming files lên AWS S3
-                //newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
-                newTrack.StreamingUrl = "";
+                newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
+                //newTrack.StreamingUrl = "";
 
                 // AWS chuyển file audio sang dạng streaming
                 //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
