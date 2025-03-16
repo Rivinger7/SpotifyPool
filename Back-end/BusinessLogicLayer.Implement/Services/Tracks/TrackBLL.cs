@@ -203,13 +203,13 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                 var (trackImages, artistDictionary, artistImages, artistPopularity, artistFollower) = await _spotifyService.FetchTrackAsync(accessToken, trackId);
 
-                var artistNames = record.ArtistNames.Split(',')
+                List<string> artistNames = record.ArtistNames.Split(',')
                     .Select(a => a.Trim().Trim('"'))
                     .Where(a => !string.IsNullOrEmpty(a))
                     .ToList();
 
-                var artistIds = new List<string>();
-                foreach (var artistName in artistNames)
+                List<string> artistIds = [];
+                foreach (string artistName in artistNames)
                 {
                     string existingArtistId = await _unitOfWork.GetCollection<Artist>()
                         .Find(a => a.Name == artistName)
@@ -649,8 +649,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             }
             else if (Util.IsLinux())
             {
-                //basePath = "/var/data";
-                basePath = "/tmp";
+                basePath = "/var/data";
+                //basePath = "/tmp";
 
                 inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
                 outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
@@ -680,7 +680,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             //}
             //catch (Exception ex)
             //{
-            //    Console.WriteLine($"❌ Write test failed: {ex.Message}");
+            //    Console.WriteLine($"Write test failed: {ex.Message}");
             //    throw new UnauthorizedAccessException("Write permission denied on `/var/data/input_temp_audio`.");
             //}
             #endregion
@@ -703,7 +703,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             try
             {
                 // lưu tạm thời file upload vào thư mục input
-                using (var stream = new FileStream(inputFilePath, FileMode.Create))
+                using (FileStream stream = new(inputFilePath, FileMode.Create))
                 {
                     await request.File.CopyToAsync(stream);
                 }
@@ -840,34 +840,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 {
                     Console.WriteLine($"Error deleting folders: {ex.Message}");
                 }
-
-                // Xóa file tạm, đảm bảo file không bị lock trước khi xóa
-                //try
-                //{
-                //    if (File.Exists(inputFilePath))
-                //    {
-                //        using (var fs = new FileStream(inputFilePath, FileMode.Open))
-                //        {
-                //            fs.Close();
-                //        }
-                //        File.Delete(inputFilePath);
-                //        Console.WriteLine($"🗑️ Deleted: {inputFilePath}");
-                //    }
-
-                //    if (File.Exists(outputFilePath))
-                //    {
-                //        using (var fs = new FileStream(outputFilePath, FileMode.Open))
-                //        {
-                //            fs.Close();
-                //        }
-                //        File.Delete(outputFilePath);
-                //        Console.WriteLine($"🗑️ Deleted: {outputFilePath}");
-                //    }
-                //}
-                //catch (Exception ex)
-                //{
-                //    Console.WriteLine($"❌ Error deleting files: {ex.Message}");
-                //}
             }
         }
 
