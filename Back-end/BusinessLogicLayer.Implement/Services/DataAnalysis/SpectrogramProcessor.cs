@@ -53,7 +53,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             // Thêm dữ liệu audio vào spectrogram
             sg.Add(audioData);
 
-            var bitmap = sg.GetBitmap(intensity: 5, dB: true);
+            BitmapDrawing bitmap = sg.GetBitmap(intensity: 5, dB: true);
 
             return bitmap;
         }
@@ -110,8 +110,8 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
                 .Start();
 
             // Đọc dữ liệu WAV đã convert
-            using var afr = new FileStream(outputWavPath, FileMode.Open, FileAccess.Read);
-            var waveBytes = new byte[afr.Length];
+            using FileStream afr = new(outputWavPath, FileMode.Open, FileAccess.Read);
+            byte[] waveBytes = new byte[afr.Length];
             await afr.ReadAsync(waveBytes, 0, waveBytes.Length);
 
             // Giả lập đọc sampleRate, bạn có thể cải thiện bằng cách đọc header WAV
@@ -218,7 +218,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             // Lưu tất cả các output vào dictionary
             Dictionary<string, float> predictions = [];
 
-            foreach (var result in results)
+            foreach (DisposableNamedOnnxValue result in results)
             {
                 float value = result.AsTensor<float>().ToArray()[0]; // Lấy giá trị đầu tiên của tensor
                 predictions[result.Name] = value;
