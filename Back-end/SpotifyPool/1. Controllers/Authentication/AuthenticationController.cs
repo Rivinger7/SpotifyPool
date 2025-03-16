@@ -92,7 +92,7 @@ namespace SpotifyPool.Controllers.Authentication
         [AllowAnonymous, HttpPost("otp-confirmation")]
         public async Task<IActionResult> ValidateOTP([FromBody] string otpCode, string email) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
         {
-            await authenticationBLL.ConfirmOTP(email, otpCode);
+            await authenticationBLL.ValidateOTPPassword(email, otpCode);
             return Ok(new { message = "Reset password successfully, please check your email to get new password." });
         }
 
