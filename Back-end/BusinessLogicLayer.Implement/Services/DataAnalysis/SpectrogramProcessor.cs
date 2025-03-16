@@ -181,7 +181,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             return new DenseTensor<float>(normalizedPixels, [1, targetHeight, targetWidth, 1]);
         }
 
-        public static float[] Predict(Tensor<float> inputTensor)
+        public static Dictionary<string, float> Predict(Tensor<float> inputTensor)
         {
             // Đường dẫn tới mô hình ONNX
             string basePath;
@@ -214,7 +214,17 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 
             // Lấy kết quả suy luận
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
-            return results.First().AsEnumerable<float>().ToArray();
+
+            // Lưu tất cả các output vào dictionary
+            Dictionary<string, float> predictions = [];
+
+            foreach (var result in results)
+            {
+                float value = result.AsTensor<float>().ToArray()[0]; // Lấy giá trị đầu tiên của tensor
+                predictions[result.Name] = value;
+            }
+
+            return predictions;
         }
     }
 }

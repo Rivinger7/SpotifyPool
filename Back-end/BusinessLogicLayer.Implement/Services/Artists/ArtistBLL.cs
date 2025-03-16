@@ -12,6 +12,7 @@ using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.User;
@@ -191,14 +192,11 @@ namespace BusinessLogicLayer.Implement.Services.Artists
 
             // Lấy danh sách track của artist
 
-            //Search
-            FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
-
             // Lấy tracks có streamingUrl != null và isPlayable = true
-            trackFilter = Builders<Track>.Filter.And(
+            FilterDefinition<Track> trackFilter = Builders<Track>.Filter.And(
                 Builders<Track>.Filter.Ne(t => t.StreamingUrl, null),
                 Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true),
-                Builders<Track>.Filter.AnyIn(t => t.ArtistIds, [artistId])
+                Builders<Track>.Filter.AnyEq(t => t.ArtistIds, artistId)
             );
 
             // Empty Pipeline

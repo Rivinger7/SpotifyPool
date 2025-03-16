@@ -623,7 +623,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             // Lấy artistId
             string? artistId = await _unitOfWork.GetCollection<Artist>().Find(artist => artist.UserId == userID)
-                .Project(artist => artist.UserId)
+                .Project(artist => artist.Id)
                 .FirstOrDefaultAsync();
 
             //map request sang Track
@@ -728,8 +728,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
 
                 // Upload streaming files lên AWS S3
-                newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
-                //newTrack.StreamingUrl = "";
+                //newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
+                newTrack.StreamingUrl = "";
 
                 // AWS chuyển file audio sang dạng streaming
                 //(publicUrl, newTrack.StreamingUrl) = await _amazonWebService.UploadAndConvertToStreamingFile(outputFile, trackIdName);
@@ -764,23 +764,23 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 Tensor<float> tensor = await SpectrogramProcessor.ProcessImageToTensor(spectrogramFile);
 
                 // Dự đoán audio features từ tensor
-                float[] spectroPredict = SpectrogramProcessor.Predict(tensor);
+                Dictionary<string, float> spectroPredict = SpectrogramProcessor.Predict(tensor);
 
                 // Tạo mới audio features từ spectroPredict
                 AudioFeatures audioFeature = new()
                 {
-                    Acousticness = spectroPredict[0],
-                    Danceability = spectroPredict[1],
-                    Energy = spectroPredict[2],
-                    Instrumentalness = spectroPredict[3],
-                    Key = (int)Math.Round(spectroPredict[4], 2),
-                    Liveness = spectroPredict[5],
-                    Loudness = spectroPredict[6],
-                    Mode = (int)Math.Round(spectroPredict[7], 2),
-                    Speechiness = spectroPredict[8],
-                    Tempo = spectroPredict[9],
-                    TimeSignature = (int)Math.Round(spectroPredict[10], 2),
-                    Valence = spectroPredict[11]
+                    Acousticness = spectroPredict["dense_1"],
+                    Danceability = spectroPredict["dense_2"],
+                    Energy = spectroPredict["dense_3"],
+                    Instrumentalness = spectroPredict["dense_4"],
+                    Key = (int)Math.Round(spectroPredict["dense_5"], 2),
+                    Liveness = spectroPredict["dense_6"],
+                    Loudness = spectroPredict["dense_7"],
+                    Mode = (spectroPredict["dense_8"] >= 0.5 ? 1 : 0), // 0 hoặc 1
+                    Speechiness = spectroPredict["dense_9"],
+                    Tempo = spectroPredict["dense_10"],
+                    TimeSignature = (int)Math.Round(spectroPredict["dense_11"], 2),
+                    Valence = spectroPredict["dense_12"]
                 };
 
 
