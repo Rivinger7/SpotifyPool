@@ -7,12 +7,13 @@ using Business_Logic_Layer.Services_Interface.Users;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.AWS;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
-using BusinessLogicLayer.Implement.Microservices.EmailSender;
+using BusinessLogicLayer.Implement.Microservices.EmailService;
 using BusinessLogicLayer.Implement.Microservices.Spotify;
 using BusinessLogicLayer.Implement.Services.Account;
 using BusinessLogicLayer.Implement.Services.Albums;
 using BusinessLogicLayer.Implement.Services.Artists;
 using BusinessLogicLayer.Implement.Services.Authentication;
+using BusinessLogicLayer.Implement.Services.BackgroundJobs.StreamCountUpdate;
 using BusinessLogicLayer.Implement.Services.FFMPEG;
 using BusinessLogicLayer.Implement.Services.JWTs;
 using BusinessLogicLayer.Implement.Services.Playlists.Custom;
@@ -22,7 +23,7 @@ using BusinessLogicLayer.Implement.Services.TopTracks;
 using BusinessLogicLayer.Implement.Services.Tracks;
 using BusinessLogicLayer.Implement.Services.Users;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
-using BusinessLogicLayer.Interface.Microservices_Interface.EmailSender;
+using BusinessLogicLayer.Interface.Microservices_Interface.EmailService;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
 using BusinessLogicLayer.Interface.Services_Interface.Albums;
 using BusinessLogicLayer.Interface.Services_Interface.Account;
@@ -61,6 +62,7 @@ using SetupLayer.Setting.Database;
 using SetupLayer.Setting.Microservices.AWS;
 using SetupLayer.Setting.Microservices.EmailSender;
 using SetupLayer.Setting.Microservices.Spotify;
+using StackExchange.Redis;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -80,7 +82,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddDatabase();
             services.AddAutoMapper();
             services.AddServices(configuration);
-            services.AddEmailSender();
+            //services.AddEmailSender();
+            services.AddFluentEmail();
+            services.AddStreamCountServices();
             services.AddJWT();
             services.AddCloudinary(configuration);
             services.AddAmazonWebService(configuration);
@@ -100,6 +104,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             //});
             services.AddAuthentication();
             services.AddAuthorization();
+            services.AddRedis();
         }
 
         #region Custom Problem Details
@@ -435,39 +440,64 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
         //    services.AddScoped<IUnitOfWork, UnitOfWork>();
         //}
 
-        public static void AddEmailSender(this IServiceCollection services)
+        //public static void AddEmailSender(this IServiceCollection services)
+        //{
+        //    SmtpSettings smtpSettings = new()
+        //    {
+        //        Host = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST")
+        //        ?? throw new DataNotFoundCustomException("EMAIL_SMTP_HOST property is not set in environment or not found"),
+        //        Port = Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT")
+        //        ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PORT property is not set in environment or not found"),
+        //        Username = Environment.GetEnvironmentVariable("EMAIL_SMTP_USERNAME")
+        //        ?? throw new DataNotFoundCustomException("EMAIL_SMTP_USERNAME property is not set in environment or not found"),
+        //        Password = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD")
+        //        ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PASSWORD property is not set in environment or not found")
+        //    };
+
+        //    EmailSenderSetting emailSenderSetting = new()
+        //    {
+        //        Smtp = smtpSettings,
+        //        FromAddress = Environment.GetEnvironmentVariable("EMAIL_FROMADDRESS")
+        //        ?? throw new DataNotFoundCustomException("EMAIL_FROMADDRESS property is not set in environment or not found"),
+        //        FromName = Environment.GetEnvironmentVariable("EMAIL_FROMNAME")
+        //        ?? throw new DataNotFoundCustomException("EMAIL_FROMNAME property is not set in environment or not found")
+        //    };
+
+        //    // Register the EmailSenderSetting with DI
+        //    services.AddSingleton(emailSenderSetting);
+
+        //    // Register the EmailService service
+        //    services.AddScoped<IEmailSenderCustom, EmailService>();
+
+        //    // Register the Channel<IEmailSenderCustom> service
+        //}
+
+
+        public static void AddFluentEmail(this IServiceCollection services)
         {
-            SmtpSettings smtpSettings = new()
-            {
-                Host = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST")
-                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_HOST property is not set in environment or not found"),
-                Port = Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT")
-                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PORT property is not set in environment or not found"),
-                Username = Environment.GetEnvironmentVariable("EMAIL_SMTP_USERNAME")
-                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_USERNAME property is not set in environment or not found"),
-                Password = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD")
-                ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PASSWORD property is not set in environment or not found")
-            };
+            var defaultFromEmail = Environment.GetEnvironmentVariable("EMAIL_FROMADDRESS") ?? throw new DataNotFoundCustomException("EMAIL_FROMADDRESS property is not set in environment or not found");
 
-            EmailSenderSetting emailSenderSetting = new()
-            {
-                Smtp = smtpSettings,
-                FromAddress = Environment.GetEnvironmentVariable("EMAIL_FROMADDRESS")
-                ?? throw new DataNotFoundCustomException("EMAIL_FROMADDRESS property is not set in environment or not found"),
-                FromName = Environment.GetEnvironmentVariable("EMAIL_FROMNAME")
-                ?? throw new DataNotFoundCustomException("EMAIL_FROMNAME property is not set in environment or not found")
-            };
+            string host = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST") ?? throw new DataNotFoundCustomException("EMAIL_SMTP_HOST property is not set in environment or not found");
 
-            // Register the EmailSenderSetting with DI
-            services.AddSingleton(emailSenderSetting);
+            string port = Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT") ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PORT property is not set in environment or not found");
 
-            // Register the EmailSender service
-            services.AddScoped<IEmailSenderCustom, EmailSender>();
+            string userName = Environment.GetEnvironmentVariable("EMAIL_SMTP_USERNAME") ?? throw new DataNotFoundCustomException("EMAIL_SMTP_USERNAME property is not set in environment or not found");
 
-            // Register the Channel<IEmailSenderCustom> service
+            string password = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") ?? throw new DataNotFoundCustomException("EMAIL_SMTP_PASSWORD property is not set in environment or not found");
 
+            services.AddFluentEmail(defaultFromEmail)
+                    .AddSmtpSender(host, int.Parse(port), userName, password)
+                    .AddRazorRenderer();
+                    
+
+            services.AddScoped<IEmailService, EmailService>();
+        }
+
+
+        public static void AddStreamCountServices(this IServiceCollection services)
+        {
             // Register the StreamCountBackgroundService as a hosted service
-            //services.AddHostedService<StreamCountBackgroundService>();
+            services.AddHostedService<StreamCountBackgroundService>();
         }
 
         public static void AddJWT(this IServiceCollection services)
@@ -845,14 +875,14 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(Algorithm), new EnumMemberSerializer<Algorithm>());
         }
 
-        //private static void AddRedis(this IServiceCollection services)
-        //{
-        //    var option = new ConfigurationOptions
-        //    {
-        //        EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
-        //        Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
-        //    };
-        //    services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
-        //}
+        private static void AddRedis(this IServiceCollection services)
+        {
+            var option = new ConfigurationOptions
+            {
+                EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
+                Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
+            };
+            services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
+        }
     }
 }

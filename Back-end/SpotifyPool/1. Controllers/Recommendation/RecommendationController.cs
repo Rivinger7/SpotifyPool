@@ -1,5 +1,4 @@
-﻿using BusinessLogicLayer.Implement.Services.Recommendation;
-using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
+﻿using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
 using BusinessLogicLayer.ModelView.Service_Model_Views.AudioFeatures.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -20,11 +19,12 @@ namespace SpotifyPool._1._Controllers.Recommendation
         /// Botpress sẽ gửi request lên đây để lấy bài hát được recommend
         /// </summary>
         /// <param name="audioFeaturesRequest"></param>
+        /// <param name="algorithm"></param>
         /// <returns></returns>
         [AllowAnonymous, HttpPost("tracks")]
-        public async Task<IActionResult> GetRecommendedSongByBotpressSearching([FromBody] AudioFeaturesRequest audioFeaturesRequest)
+        public async Task<IActionResult> GetRecommendedSongByBotpressSearching([FromBody] AudioFeaturesRequest audioFeaturesRequest, [FromQuery] Algorithm algorithm = Algorithm.CosineSimilarity)
         {
-            var result = await _recommendationService.GetRecommendations(audioFeaturesRequest, RecommendationBLL.CalculateWeightedEulideanDisctance);
+            var result = await _recommendationService.GetRecommendations(audioFeaturesRequest, algorithm);
             return Ok(result);
         }
 
@@ -37,12 +37,7 @@ namespace SpotifyPool._1._Controllers.Recommendation
         [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("tracks/{trackId}")]
         public async Task<IActionResult> GetRecommendedSongByTrackId([FromRoute] string trackId, [FromQuery] Algorithm algorithm = Algorithm.CosineSimilarity)
         {
-            return algorithm switch
-            {
-                Algorithm.CosineSimilarity => Ok(await _recommendationService.GetRecommendations(trackId, RecommendationBLL.CalculateCosineSimilarity)),
-                Algorithm.WeightedEuclideanDistance => Ok(await _recommendationService.GetRecommendations(trackId, RecommendationBLL.CalculateWeightedEulideanDisctance)),
-                _ => BadRequest("Invalid algorithm"),
-            };
+            return Ok(await _recommendationService.GetRecommendations(trackId, algorithm));
         }
 
         /// <summary>
@@ -52,14 +47,9 @@ namespace SpotifyPool._1._Controllers.Recommendation
         /// <param name="algorithm"></param>
         /// <returns></returns>
         [Authorize(Roles = nameof(UserRole.Customer)), HttpGet("tracks")]
-        public async Task<IActionResult> GetRecommendedSongsByCosineSimilarity([FromQuery] IEnumerable<string> trackIds, [FromQuery] Algorithm algorithm = Algorithm.CosineSimilarity)
+        public async Task<IActionResult> GetRecommendedSongs([FromQuery] IEnumerable<string> trackIds, [FromQuery] Algorithm algorithm = Algorithm.CosineSimilarity)
         {
-            return algorithm switch
-            {
-                Algorithm.CosineSimilarity => Ok(await _recommendationService.GetManyRecommendations(trackIds, RecommendationBLL.CalculateCosineSimilarity)),
-                Algorithm.WeightedEuclideanDistance => Ok(await _recommendationService.GetManyRecommendations(trackIds, RecommendationBLL.CalculateWeightedEulideanDisctance)),
-                _ => BadRequest("Invalid algorithm"),
-            };
+            return Ok(await _recommendationService.GetManyRecommendations(trackIds, algorithm));
         }
     }
 }

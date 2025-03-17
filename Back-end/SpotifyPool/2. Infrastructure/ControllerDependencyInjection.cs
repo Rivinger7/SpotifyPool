@@ -5,28 +5,12 @@ namespace SpotifyPool.Infrastructure
 {
     public static class ControllerDependencyInjection
     {
-        // Static logger instance
-        private static readonly ILogger _logger;
-
-        static ControllerDependencyInjection()
-        {
-            // Initialize the logger
-            var loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder.AddConsole(); // You can add other logging providers like file, etc.
-            });
-            _logger = loggerFactory.CreateLogger("DependencyInjectionLogger");
-        }
-
         public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             // API Config
             services.ConfigRoute();
             services.AddSwaggerGen();
             services.AddCors();
-
-            // Log an informational message
-            _logger.LogInformation("Controllers have been configured.");
         }
 
         public static void ConfigRoute(this IServiceCollection services)

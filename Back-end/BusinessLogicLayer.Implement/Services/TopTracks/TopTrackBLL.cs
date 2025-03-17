@@ -1,4 +1,5 @@
-﻿using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
+﻿using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Interface.Services_Interface.TopTracks;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack.Request;
@@ -15,11 +16,11 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.TopTracks
 {
-    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork) : ITopTrack
+    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, IConnectionMultiplexer connectionMultiplexer) : ITopTrack
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        //private readonly IDatabase _redis = redis.GetDatabase();
+        private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
 
         public async Task UpsertTopTrackAsync(TopTrackRequestModel topTrackRequestModel)
         {
@@ -171,14 +172,27 @@ namespace BusinessLogicLayer.Implement.Services.TopTracks
 
         //public async Task UpdateStreamCountAsync(string trackId)
         //{
-        //    string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        //    if (string.IsNullOrEmpty(userID))
+        //    string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        //                     ?? throw new UnAuthorizedCustomException("Your session is limit, you must login again to edit profile!");
+
+        //    //đặt tên key
+        //    string key = $"stream_count:{userID}";
+
+        //    //nếu key đã tồn tại 1 field y chang thì chỉ việc tăng giá trị của field đó lên 1; còn chưa có field đó thì vừa tạo field vừa set thời gian TTL cho field đó
+        //    if (await _redis.HashExistsAsync(key, trackId))
         //    {
-        //        throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");      
+        //        await _redis.HashIncrementAsync(key, trackId, 1);
+        //    }
+        //    else
+        //    {
+        //        await _redis.HashIncrementAsync(key, trackId, 1);
+        //        RedisValue[] fieldValues = [trackId];
+        //        await _redis.HashFieldExpireAsync(key, fieldValues, TimeSpan.FromMinutes(6));
         //    }
 
-        //    string key = $"stream_count:{userID}";
-        //    await _redis.HashIncrementAsync(key, trackId, 1);
+        //    //set TTL cho key
+        //    await _redis.KeyExpireAsync(key, TimeSpan.FromMinutes(30));
+
         //    return;
         //}
     }

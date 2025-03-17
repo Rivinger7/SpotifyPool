@@ -435,7 +435,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         }
         #endregion
         // Helper method for getting total tracks in a playlist
-        private static async Task<int> GetTotalTracksInPlaylist(string accessToken, string playlistId)
+        private async Task<int> GetTotalTracksInPlaylist(string accessToken, string playlistId)
         {
             string TRACKS_TOTAL = "tracks.total";
 
@@ -454,7 +454,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         }
 
         // Helper method for batching artists' IDs
-        private static IEnumerable<(IEnumerable<T1>, IEnumerable<T2>)> Batch<T1, T2>(List<T1> spotifyArtistIds, List<T2> artistIdsObjectId, int batchSize)
+        private IEnumerable<(IEnumerable<T1>, IEnumerable<T2>)> Batch<T1, T2>(List<T1> spotifyArtistIds, List<T2> artistIdsObjectId, int batchSize)
         {
             // Chỉ batch theo `spotifyArtistIdsStorage` (Spotify IDs)
             for (int i = 0; i < spotifyArtistIds.Count; i += batchSize)
@@ -807,7 +807,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Spotify
         //    }
         //}
 
-        private static async Task<string> GetResponseAsync(string uri, string accessToken, int maxRetries = 10)
+        private async Task<string> GetResponseAsync(string uri, string accessToken, int maxRetries = 10)
         {
             // Gửi yêu cầu HTTP Header với Bearer tới Spotify App của người dùng
             // Để được ủy quyền thông qua máy chủ khách

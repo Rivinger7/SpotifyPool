@@ -1,48 +1,40 @@
-﻿using DataAccessLayer.Interface.MongoDB.UOW;
-using DataAccessLayer.Repository.Entities;
+﻿using BusinessLogicLayer.Implement.CustomExceptions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
-using MongoDB.Driver;
 using StackExchange.Redis;
 using System.Security.Claims;
 
 namespace BusinessLogicLayer.Implement.Services.SignalR.StreamCounting
 {
-    public class StreamCountingHub(IUnitOfWork unitOfWork) : Hub
+    public class StreamCountingHub(IHttpContextAccessor httpContextAccessor, IConnectionMultiplexer connectionMultiplexer) : Hub
     {
-        private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        //private readonly IDatabase _redis = redis.GetDatabase();
+        private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public async Task UpdateStreamCountAsync(string trackId)
         {
-            // Lấy thông tin user từ Context
-            string? userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                 ?? throw new UnAuthorizedCustomException("Your session is limit, you must login again to edit profile!");
 
-            // Nếu không có thông tin user thì không thực hiện gì cả
-            if (userId is null)
+            //đặt tên key
+            string key = $"stream_count:{userID}";
+
+            //nếu key đã tồn tại 1 field y chang thì chỉ việc tăng giá trị của field đó lên 1; còn chưa có field đó thì vừa tạo field vừa set thời gian TTL cho field đó
+            if (await _redis.HashExistsAsync(key, trackId))
             {
-                // Nên thông báo lỗi ở đây
-                await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to create playlist!");
-                return;
+                await _redis.HashIncrementAsync(key, trackId, 1);
+            }
+            else
+            {
+                await _redis.HashIncrementAsync(key, trackId, 1);
+                RedisValue[] fieldValues = [trackId];
+                await _redis.HashFieldExpireAsync(key, fieldValues, TimeSpan.FromMinutes(6));
             }
 
-            // Cập nhật Stream Count của track
-            UpdateDefinition<Track> streamCountTrackUpdateDefinition = Builders<Track>.Update.Inc(track => track.StreamCount, 1);
-            UpdateResult trackUpdateResult = await _unitOfWork.GetCollection<Track>().UpdateOneAsync(track => track.Id == trackId, streamCountTrackUpdateDefinition);
+            //set TTL cho key
+            await _redis.KeyExpireAsync(key, TimeSpan.FromMinutes(30));
+
+            return;
         }
-
-        //public async Task UpdateStreamCountAsync(string trackId)
-        //{
-        //    string userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        //    if (string.IsNullOrEmpty(userId))
-        //    {
-        //        await Clients.Caller.SendAsync("ReceiveException", "Your session is limit, you must login again to create playlist!");
-        //        return;
-        //    }
-
-        //    string key = $"stream_count:{userId}";
-        //    await _redis.HashIncrementAsync(key, trackId, 1);
-        //    return;
-        //}
-
     }
 }

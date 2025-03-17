@@ -26,7 +26,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             }
 
             #region Kiểm tra bằng đuôi file (.ext)
-            //// Lấy đuôi file (File Extension)
+            //// Lấy đuôi file (AudioFile Extension)
             //string? fileExtension = Path.GetExtension(imageFile.FileName).ToLower().TrimStart('.');
 
             //// Kiểm tra nếu phần mở rộng có tồn tại trong enum ImageExtension
@@ -103,7 +103,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             }
 
             #region Kiểm tra bằng đuôi file (.ext)
-            //// Lấy đuôi file (File Extension)
+            //// Lấy đuôi file (AudioFile Extension)
             //string? fileExtension = Path.GetExtension(trackFile.FileName).ToLower().TrimStart('.');
 
             //// Kiểm tra nếu phần mở rộng có tồn tại trong enum ImageExtension
@@ -281,7 +281,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
         //{
         //    var uploadParams = new VideoUploadParams
         //    {
-        //        File = new FileDescription(filePath),
+        //        AudioFile = new FileDescription(filePath),
         //        ResourceType = ResourceType.Video
         //    };
 

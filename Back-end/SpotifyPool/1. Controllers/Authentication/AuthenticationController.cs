@@ -6,15 +6,18 @@ using BusinessLogicLayer.ModelView;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using SetupLayer.Enum.Services.User;
+using BusinessLogicLayer.Interface.Services_Interface.JWTs;
+using BusinessLogicLayer.ModelView.Service_Model_Views.JWTs.Request;
 
 namespace SpotifyPool.Controllers.Authentication
 {
     [Route("api/v1/authentication")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    public class AuthenticationController(IAuthentication authenticationBLL) : ControllerBase
+    public class AuthenticationController(IAuthentication authenticationBLL, IJwtBLL jwtBLL) : ControllerBase
     {
         private readonly IAuthentication authenticationBLL = authenticationBLL;
+        private readonly IJwtBLL _jwtBLL = jwtBLL;
 
         [AllowAnonymous, HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerModel)
@@ -33,8 +36,8 @@ namespace SpotifyPool.Controllers.Authentication
         [AllowAnonymous, HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestModel loginModel)
         {
-            var authenticatedResponseModel = await authenticationBLL.Authenticate(loginModel);
-            return Ok(new { message = "Login Successfully", authenticatedResponseModel });
+            var accessToken = await authenticationBLL.Authenticate(loginModel);
+            return Ok(new { message = "Login Successfully", accessToken });
         }
 
         //[Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}"), HttpPost("switch-profile")]
@@ -89,7 +92,7 @@ namespace SpotifyPool.Controllers.Authentication
         [AllowAnonymous, HttpPost("otp-confirmation")]
         public async Task<IActionResult> ValidateOTP([FromBody] string otpCode, string email) //chỗ này đang ?, ko biết Hòa lấy OTP với cái gì nên đang để tạm
         {
-            await authenticationBLL.ConfirmOTP(email, otpCode);
+            await authenticationBLL.ValidateOTPPassword(email, otpCode);
             return Ok(new { message = "Reset password successfully, please check your email to get new password." });
         }
 
@@ -103,7 +106,7 @@ namespace SpotifyPool.Controllers.Authentication
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestModel model)
         {
             await authenticationBLL.ResetPasswordAsync(model);
-            return Ok(new{message = "Reset password successfully"});
+            return Ok(new { message = "Reset password successfully" });
         }
 
 
@@ -111,7 +114,7 @@ namespace SpotifyPool.Controllers.Authentication
         /// Lấy thông tin đăng nhập của người dùng từ jwt ở header
         /// </summary>
         /// <returns></returns>
-        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, , {nameof(UserRole.Admin)}"), HttpGet("authenticated-user-info")]
+        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, {nameof(UserRole.Admin)}"), HttpGet("authenticated-user-info")]
         public IActionResult GetAuthenticatedUserInfo()
         {
             var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
@@ -119,11 +122,28 @@ namespace SpotifyPool.Controllers.Authentication
             return Ok(new { authenticatedUserInfoResponseModel });
         }
 
+
+        /// <summary>
+        /// Cấp lại access và refresh token mới khi access token cũ hết hạn
+        /// </summary>
+        /// <returns></returns>
         [AllowAnonymous, HttpPost("refresh-token")]
         public IActionResult Relog()
         {
             var authenticatedUserInfoResponseModel = authenticationBLL.Relog();
             return Ok(new { authenticatedUserInfoResponseModel });
+        }
+
+
+        /// <summary>
+        /// Đăng xuất, cần FE xóa accessToken ra khỏi localStorage
+        /// </summary>
+        /// <returns></returns>
+        [Authorize(Roles = $"{nameof(UserRole.Customer)}, {nameof(UserRole.Artist)}, {nameof(UserRole.Admin)}"), HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await authenticationBLL.LogoutAsync();
+            return Ok(new { message = "Logout Successfully" });
         }
 
     }

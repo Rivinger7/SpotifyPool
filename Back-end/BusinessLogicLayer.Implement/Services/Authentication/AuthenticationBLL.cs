@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Interface.Microservices_Interface.EmailService;
 using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView;
+using BusinessLogicLayer.ModelView.Microservice_Model_Views.EmailService;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
@@ -15,18 +17,22 @@ using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
+using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Utility.Coding;
+using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor) : IAuthentication
+    public class AuthenticationBLL(IConnectionMultiplexer connectionMultiplexer, IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IEmailService emailService) : IAuthentication
     {
+        private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly IEmailService _emailService = emailService;
 
         public async Task CreateAccount(RegisterRequestModel registerModel)
         {
@@ -99,13 +105,10 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UserResponseModel userResponseModel = _mapper.Map<UserResponseModel>(newUser);
 
             // Tạo request model để gửi email
-            EmailSenderRequestModel emailSenderRequestModel = new()
-            {
-                EmailTo = [email],
-                Subject = "Xác nhận Email"
-            };
+            EmailMetadata emailMetadata = new(newUser.Email, "Email confirmation", confirmationLink);
 
             // Gửi email
+            await _emailService.SendAsync(emailMetadata, 1);
 
             // Confirmation Link nên redirect tới đường dẫn trang web bên FE sau đó khi tới đó thì FE sẽ gọi API bên BE để xác nhận đăng ký
 
@@ -244,6 +247,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                     Product = UserProduct.Free,
                     CountryId = "VN",
                     Status = UserStatus.Active,
+                    IsLinkedWithGoogle = true,
                     CreatedTime = Util.GetUtcPlus7Time()
                 };
                 await _unitOfWork.GetCollection<User>().InsertOneAsync(retrieveUser);
@@ -276,12 +280,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             // Có thể không cần dùng claimList vì trên đó đã có list về claim và tùy theo hệ thống nên tạo mới list claim
             IEnumerable<Claim> claimsList =
             [
-                new Claim(JwtRegisteredClaimNames.NameId, retrieveUser.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, retrieveUser.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, payload.Email),
                 new Claim(JwtRegisteredClaimNames.GivenName, payload.GivenName ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.FamilyName, payload.FamilyName ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Name, payload.Name),
-                new Claim(JwtRegisteredClaimNames.Picture, payload.Picture),
+                new Claim("Avatar", payload.Picture),
                 new Claim(ClaimTypes.Role, "Customer")
             ];
 
@@ -302,7 +306,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             return authenticationModel;
         }
 
-        private static async Task<GoogleJsonWebSignature.Payload> VerifyGoogleToken(string googleToken)
+        private async Task<GoogleJsonWebSignature.Payload> VerifyGoogleToken(string googleToken)
         {
             GoogleJsonWebSignature.ValidationSettings settings = new()
             {
@@ -555,11 +559,14 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
                 Subject = "OTP forgot password"
             };
 
+            //tạo model chứa thông tin cần thiết để gửi email
+            EmailMetadata emailMetadata = new(retrieveUser.Email, "OTP forgot password", otpToEmail);
+
             // Gửi email
+            await _emailService.SendAsync(emailMetadata, 2);
         }
 
-
-        public async Task ConfirmOTP(string email, string otpCode)
+        public async Task ValidateOTPPassword(string email, string otpCode)
         {
             OTP otp = await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email && otp.OTPCode == otpCode)
                                          .FirstOrDefaultAsync()
@@ -581,13 +588,12 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> updatePassword = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(password));
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.Email == email, updatePassword);
 
-            EmailSenderRequestModel emailSenderRequestModel = new()
-            {
-                EmailTo = [retrieveUser.Email],
-                Subject = "Reset Password"
-            };
+
+            //tạo model chứa thông tin cần thiết để gửi email
+            EmailMetadata emailMetadata = new(retrieveUser.Email, "Reset Password", password);
 
             // Gửi email
+            await _emailService.SendAsync(emailMetadata, 3);
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequestModel model)
@@ -603,8 +609,6 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             UpdateDefinition<User> update = Builders<User>.Update.Set(user => user.Password, BCrypt.Net.BCrypt.HashPassword(model.NewPassword));
             await _unitOfWork.GetCollection<User>().UpdateOneAsync(user => user.UserName == userName, update);
         }
-
-
 
         private async Task<string> CreateOTPAsync(string email)
         {
@@ -635,6 +639,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         {
             List<Claim> info = _jwtBLL.ValidateToken(token).Claims.ToList();
 
+            // lấy thông tin người dùng từ token
             var userinfo = new AuthenticatedUserInfoResponseModel()
             {
                 Id = info.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
@@ -676,6 +681,22 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", RefreshToken, cookieOptions);
 
             return authenticatedUserInfoResponseModel;
+        }
+
+        public async Task LogoutAsync()
+        {
+            //xóa refresh token trong cookie
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("SpotifyPool_RefreshToken");
+
+            //chỗ này nếu logout đúng lúc hết hạn thì không cần xóa key refresh trong redis
+            string? userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if(userId is not null)
+            {
+                //xóa key refresh trong redis để dọn dẹp tài nguyên ko cần thiết vì token 7 ngày lận
+                await _redis.KeyDeleteAsync(userId);
+            }
+            return;
         }
     }
 }

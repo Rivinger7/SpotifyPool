@@ -167,19 +167,19 @@ namespace BusinessLogicLayer.Implement.Services.Account
                 .FirstOrDefaultAsync()
                 ?? throw new KeyNotFoundException($"User with ID {id} does not exist");
 
-            //Ánh xạ UpdateRequestModel -> existingUser
-            _mapper.Map(userRequest, existingUser);
+            //Update từng fields riêng biệt
+			UpdateDefinition<User> update = Builders<User>.Update
+                .Set(u => u.DisplayName, userRequest.DisplayName)
+                .Set(u => u.Gender, userRequest.Gender)
+                .Set(u => u.Birthdate, userRequest.Birthdate)
+	            .Set(u => u.PhoneNumber, userRequest.PhoneNumber)
+	            .Set(u => u.Followers, userRequest.Followers)
+	            .Set(u => u.Product, userRequest.Product)
+	            .Set(u => u.Roles, userRequest.Roles)
+	            .Set(u => u.Images, userRequest.Images)
+	            .Set(u => u.LastUpdatedTime, Util.GetUtcPlus7Time());
 
-            //Cập nhật
-            existingUser.LastUpdatedTime = Util.GetUtcPlus7Time();
-
-            //Chuyển thành BsonDocument để cập nhật, loại bỏ _id
-            BsonDocument bsonDoc = existingUser.ToBsonDocument();
-            bsonDoc.Remove("_id");
-
-            //Tạo UpdateDefinition từ BsonDocument
-            BsonDocument update = new BsonDocument("$set", bsonDoc);
-
+            //Update vào MongoDB
             UpdateResult result = await _unitOfWork.GetCollection<User>()
                 .UpdateOneAsync(filter, update);
 

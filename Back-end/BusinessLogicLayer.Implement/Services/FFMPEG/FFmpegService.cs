@@ -70,7 +70,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             }
         }
 
-        private static void DeleteOldFFmpegFiles(string directory)
+        private void DeleteOldFFmpegFiles(string directory)
         {
             string[] oldFiles = Directory.GetFiles(directory, "ffmpeg*"); // Xóa ffmpeg.exe, ffmpeg-linux, ffmpeg-macos...
             string[] oldProbes = Directory.GetFiles(directory, "ffprobe*"); // Xóa ffprobe.exe nếu có
@@ -98,7 +98,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             try
             {
                 if (audioFile == null || audioFile.Length == 0)
-                    throw new ArgumentException("File âm thanh không hợp lệ.");
+                    throw new ArgumentException("AudioFile âm thanh không hợp lệ.");
 
                 // Tạo thư mục chứa file input và output
                 string basePath = string.Empty;
@@ -147,7 +147,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 // Kiểm tra file đầu vào có hợp lệ không
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputFileTemp);
                 if (!mediaInfo.AudioStreams.Any())
-                    throw new InvalidOperationException("File không chứa stream âm thanh hợp lệ.");
+                    throw new InvalidOperationException("AudioFile không chứa stream âm thanh hợp lệ.");
 
                 // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
                 IConversion conversion = FFmpeg.Conversions.New()
@@ -172,8 +172,8 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             finally
             {
                 // Xóa file input sau khi xử lý xong để tránh rác
-                //if (!string.IsNullOrEmpty(inputFileTemp) && File.Exists(inputFileTemp))
-                //    File.Delete(inputFileTemp);
+                //if (!string.IsNullOrEmpty(inputFileTemp) && AudioFile.Exists(inputFileTemp))
+                //    AudioFile.Delete(inputFileTemp);
 
                 //if (Directory.Exists(inputFolder))
                 //{
@@ -199,7 +199,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             try
             {
                 if (audioFile == null || audioFile.Length == 0)
-                    throw new ArgumentException("File âm thanh không hợp lệ.");
+                    throw new ArgumentException("AudioFile âm thanh không hợp lệ.");
 
                 // Tạo thư mục chứa file input và output
                 string basePath = string.Empty;
@@ -248,7 +248,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 // Kiểm tra file đầu vào có hợp lệ không
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputFileTemp);
                 if (!mediaInfo.AudioStreams.Any())
-                    throw new InvalidOperationException("File không chứa stream âm thanh hợp lệ.");
+                    throw new InvalidOperationException("AudioFile không chứa stream âm thanh hợp lệ.");
 
                 // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
                 IConversion conversion = FFmpeg.Conversions.New()
@@ -273,8 +273,8 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             finally
             {
                 // Xóa file input sau khi xử lý xong để tránh rác
-                //if (!string.IsNullOrEmpty(inputFileTemp) && File.Exists(inputFileTemp))
-                //    File.Delete(inputFileTemp);
+                //if (!string.IsNullOrEmpty(inputFileTemp) && AudioFile.Exists(inputFileTemp))
+                //    AudioFile.Delete(inputFileTemp);
 
                 //if (Directory.Exists(inputFolder))
                 //{

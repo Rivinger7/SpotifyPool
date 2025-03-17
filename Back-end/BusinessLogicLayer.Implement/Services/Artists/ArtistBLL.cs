@@ -3,11 +3,16 @@ using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
+using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.User;
@@ -93,7 +98,7 @@ namespace BusinessLogicLayer.Implement.Services.Artists
             await _unitOfWork.GetCollection<Artist>().InsertOneAsync(artist);
         }
 
-        public async Task<AuthenticatedResponseModel> SwitchToUserProfile()
+        public async Task<AuthenticatedUserInfoResponseModel> SwitchToUserProfile()
         {
             // Lấy UserId từ phiên người dùng
             string? userID = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -119,14 +124,99 @@ namespace BusinessLogicLayer.Implement.Services.Artists
             // Gọi phương thức để tạo access token và refresh token từ danh sách claim và thông tin người dùng
             _jwtBLL.GenerateAccessToken(claims, userID, out string accessToken, out string refreshToken);
 
-            // Tạo access token và refresh token
-            AuthenticatedResponseModel authenticationModel = new()
+            // Tạo cookie
+            CookieOptions cookieOptions = new()
             {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
+                Secure = true,
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                MaxAge = TimeSpan.FromDays(7)
             };
 
-            return authenticationModel;
+            // Thêm refresh token vào cookie
+            _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", refreshToken, cookieOptions);
+
+            // Tạo thông tin người dùng đã xác thực
+            AuthenticatedUserInfoResponseModel authenticatedUserInfoResponseModel = new()
+            {
+                AccessToken = accessToken,
+                Id = user.Id.ToString(),
+                Name = user.DisplayName,
+                Role = [UserRole.Customer.ToString()],
+                Avatar = [user.Images[0].URL]
+            };
+
+            return authenticatedUserInfoResponseModel;
+        }
+
+        public async Task<IEnumerable<TrackResponseModel>> GetOwnTracks(int offset, int limit)
+        {
+            // Lấy UserId từ phiên người dùng
+            string? artistId = _httpContextAccessor.HttpContext?.User.FindFirst("ArtistId")?.Value;
+
+            // Kiểm tra UserId
+            if (string.IsNullOrEmpty(artistId))
+            {
+                throw new UnauthorizedAccessException("Your session is limit, you must login again to edit profile!");
+            }
+
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.StreamingUrl,
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
+
+            // Lấy danh sách track của artist
+
+            // Lấy tracks có streamingUrl != null và isPlayable = true
+            FilterDefinition<Track> trackFilter = Builders<Track>.Filter.And(
+                Builders<Track>.Filter.Ne(t => t.StreamingUrl, null),
+                Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true),
+                Builders<Track>.Filter.AnyEq(t => t.ArtistIds, artistId)
+            );
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Match(trackFilter)
+                .Skip((offset - 1) * limit)
+                .Limit(limit)
+                .Lookup<Track, Artist, ASTrack>(
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists)
+                .Project(trackWithArtistProjection)
+                .ToListAsync();
+
+            return tracksResponseModel;
         }
     }
 }

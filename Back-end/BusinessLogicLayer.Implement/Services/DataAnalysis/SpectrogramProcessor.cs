@@ -53,7 +53,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             // Thêm dữ liệu audio vào spectrogram
             sg.Add(audioData);
 
-            var bitmap = sg.GetBitmap(intensity: 5, dB: true);
+            BitmapDrawing bitmap = sg.GetBitmap(intensity: 5, dB: true);
 
             return bitmap;
         }
@@ -62,7 +62,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
         //{
         //    if (audioFile == null || audioFile.Length == 0)
         //    {
-        //        throw new ArgumentException("File âm thanh không hợp lệ.");
+        //        throw new ArgumentException("AudioFile âm thanh không hợp lệ.");
         //    }
 
         //    using var stream = new MemoryStream();
@@ -110,8 +110,8 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
                 .Start();
 
             // Đọc dữ liệu WAV đã convert
-            using var afr = new FileStream(outputWavPath, FileMode.Open, FileAccess.Read);
-            var waveBytes = new byte[afr.Length];
+            using FileStream afr = new(outputWavPath, FileMode.Open, FileAccess.Read);
+            byte[] waveBytes = new byte[afr.Length];
             await afr.ReadAsync(waveBytes, 0, waveBytes.Length);
 
             // Giả lập đọc sampleRate, bạn có thể cải thiện bằng cách đọc header WAV
@@ -181,7 +181,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
             return new DenseTensor<float>(normalizedPixels, [1, targetHeight, targetWidth, 1]);
         }
 
-        public static float[] Predict(Tensor<float> inputTensor)
+        public static Dictionary<string, float> Predict(Tensor<float> inputTensor)
         {
             // Đường dẫn tới mô hình ONNX
             string basePath;
@@ -214,7 +214,17 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 
             // Lấy kết quả suy luận
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
-            return results.First().AsEnumerable<float>().ToArray();
+
+            // Lưu tất cả các output vào dictionary
+            Dictionary<string, float> predictions = [];
+
+            foreach (DisposableNamedOnnxValue result in results)
+            {
+                float value = result.AsTensor<float>().ToArray()[0]; // Lấy giá trị đầu tiên của tensor
+                predictions[result.Name] = value;
+            }
+
+            return predictions;
         }
     }
 }
