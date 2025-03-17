@@ -62,7 +62,7 @@ namespace BusinessLogicLayer.Implement.Services.DataAnalysis
         //{
         //    if (audioFile == null || audioFile.Length == 0)
         //    {
-        //        throw new ArgumentException("File âm thanh không hợp lệ.");
+        //        throw new ArgumentException("AudioFile âm thanh không hợp lệ.");
         //    }
 
         //    using var stream = new MemoryStream();

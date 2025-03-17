@@ -4,6 +4,8 @@ namespace SetupLayer.Enum.Microservices.Cloudinary
 {
     public enum ImageTag
     {
+        [EnumMember(Value = "Track")]
+        Track,
         [EnumMember(Value = "Users_Profile")]
         Users_Profile,
         [EnumMember(Value = "Artist")]

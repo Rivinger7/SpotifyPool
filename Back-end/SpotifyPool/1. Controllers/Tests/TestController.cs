@@ -78,7 +78,7 @@ namespace SpotifyPool._1._Controllers.Tests
         //		string StorageZoneName = "spotifypool-storage";
         //		string folder = "test";
         //		if (files == null || files.Count == 0)
-        //			return BadRequest("File không hợp lệ");
+        //			return BadRequest("AudioFile không hợp lệ");
 
         //		List<object> results = new List<object>();
 
@@ -144,13 +144,13 @@ namespace SpotifyPool._1._Controllers.Tests
 
         //        if (fileBytes == null || fileBytes.Length == 0)
         //        {
-        //            return NotFound("File không tồn tại hoặc không thể tải xuống.");
+        //            return NotFound("AudioFile không tồn tại hoặc không thể tải xuống.");
         //        }
 
         //        string contentType = "application/octet-stream"; // Hoặc xác định loại file dựa trên extension
         //        string fileName = Path.GetFileName(path); // Lấy tên file từ đường dẫn
 
-        //        return File(fileBytes, contentType, fileName);
+        //        return AudioFile(fileBytes, contentType, fileName);
         //    }
         //    catch (Exception ex)
         //    {
