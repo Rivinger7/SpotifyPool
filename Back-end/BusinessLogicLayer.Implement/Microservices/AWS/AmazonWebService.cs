@@ -18,7 +18,7 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
         {
             if (audioFile == null || audioFile.Length == 0)
             {
-                throw new BadRequestCustomException("File is empty");
+                throw new BadRequestCustomException("AudioFile is empty");
             }
 
             // Lấy thông tin từ settings
@@ -38,11 +38,11 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
             try
             {
                 await _s3Client.GetObjectMetadataAsync(bucketName, s3Key);
-                Console.WriteLine($"File {s3Key} đã tồn tại trên S3, không cần upload lại.");
+                Console.WriteLine($"AudioFile {s3Key} đã tồn tại trên S3, không cần upload lại.");
             }
             catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                // File chưa tồn tại → Thực hiện upload
+                // AudioFile chưa tồn tại → Thực hiện upload
                 using var stream = audioFile.OpenReadStream();
                 TransferUtilityUploadRequest uploadRequest = new()
                 {
@@ -104,7 +104,7 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
         //{
         //    if (audioFile == null || audioFile.Length == 0)
         //    {
-        //        throw new BadRequestCustomException("File is empty");
+        //        throw new BadRequestCustomException("AudioFile is empty");
         //    }
 
         //    // Lấy thông tin từ settings
@@ -237,7 +237,7 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
         {
             if (audioFile == null || audioFile.Length == 0)
             {
-                throw new BadRequestCustomException("File is empty");
+                throw new BadRequestCustomException("AudioFile is empty");
             }
 
             // Lấy thông tin từ settings
@@ -263,11 +263,11 @@ namespace BusinessLogicLayer.Implement.Microservices.AWS
             try
             {
                 await _s3Client.GetObjectMetadataAsync(bucketName, s3Key);
-                Console.WriteLine($"File {s3Key} đã tồn tại trên S3, không cần upload lại.");
+                Console.WriteLine($"AudioFile {s3Key} đã tồn tại trên S3, không cần upload lại.");
             }
             catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                // File chưa tồn tại → Thực hiện upload
+                // AudioFile chưa tồn tại → Thực hiện upload
                 using var stream = audioFile.OpenReadStream();
                 TransferUtilityUploadRequest uploadRequest = new()
                 {
