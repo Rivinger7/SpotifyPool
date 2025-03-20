@@ -552,12 +552,8 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
         {
             User retrieveUser = await _unitOfWork.GetCollection<User>().Find(user => user.Email == model.Email).FirstOrDefaultAsync() ?? throw new DataNotFoundCustomException("There's no account match with this email!");
             string otpToEmail = await CreateOTPAsync(retrieveUser.Email);
-
-            EmailSenderRequestModel emailSenderRequestModel = new()
-            {
-                EmailTo = [retrieveUser.Email],
-                Subject = "OTP forgot password"
-            };
+            
+            _redis.StringSet(retrieveUser.Email, otpToEmail, TimeSpan.FromMinutes(5));
 
             //tạo model chứa thông tin cần thiết để gửi email
             EmailMetadata emailMetadata = new(retrieveUser.Email, "OTP forgot password", otpToEmail);
@@ -568,13 +564,11 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
 
         public async Task ValidateOTPPassword(string email, string otpCode)
         {
-            OTP otp = await _unitOfWork.GetCollection<OTP>().Find(otp => otp.Email == email && otp.OTPCode == otpCode)
-                                         .FirstOrDefaultAsync()
-                    ?? throw new DataNotFoundCustomException("OTP is not correct!");
+            string? otpFromEmailInRedis = _redis.StringGet(email);
 
-            if (otp.ExpiryTime < DateTimeOffset.UtcNow)
+            if(otpFromEmailInRedis is null || otpCode != otpFromEmailInRedis)
             {
-                throw new BadRequestCustomException("OTP has expired!");
+                throw new DataNotFoundCustomException("OTP is not correct!");
             }
 
             UpdateDefinition<OTP> update = Builders<OTP>.Update.Set(otp => otp.IsUsed, true);
