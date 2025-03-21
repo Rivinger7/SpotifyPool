@@ -643,6 +643,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             var userinfo = new AuthenticatedUserInfoResponseModel()
             {
                 Id = info.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
+                ArtistId = info.FirstOrDefault(c => c.Type == "ArtistId")?.Value ?? null,
                 Name = info.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
                 Role = info.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList(),
                 Avatar = info.Where(c => c.Type == "Avatar").Select(c => c.Value).ToList()
