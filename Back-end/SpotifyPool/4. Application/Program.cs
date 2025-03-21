@@ -61,14 +61,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         // Đặt tiêu đề
-            options.DocumentTitle = "SpotifyPool API";
+        options.DocumentTitle = "SpotifyPool API";
 
         //    // Đường dẫn đến file JSON của Swagger
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
 
         //    // Inject JavaScript để chuyển đổi theme
-            options.InjectJavascript("/theme-switcher.js");
+        options.InjectJavascript("/theme-switcher.js");
     });
+}
+else
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 //app.UseSwagger();
