@@ -67,6 +67,8 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using Utility.Coding;
+using BusinessLogicLayer.Interface.Services_Interface.Dashboard;
+using BusinessLogicLayer.Implement.Services.Dashboard;
 #endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
@@ -432,6 +434,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // FFmpeg
             services.AddScoped<IFFmpegService, FFmpegService>();
+
+            // Dashboard
+            services.AddScoped<IDashboard, DashboardBLL>();
         }
         #endregion
 
