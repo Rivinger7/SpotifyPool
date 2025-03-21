@@ -1,17 +1,15 @@
-# Use Alpine-based ASP.NET Core runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+# Use the ASP.NET Core image for the runtime environment
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
+#EXPOSE 8081
 
-# Install dependencies for System.Drawing.Common & ONNX Runtime
-RUN apk add --no-cache libgdiplus libc6-compat libstdc++ icu gcompat
-
-# Use Alpine SDK for build environment
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+# Use Alpine SDK image for build environment
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Copy csproj files and restore dependencies
+# Copy files from context to container
 COPY ["Back-end/SpotifyPool/SpotifyPool.csproj", "SpotifyPool/"]
 COPY ["Back-end/BusinessLogicLayer.DependencyInjection/BusinessLogicLayer.DependencyInjection.csproj", "BusinessLogicLayer.DependencyInjection/"]
 COPY ["Back-end/BusinessLogicLayer.Implement/BusinessLogicLayer.Implement.csproj", "BusinessLogicLayer.Implement/"]
@@ -40,18 +38,21 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "SpotifyPool.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# Final runtime phase
+# Final phase to run the application
 FROM base AS final
 WORKDIR /app
+
+# Install Libgdiplus to support System.Drawing.common and OnnxRuntime
+RUN apt-get update && apt-get install -y libgdiplus libstdc++6 libc6 && rm -rf /var/lib/apt/lists/*
 
 # Copy model ONNX into TrainingModel folder
 COPY ["Back-end/SpotifyPool/TrainingModel/audio_features_model.onnx", "/app"]
 
-# Set environmental variables for ONNX Runtime
+# Set environmental variables for the application to find onnxruntime
 ENV LD_LIBRARY_PATH="/usr/local/lib/onnxruntime:$LD_LIBRARY_PATH"
+#ENV LD_LIBRARY_PATH="/app/runtimes/linux-x64/native:$LD_LIBRARY_PATH"
 
-# Copy published files from build stage
+# Copy the published files to the container
 COPY --from=publish /app/publish .
 
-# Set the entrypoint
 ENTRYPOINT ["dotnet", "SpotifyPool.dll"]
