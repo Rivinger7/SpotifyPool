@@ -69,14 +69,6 @@ namespace SpotifyPool._1._Controllers.Track
         //}
 		#endregion
 
-
-		//[AllowAnonymous, HttpGet("filter")]
-		//public async Task<IActionResult> GetTracksByMoodAsync([FromQuery] Mood mood)
-		//{
-		//    var result = await _trackService.GetTracksByMoodAsync(mood);
-		//    return Ok(result);
-		//}
-
 		[Authorize(Roles = $"{nameof(UserRole.Artist)}"), HttpPost("upload")]
         public async Task<IActionResult> UploadTrackAsync([FromForm] UploadTrackRequestModel request)
         {
