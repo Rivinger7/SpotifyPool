@@ -10,6 +10,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.EmailSender.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Forgot_Password.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Response;
+using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
 using DataAccessLayer.Repository.Entities;
@@ -640,7 +641,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             List<Claim> info = _jwtBLL.ValidateToken(token).Claims.ToList();
 
             // lấy thông tin người dùng từ token
-            var userinfo = new AuthenticatedUserInfoResponseModel()
+            AuthenticatedUserInfoResponseModel userinfo = new()
             {
                 Id = info.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
                 ArtistId = info.FirstOrDefault(c => c.Type == "ArtistId")?.Value ?? null,
@@ -664,6 +665,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             {
                 AccessToken = accessToken,
                 Id = principal.Identity?.Name,
+                ArtistId = principal.FindFirst("ArtistId")?.Value ?? null,
                 Name = principal.FindFirst(ClaimTypes.Name)?.Value,
                 Role = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList(),
                 Avatar = principal.FindAll("Avatar").Select(c => c.Value).ToList()
