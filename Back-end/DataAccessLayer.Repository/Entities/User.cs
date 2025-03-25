@@ -15,7 +15,7 @@ namespace DataAccessLayer.Repository.Entities
         public string Email { get; set; } = null!;
 
         public List<UserRole> Roles {  get; set; } = [];
-        public UserProduct Product { get; set; }
+        public UserProduct? Product { get; set; }
         public string CountryId { get; set; } = null!;
         public string? PhoneNumber { get; set; }
         public required string DisplayName { get; set; }
@@ -32,5 +32,14 @@ namespace DataAccessLayer.Repository.Entities
         public DateTime CreatedTime { get; set; }
         public DateTime? LastLoginTime { get; set; }
         public DateTime? LastUpdatedTime { get; set; }
+        public Product? LatestPremium {  get; set; }
+    }
+    public class Product
+    {
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? PremiumId { get; set; }
+        public DateTime? BuyedTime { get; set; }
+        public DateTime? ExpiredTime { get; set; }
+
     }
 }
