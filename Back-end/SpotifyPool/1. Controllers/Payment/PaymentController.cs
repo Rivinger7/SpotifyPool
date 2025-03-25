@@ -96,6 +96,7 @@ namespace SpotifyPool._1._Controllers.Payment
         {
             using var reader = new StreamReader(Request.Body);
             string rawBody = await reader.ReadToEndAsync();
+            Console.WriteLine("Webhook raw body: " + rawBody);
 
             try
             {
@@ -126,8 +127,16 @@ namespace SpotifyPool._1._Controllers.Payment
         [AllowAnonymous, HttpPost("webhook-confirm")]
         public async Task<IActionResult> ConfirmWebhook(string url)
         {
-            string result = await _paymentService.ConfirmWebhook(url); 
-            return Ok(result);
+            try
+            {
+                string result = await _paymentService.ConfirmWebhook(url);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi confirm webhook: " + ex.Message);
+                return StatusCode(500, "Internal Server Error: " + ex.Message);
+            }
         }
     }
 }
