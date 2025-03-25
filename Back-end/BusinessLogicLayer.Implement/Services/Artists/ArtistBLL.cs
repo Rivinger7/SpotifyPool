@@ -7,6 +7,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
@@ -310,6 +311,53 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
             return tracksResponseModel;
+        }
+
+        public async Task UpdateArtistProfile(string artistId, EditProfileRequestModel request)
+        {
+            Artist artist = await _unitOfWork.GetCollection<Artist>().Find(a => !a.DeletedTime.HasValue && a.Id == artistId).FirstOrDefaultAsync();
+            artist.Name = request.DisplayName;
+            artist.LastUpdatedTime = Util.GetUtcPlus7Time();
+            if (request.Image != null)
+            {
+                // Kết quả upload hình ảnh
+                ImageUploadResult uploadResult;
+                // Kích thước ảnh cố định
+                int fixedSize = 300;
+                // Upload hình ảnh lên Cloudinary
+                uploadResult = _cloudinaryService.UploadImage(request.Image, ImageTag.Album, rootFolder: "Image", fixedSize, fixedSize);
+                string imageUrl = uploadResult.SecureUrl.AbsoluteUri;
+                // Tạo hình ảnh cho album
+                List<Image> images = [];
+                // Kích thước ảnh
+                IEnumerable<int> sizes = [640, 300, 64];
+                // Tạo 3 kích thước ảnh khác nhau nhưng cùng một URL với kích thước cố định
+                foreach (int size in sizes)
+                {
+                    images.Add(new()
+                    {
+                        URL = imageUrl,
+                        Height = size,
+                        Width = size
+                    });
+                }
+                artist.Images = images;
+            }
+
+            FilterDefinition<Artist> filter = Builders<Artist>.Filter.Eq(a => a.Id, artist.Id);
+            //Chuyển thành BsonDocument để cập nhật, loại bỏ _id
+            BsonDocument bsonDoc = artist.ToBsonDocument();
+            bsonDoc.Remove("_id");
+
+            //Tạo UpdateDefinition từ BsonDocument
+            BsonDocument update = new BsonDocument("$set", bsonDoc);
+            UpdateResult result = await _unitOfWork.GetCollection<Artist>()
+                .UpdateOneAsync(filter, update);
+
+            if (result.MatchedCount == 0)
+            {
+                throw new KeyNotFoundException($"Artist with ID {artist.Id} does not exist.");
+            }
         }
     }
 }
