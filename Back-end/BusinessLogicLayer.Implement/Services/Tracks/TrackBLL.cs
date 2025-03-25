@@ -381,39 +381,36 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             // Empty Pipeline
             IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
-            // Endpoint cho track detail
-            string endpointTrack = "https://spotifypoolmusic.vercel.app/track";
-
             // Projection
-            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
-                new TrackResponseModel
-                {
-                    Id = track.Id,
-                    Name = track.Name,
-                    Description = track.Description,
-                    Lyrics = track.Lyrics,
-                    PreviewURL = track.StreamingUrl,
-                    TrackDetailUrl = $"{endpointTrack}/{track.Id}",
-                    Duration = track.Duration,
-                    Images = track.Images.Select(image => new ImageResponseModel
-                    {
-                        URL = image.URL,
-                        Height = image.Height,
-                        Width = image.Width
-                    }),
-                    Artists = track.Artists.Select(artist => new ArtistResponseModel
-                    {
-                        Id = artist.Id,
-                        Name = artist.Name,
-                        Followers = artist.Followers,
-                        Images = artist.Images.Select(image => new ImageResponseModel
-                        {
-                            URL = image.URL,
-                            Height = image.Height,
-                            Width = image.Width
-                        })
-                    })
-                });
+            //ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+            //    new TrackResponseModel
+            //    {
+            //        Id = track.Id,
+            //        Name = track.Name,
+            //        Description = track.Description,
+            //        Lyrics = track.Lyrics,
+            //        PreviewURL = track.StreamingUrl,
+            //        TrackDetailUrl = $"{endpointTrack}/{track.Id}",
+            //        Duration = track.Duration,
+            //        Images = track.Images.Select(image => new ImageResponseModel
+            //        {
+            //            URL = image.URL,
+            //            Height = image.Height,
+            //            Width = image.Width
+            //        }),
+            //        Artists = track.Artists.Select(artist => new ArtistResponseModel
+            //        {
+            //            Id = artist.Id,
+            //            Name = artist.Name,
+            //            Followers = artist.Followers,
+            //            Images = artist.Images.Select(image => new ImageResponseModel
+            //            {
+            //                URL = image.URL,
+            //                Height = image.Height,
+            //                Width = image.Width
+            //            })
+            //        })
+            //    });
 
             //Search
             FilterDefinition<Track> trackFilter = FilterDefinition<Track>.Empty;
@@ -496,7 +493,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             // Lấy thông tin Tracks với Artist
             // Lookup
-            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+            List<ASTrack> tracks = await aggregateFluent
                 .Match(trackFilter)
                 .Skip((offset - 1) * limit)
                 .Limit(limit)
@@ -505,10 +502,43 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     track => track.ArtistIds,
                     artist => artist.Id,
                     result => result.Artists)
-                .Project(trackWithArtistProjection)
+                //.Project(trackWithArtistProjection)
                 .ToListAsync();
 
-            return tracksResponseModel;
+            // Endpoint cho track detail
+            string endpointTrack = "https://spotifypoolmusic.vercel.app/track";
+
+            // Mapping thủ công do không dùng Projection.Expression được
+            IEnumerable<TrackResponseModel> trackResponseModels = tracks.Select(track => new TrackResponseModel
+            {
+                Id = track.Id,
+                Name = track.Name,
+                Description = track.Description,
+                Lyrics = track.Lyrics,
+                PreviewURL = track.StreamingUrl,
+                TrackDetailUrl = $"{endpointTrack}/{track.Id}",
+                Duration = track.Duration,
+                Images = track.Images.Select(img => new ImageResponseModel
+                {
+                    URL = img.URL,
+                    Height = img.Height,
+                    Width = img.Width
+                }),
+                Artists = track.Artists.Select(artist => new ArtistResponseModel
+                {
+                    Id = artist.Id,
+                    Name = artist.Name,
+                    Followers = artist.Followers,
+                    Images = artist.Images.Select(img => new ImageResponseModel
+                    {
+                        URL = img.URL,
+                        Height = img.Height,
+                        Width = img.Width
+                    })
+                })
+            });
+
+            return trackResponseModels;
         }
 
         public async Task<TrackResponseModel> GetTrackAsync(string id)
