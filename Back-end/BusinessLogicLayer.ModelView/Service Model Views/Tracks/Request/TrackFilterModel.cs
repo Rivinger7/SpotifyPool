@@ -11,5 +11,8 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request
 		public bool? SortByName { get; set; }
 
 		public Mood? Mood { get; set; }
+
+        public RestrictionReason? RestrictionReason { get; set; }
+
     }
 }

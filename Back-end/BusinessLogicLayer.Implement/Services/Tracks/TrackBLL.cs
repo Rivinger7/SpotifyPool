@@ -421,6 +421,14 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true)
             );
 
+            if (filterModel.RestrictionReason.HasValue)
+            {
+                trackFilter = Builders<Track>.Filter.And(
+                    trackFilter,
+                    Builders<Track>.Filter.Eq(t => t.Restrictions.Reason, filterModel.RestrictionReason.Value)
+                );
+            }
+
             // Tìm kiếm theo tên hoặc mô tả
             if (!string.IsNullOrEmpty(searchTermEscaped))
             {
