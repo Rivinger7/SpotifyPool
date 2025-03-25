@@ -2,6 +2,7 @@
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 
 namespace BusinessLogicLayer.Interface.Services_Interface.Artists
 {
@@ -12,5 +13,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Artists
         Task<IEnumerable<TrackResponseModel>> GetOwnTracks(int offset, int limit);
         Task<IEnumerable<TrackResponseModel>> GetTracksByArtistId(string artistId, int offset, int limit);
         Task<AuthenticatedUserInfoResponseModel> SwitchToUserProfile();
+        Task UpdateArtistProfile(string artistId, EditProfileRequestModel request);
     }
 }
