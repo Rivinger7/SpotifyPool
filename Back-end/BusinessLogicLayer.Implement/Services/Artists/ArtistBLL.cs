@@ -241,6 +241,14 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
 
+            // lấy AlbumIds mỗi track
+            IEnumerable<Album> allAlbums = await _unitOfWork.GetCollection<Album>().Find(a => !a.DeletedTime.HasValue).ToListAsync();
+            foreach (var track in tracksResponseModel)
+            {
+                IEnumerable<string> albumIds = allAlbums.Where(a => a.TrackIds.Contains(track.Id)).Select(a => a.Id);
+                track.AlbumIds = albumIds;
+            }
+
             return tracksResponseModel;
         }
 
