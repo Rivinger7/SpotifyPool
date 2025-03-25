@@ -7,5 +7,10 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Dashboard
 		Task<SystemOverviewResponse> GetSystemOverviewAsync();
 
 		Task<DashboardTrackArtistManagemen> GetTrackArtistManagementAsync();
+
+		Task<List<UserGrowthDashboard>> GetUserGrowthAsync();
+
+		Task<List<RoleDistributionDashboard>> GetUserRoleDistributionAsync();
+
 	}
 }
