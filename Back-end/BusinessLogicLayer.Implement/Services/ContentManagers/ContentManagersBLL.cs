@@ -1,12 +1,9 @@
-﻿using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
-using BusinessLogicLayer.Interface.Services_Interface.ContentManagers;
+﻿using BusinessLogicLayer.Interface.Services_Interface.ContentManagers;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
-using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using SetupLayer.Enum.Services.Album;
 using SetupLayer.Enum.Services.Track;
 using Utility.Coding;
 
@@ -15,14 +12,10 @@ namespace BusinessLogicLayer.Implement.Services.ContentManagers
     public class ContentManagersBLL : IContentManager
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly CloudinaryService _cloudinaryService;
 
-        public ContentManagersBLL(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, CloudinaryService cloudinaryService)
+        public ContentManagersBLL(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _httpContextAccessor = httpContextAccessor;
-            _cloudinaryService = cloudinaryService;
         }
 
         public async Task ChangeTrackRestrictionAsync(string trackId, TrackRestrictionRequestModel model)

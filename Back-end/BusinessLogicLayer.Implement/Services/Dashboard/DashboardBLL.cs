@@ -140,7 +140,7 @@ namespace BusinessLogicLayer.Implement.Services.Dashboard
 			int totalUsers = users.Count;
 
 			//Ưu tiên: Admin > Artist > Customer > ...
-			var rolePriority = new[] { UserRole.Admin, UserRole.Artist, UserRole.Customer, UserRole.ContentManeger };
+			var rolePriority = new[] { UserRole.Admin, UserRole.Artist, UserRole.Customer, UserRole.ContentManager };
 
 			List<RoleDistributionDashboard> mainRoles = users
 				.Select(user =>

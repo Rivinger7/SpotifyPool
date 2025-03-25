@@ -14,7 +14,7 @@ namespace SpotifyPool._1._Controllers.ContentManager
     [Route("api/v1/content-managers")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
-    [Authorize(Roles = nameof(UserRole.ContentManeger))]
+    [Authorize(Roles = nameof(UserRole.ContentManager))]
     public class ContentManagerController(IContentManager contentManagerService, IUser userBLL) : Controller
     {
         private readonly IContentManager _contentManager = contentManagerService;
@@ -24,7 +24,7 @@ namespace SpotifyPool._1._Controllers.ContentManager
         /// Thông tin cá nhân (Tên, Ảnh)
         /// </summary>
         /// <returns></returns>
-        [Authorize(Roles = $"{nameof(UserRole.ContentManeger)},{nameof(UserRole.Admin)}"), HttpGet("me/profile")]
+        [Authorize(Roles = $"{nameof(UserRole.ContentManager)},{nameof(UserRole.Admin)}"), HttpGet("me/profile")]
         public async Task<IActionResult> GetProfileAsync()
         {
             var user = await _userBLL.GetProfileAsync();
@@ -36,7 +36,7 @@ namespace SpotifyPool._1._Controllers.ContentManager
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.ContentManeger)), HttpPatch("me/profile")]
+        [Authorize(Roles = nameof(UserRole.ContentManager)), HttpPatch("me/profile")]
         public async Task<IActionResult> EditProfileAsync([FromForm] EditProfileRequestModel request)
         {
             await _userBLL.EditProfileAsync(request);
@@ -50,7 +50,7 @@ namespace SpotifyPool._1._Controllers.ContentManager
         /// <param name="id"> Id của track </param>
         /// <param name="model"></param>
         /// <returns></returns>
-        [Authorize(Roles = nameof(UserRole.ContentManeger)), HttpPut("{id}/track-restriction-change")]
+        [Authorize(Roles = nameof(UserRole.ContentManager)), HttpPut("{id}/track-restriction-change")]
         public async Task<IActionResult> UpdateAlbumAsync(string id, [FromForm] TrackRestrictionRequestModel model)
         {
             await _contentManager.ChangeTrackRestrictionAsync(id, model);
