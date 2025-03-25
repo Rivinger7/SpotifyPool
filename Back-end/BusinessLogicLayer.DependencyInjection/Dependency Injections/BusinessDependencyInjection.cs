@@ -71,6 +71,11 @@ using BusinessLogicLayer.Interface.Services_Interface.Dashboard;
 using BusinessLogicLayer.Implement.Services.Dashboard;
 using BusinessLogicLayer.Interface.Services_Interface.ContentManagers;
 using BusinessLogicLayer.Implement.Services.ContentManagers;
+using BusinessLogicLayer.Implement.Services.Episode;
+using BusinessLogicLayer.Implement.Services.Podcast;
+using BusinessLogicLayer.Interface.Services_Interface.Episode;
+using BusinessLogicLayer.Interface.Services_Interface.Podcast;
+
 #endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
@@ -441,6 +446,9 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IDashboard, DashboardBLL>();
             //Content Manager
             services.AddScoped<IContentManager, ContentManagersBLL>();
+
+            services.AddScoped<IPodcast, PodcastBLL>();
+            services.AddScoped<IEpisode, EpisodeBLL>();
         }
         #endregion
 
