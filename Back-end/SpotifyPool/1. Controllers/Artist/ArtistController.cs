@@ -35,7 +35,7 @@ namespace SpotifyPool._1._Controllers.Artist
             return Ok(new { Message = "Get Own Tracks Successfully", trackResponseModels });
         }
 
-        [Authorize(Roles = nameof(UserRole.Artist)), HttpGet("{artistId}/profile")]
+        [Authorize(Roles = $"{nameof(UserRole.Artist)},{nameof(UserRole.Customer)}"), HttpGet("{artistId}/profile")]
         public async Task<IActionResult> GetArtistProfileAsync(string artistId)
         {
             var artistProfile = await _artistService.GetArtistByIdAsync(artistId);
