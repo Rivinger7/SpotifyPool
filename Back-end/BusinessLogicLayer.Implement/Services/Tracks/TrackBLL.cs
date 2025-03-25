@@ -485,7 +485,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 );
 
                 // Empty Pipeline
-                aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate().Sample(limit);
+                aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
             }
 
             //Sorting
@@ -505,6 +505,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             // Lấy thông tin Tracks với Artist
             // Lookup
             List<ASTrack> tracks = await aggregateFluent
+                //.Sample(limit)
                 .Match(trackFilter)
                 .Skip((offset - 1) * limit)
                 .Limit(limit)
