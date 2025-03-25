@@ -11,6 +11,6 @@ namespace SetupLayer.Enum.Services.User
         [EnumMember(Value = "Customer")]
         Customer,
         [EnumMember(Value = "Content Manager")]
-        ContentManeger
+        ContentManager
     }
 }
