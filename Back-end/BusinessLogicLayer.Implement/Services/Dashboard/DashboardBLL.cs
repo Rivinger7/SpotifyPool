@@ -38,20 +38,24 @@ namespace BusinessLogicLayer.Implement.Services.Dashboard
 		#region Quản lý bài hát & nghệ sĩ (Top bài hát, Top nghệ sĩ)
 		public async Task<DashboardTrackArtistManagemen> GetTrackArtistManagementAsync()
 		{
+			//Top 10 bài hát có lượt stream cao nhất
 			List<Track> topTracks = await _unitOfWork.GetCollection<Track>()
 				.Find(FilterDefinition<Track>.Empty)
 				.SortByDescending(t => t.StreamCount)
 				.Limit(10)
 				.ToListAsync();
 
+			//Top 10 nghệ sĩ có nhiều follower nhất
 			List<Artist> topArtists = await _unitOfWork.GetCollection<Artist>()
 				.Find(FilterDefinition<Artist>.Empty)
 				.SortByDescending(a => a.Followers)
 				.Limit(10)
 				.ToListAsync();
 
+			//10 Bài hát mới nhất
 			List<Track> newTracks = await _unitOfWork.GetCollection<Track>()
 				.Find(FilterDefinition<Track>.Empty)
+				.SortByDescending(t => t.UploadDate)
 				.Limit(10)
 				.ToListAsync();
 
