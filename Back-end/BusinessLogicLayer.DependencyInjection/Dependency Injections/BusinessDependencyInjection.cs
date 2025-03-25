@@ -71,6 +71,9 @@ using BusinessLogicLayer.Interface.Services_Interface.Dashboard;
 using BusinessLogicLayer.Implement.Services.Dashboard;
 using BusinessLogicLayer.Interface.Services_Interface.ContentManagers;
 using BusinessLogicLayer.Implement.Services.ContentManagers;
+using DataAccessLayer.Repository.Entities;
+using BusinessLogicLayer.Implement.Services.Payments;
+using BusinessLogicLayer.Interface.Services_Interface.Payments;
 #endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
@@ -441,6 +444,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             services.AddScoped<IDashboard, DashboardBLL>();
             //Content Manager
             services.AddScoped<IContentManager, ContentManagersBLL>();
+            // Paymemnt
+            services.AddScoped<IPayment, PaymentBLL>();
         }
         #endregion
 

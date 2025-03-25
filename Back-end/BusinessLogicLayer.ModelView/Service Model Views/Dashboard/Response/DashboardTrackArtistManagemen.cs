@@ -1,4 +1,6 @@
-﻿namespace BusinessLogicLayer.ModelView.Service_Model_Views.Dashboard.Response
+﻿using DataAccessLayer.Repository.Entities;
+
+namespace BusinessLogicLayer.ModelView.Service_Model_Views.Dashboard.Response
 {
 	public class DashboardTrackArtistManagemen
 	{
@@ -14,6 +16,7 @@
 		public long StreamCount { get; set; }
 		public int Duration { get; set; }
 		public string UploadDate { get; set; }
+		public List<Image> Images { get; set; } = [];
 	}
 
 	public class Artistes
@@ -22,5 +25,6 @@
 		public string Name { get; set; } = null!;
 		public int Followers { get; set; }
 		public int Popularity { get; set; }
+		public List<Image> Images { get; set; } = [];
 	}
 }
