@@ -70,7 +70,8 @@ namespace BusinessLogicLayer.Implement.Services.Dashboard
 					Name = t.Name,
 					StreamCount = t.StreamCount,
 					Duration = t.Duration,
-					UploadDate = t.UploadDate
+					UploadDate = t.UploadDate,
+					Images = t.Images,
 				}).ToList(),
 
 				TopArtists = topArtists.Select(a => new Artistes
@@ -78,7 +79,8 @@ namespace BusinessLogicLayer.Implement.Services.Dashboard
 					Id = a.Id.ToString(),
 					Name = a.Name,
 					Followers = a.Followers,
-					Popularity = a.Popularity
+					Popularity = a.Popularity,
+					Images = a.Images
 				}).ToList(),
 
 				NewTracks = newTracks.Select(t => new Trackss
@@ -87,7 +89,8 @@ namespace BusinessLogicLayer.Implement.Services.Dashboard
 					Name = t.Name,
 					StreamCount = t.StreamCount,
 					Duration = t.Duration,
-					UploadDate = t.UploadDate
+					UploadDate = t.UploadDate,
+					Images = t.Images
 				}).ToList()
 			};
 
