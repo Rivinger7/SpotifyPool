@@ -1,4 +1,5 @@
-﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
+﻿using BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using System.Text.Json.Serialization;
 
@@ -25,7 +26,13 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
 
         public required IEnumerable<ImageResponseModel> Images { get; set; }
         public required IEnumerable<ArtistResponseModel> Artists { get; set; }
-        public IEnumerable<string> AlbumIds { get; set; } = [];
+        public IEnumerable<AlbumInfoResponse> Albums { get; set; } = [];
 
+    }
+    public class AlbumInfoResponse
+    {
+        public string Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public IEnumerable<ImageResponseModel> Images { get; set; } = [];
     }
 }

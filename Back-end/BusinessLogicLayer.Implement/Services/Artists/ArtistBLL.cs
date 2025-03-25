@@ -1,7 +1,9 @@
-﻿using BusinessLogicLayer.Implement.CustomExceptions;
+﻿using AutoMapper;
+using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
@@ -22,13 +24,13 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Artists
 {
-    public class ArtistBLL(IUnitOfWork unitOfWork, CloudinaryService cloudinaryService, IHttpContextAccessor httpContextAccessor, IJwtBLL jwtBLL) : IArtist
+    public class ArtistBLL(IUnitOfWork unitOfWork, CloudinaryService cloudinaryService, IHttpContextAccessor httpContextAccessor, IJwtBLL jwtBLL, IMapper mapper) : IArtist
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
-
+        private readonly IMapper _mapper = mapper;
         public async Task CreateArtist(ArtistRequest artistRequest)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
@@ -242,12 +244,13 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
 
-            // lấy AlbumIds mỗi track
+            // lấy AlbumInfos mỗi track
             IEnumerable<Album> allAlbums = await _unitOfWork.GetCollection<Album>().Find(a => !a.DeletedTime.HasValue).ToListAsync();
             foreach (var track in tracksResponseModel)
             {
-                IEnumerable<string> albumIds = allAlbums.Where(a => a.TrackIds.Contains(track.Id)).Select(a => a.Id);
-                track.AlbumIds = albumIds;
+                IEnumerable<Album> albums = allAlbums.Where(a => a.TrackIds.Contains(track.Id));
+
+                track.Albums = _mapper.Map<IReadOnlyCollection<AlbumInfoResponse>>(albums);
             }
 
             return tracksResponseModel;
@@ -310,6 +313,14 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                     result => result.Artists)
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
+            // lấy AlbumInfos mỗi track
+            IEnumerable<Album> allAlbums = await _unitOfWork.GetCollection<Album>().Find(a => !a.DeletedTime.HasValue).ToListAsync();
+            foreach (var track in tracksResponseModel)
+            {
+                IEnumerable<Album> albums = allAlbums.Where(a => a.TrackIds.Contains(track.Id));
+
+                track.Albums = _mapper.Map<IReadOnlyCollection<AlbumInfoResponse>>(albums);
+            }
             return tracksResponseModel;
         }
 
