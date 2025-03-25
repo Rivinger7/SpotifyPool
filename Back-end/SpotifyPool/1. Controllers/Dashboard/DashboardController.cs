@@ -35,5 +35,27 @@ namespace SpotifyPool._1._Controllers.Dashboard
 			var data = await _dashboardBLL.GetTrackArtistManagementAsync();
 			return Ok(data);
 		}
+
+		/// <summary>
+		/// Tổng quan: so sánh giữa người dùng mới với người dùng trong tháng đó
+		/// </summary>
+		/// <returns></returns>
+		[HttpGet("user-growth")]
+		public async Task<IActionResult> GetUserGrowth()
+		{
+			var data = await _dashboardBLL.GetUserGrowthAsync();
+			return Ok(data);
+		}
+
+		/// <summary>
+		/// Tỷ lệ người dùng theo role
+		/// </summary>
+		/// <returns></returns>
+		[HttpGet("user-role-distribution")]
+		public async Task<IActionResult> GetUserRoleDistribution()
+		{
+			var data = await _dashboardBLL.GetUserRoleDistributionAsync();
+			return Ok(data);
+		}
 	}
 }
