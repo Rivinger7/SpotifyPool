@@ -378,6 +378,12 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 ? Util.EscapeSpecialCharacters(filterModel.SearchTerm)
                 : string.Empty;
 
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Endpoint cho track detail
+            string endpointTrack = "https://spotifypoolmusic.vercel.app/track";
+
             // Projection
             ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
                 new TrackResponseModel
@@ -387,6 +393,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                     Description = track.Description,
                     Lyrics = track.Lyrics,
                     PreviewURL = track.StreamingUrl,
+                    TrackDetailUrl = $"{endpointTrack}/{track.Id}",
                     Duration = track.Duration,
                     Images = track.Images.Select(image => new ImageResponseModel
                     {
@@ -468,10 +475,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                         _ => throw new InvalidDataCustomException("The mood is not supported"),
                     }
                 );
-            }
 
-            // Empty Pipeline
-            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+                // Empty Pipeline
+                aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate().Sample(limit);
+            }
 
             //Sorting
             if (filterModel.SortById.HasValue)
