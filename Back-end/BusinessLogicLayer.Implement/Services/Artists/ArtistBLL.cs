@@ -1,12 +1,15 @@
-﻿using BusinessLogicLayer.Implement.CustomExceptions;
+﻿using AutoMapper;
+using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.Interface.Services_Interface.JWTs;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Albums.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 using CloudinaryDotNet.Actions;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
@@ -21,13 +24,13 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.Artists
 {
-    public class ArtistBLL(IUnitOfWork unitOfWork, CloudinaryService cloudinaryService, IHttpContextAccessor httpContextAccessor, IJwtBLL jwtBLL) : IArtist
+    public class ArtistBLL(IUnitOfWork unitOfWork, CloudinaryService cloudinaryService, IHttpContextAccessor httpContextAccessor, IJwtBLL jwtBLL, IMapper mapper) : IArtist
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly CloudinaryService _cloudinaryService = cloudinaryService;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
-
+        private readonly IMapper _mapper = mapper;
         public async Task CreateArtist(ArtistRequest artistRequest)
         {
             // UserID lấy từ phiên người dùng có thể là FE hoặc BE
@@ -241,12 +244,13 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
 
-            // lấy AlbumIds mỗi track
+            // lấy AlbumInfos mỗi track
             IEnumerable<Album> allAlbums = await _unitOfWork.GetCollection<Album>().Find(a => !a.DeletedTime.HasValue).ToListAsync();
             foreach (var track in tracksResponseModel)
             {
-                IEnumerable<string> albumIds = allAlbums.Where(a => a.TrackIds.Contains(track.Id)).Select(a => a.Id);
-                track.AlbumIds = albumIds;
+                IEnumerable<Album> albums = allAlbums.Where(a => a.TrackIds.Contains(track.Id));
+
+                track.Albums = _mapper.Map<IReadOnlyCollection<AlbumInfoResponse>>(albums);
             }
 
             return tracksResponseModel;
@@ -309,7 +313,62 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                     result => result.Artists)
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
+            // lấy AlbumInfos mỗi track
+            IEnumerable<Album> allAlbums = await _unitOfWork.GetCollection<Album>().Find(a => !a.DeletedTime.HasValue).ToListAsync();
+            foreach (var track in tracksResponseModel)
+            {
+                IEnumerable<Album> albums = allAlbums.Where(a => a.TrackIds.Contains(track.Id));
+
+                track.Albums = _mapper.Map<IReadOnlyCollection<AlbumInfoResponse>>(albums);
+            }
             return tracksResponseModel;
+        }
+
+        public async Task UpdateArtistProfile(string artistId, EditProfileRequestModel request)
+        {
+            Artist artist = await _unitOfWork.GetCollection<Artist>().Find(a => !a.DeletedTime.HasValue && a.Id == artistId).FirstOrDefaultAsync();
+            artist.Name = request.DisplayName;
+            artist.LastUpdatedTime = Util.GetUtcPlus7Time();
+            if (request.Image != null)
+            {
+                // Kết quả upload hình ảnh
+                ImageUploadResult uploadResult;
+                // Kích thước ảnh cố định
+                int fixedSize = 300;
+                // Upload hình ảnh lên Cloudinary
+                uploadResult = _cloudinaryService.UploadImage(request.Image, ImageTag.Album, rootFolder: "Image", fixedSize, fixedSize);
+                string imageUrl = uploadResult.SecureUrl.AbsoluteUri;
+                // Tạo hình ảnh cho album
+                List<Image> images = [];
+                // Kích thước ảnh
+                IEnumerable<int> sizes = [640, 300, 64];
+                // Tạo 3 kích thước ảnh khác nhau nhưng cùng một URL với kích thước cố định
+                foreach (int size in sizes)
+                {
+                    images.Add(new()
+                    {
+                        URL = imageUrl,
+                        Height = size,
+                        Width = size
+                    });
+                }
+                artist.Images = images;
+            }
+
+            FilterDefinition<Artist> filter = Builders<Artist>.Filter.Eq(a => a.Id, artist.Id);
+            //Chuyển thành BsonDocument để cập nhật, loại bỏ _id
+            BsonDocument bsonDoc = artist.ToBsonDocument();
+            bsonDoc.Remove("_id");
+
+            //Tạo UpdateDefinition từ BsonDocument
+            BsonDocument update = new BsonDocument("$set", bsonDoc);
+            UpdateResult result = await _unitOfWork.GetCollection<Artist>()
+                .UpdateOneAsync(filter, update);
+
+            if (result.MatchedCount == 0)
+            {
+                throw new KeyNotFoundException($"Artist with ID {artist.Id} does not exist.");
+            }
         }
     }
 }

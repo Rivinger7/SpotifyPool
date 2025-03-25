@@ -1,5 +1,6 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.Artists;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Users.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +42,13 @@ namespace SpotifyPool._1._Controllers.Artist
             var artistProfile = await _artistService.GetArtistByIdAsync(artistId);
             var artistTracks = await _artistService.GetTracksByArtistId(artistId, 1, 10);
             return Ok(new { Message = "Get Artist Successfully", artistProfile, artistTracks});
+        }
+
+        [Authorize(Roles = $"{nameof(UserRole.Artist)},{nameof(UserRole.Customer)}"), HttpPut("{artistId}/profile")]
+        public async Task<IActionResult> EditArtistProfileAsync(string artistId, [FromForm] EditProfileRequestModel request)
+        {
+            await _artistService.UpdateArtistProfile(artistId, request);
+            return Ok("Update profile successfully!");
         }
     }
 }
