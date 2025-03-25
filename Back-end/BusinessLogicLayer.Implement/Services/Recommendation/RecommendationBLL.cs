@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Services_Interface.Recommendation;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.AudioFeatures.Request;
+using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Aggregate_Storage;
@@ -48,22 +50,45 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                 .Select(x => x.Track)
                 .ToList();
 
-            // Projection
-            ProjectionDefinition<ASTrack> projectionDefinition = Builders<ASTrack>.Projection
-                .Include(track => track.Id)
-                .Include(track => track.Name)
-                .Include(track => track.Description)
-                .Include(track => track.Lyrics)
-                .Include(track => track.StreamingUrl)
-                .Include(track => track.Duration)
-                .Include(track => track.Images)
-                .Include(track => track.Artists);
+            // Endpoint cho track detail
+            string endpointTrack = "https://spotifypoolmusic.vercel.app/track";
+
+            // Projection trực tiếp sang TrackResponseModel
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.StreamingUrl,
+                    TrackDetailUrl = $"{endpointTrack}/{track.Id}",
+                    Duration = track.Duration,
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
 
             // Empty Pipeline
             IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
 
             // Lấy thêm thông tin về artist
-            IAggregateFluent<ASTrack> trackPipelines = aggregateFluent
+            IAggregateFluent<TrackResponseModel> trackPipelines = aggregateFluent
                 .Match(track => topSimilarTracks.Select(t => t.Id).Contains(track.Id)) // Lọc theo các track đã chọn
                 .Lookup<Track, Artist, ASTrack>
                 (
@@ -72,14 +97,15 @@ namespace BusinessLogicLayer.Implement.Services.Recommendation
                     artist => artist.Id,
                     result => result.Artists
                 )
-                .Project<ASTrack>(projectionDefinition);
+                .Project(trackWithArtistProjection);
 
-            IEnumerable<ASTrack> recommendedTracks = await trackPipelines.ToListAsync();
+            // Lấy danh sách các track được recommend
+            IEnumerable<TrackResponseModel> recommendedTracks = await trackPipelines.ToListAsync();
 
             // Mapping sang TrackResponseModel
-            IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(recommendedTracks);
+            //IEnumerable<TrackResponseModel> responseModels = _mapper.Map<IEnumerable<TrackResponseModel>>(recommendedTracks);
 
-            return responseModels;
+            return recommendedTracks;
         }
 
 
