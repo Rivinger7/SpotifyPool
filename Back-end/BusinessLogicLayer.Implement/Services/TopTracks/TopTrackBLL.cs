@@ -164,8 +164,9 @@ namespace BusinessLogicLayer.Implement.Services.TopTracks
 
             // Maintain the order of tracks based on the sorted trackIds
             tracksResponseModel = trackIds
-                .Select(trackId => tracksResponseModel.First(track => track.Id == trackId))
-                .ToList();
+            .Select(trackId => tracksResponseModel.FirstOrDefault(track => track.Id == trackId))
+            .Where(track => track != null)
+            .ToList();
 
             return tracksResponseModel;
         }
