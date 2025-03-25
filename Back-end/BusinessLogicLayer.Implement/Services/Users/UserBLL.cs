@@ -193,6 +193,7 @@ namespace BusinessLogicLayer.Implement.Services.Users
             };
 
             // Thêm refresh token vào cookie
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete("SpotifyPool_RefreshToken");
             _httpContextAccessor.HttpContext.Response.Cookies.Append("SpotifyPool_RefreshToken", refreshToken, cookieOptions);
 
             // Tạo thông tin người dùng đã xác thực

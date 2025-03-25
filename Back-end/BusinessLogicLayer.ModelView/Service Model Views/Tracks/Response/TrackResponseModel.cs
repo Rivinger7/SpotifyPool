@@ -11,13 +11,21 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
         public string? Description { get; set; }
         public string? Lyrics { get; set; }
         public required string PreviewURL { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? TrackDetailUrl { get; set; }
+
         public required int Duration { get; set; }
         public string DurationFormated { get; set; } = string.Empty;
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AddedTime { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? UploadDate { get; set; }
 
         public required IEnumerable<ImageResponseModel> Images { get; set; }
         public required IEnumerable<ArtistResponseModel> Artists { get; set; }
+        public IEnumerable<string> AlbumIds { get; set; } = [];
+
     }
 }

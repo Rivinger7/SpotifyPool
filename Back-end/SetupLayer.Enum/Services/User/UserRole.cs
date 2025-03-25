@@ -9,6 +9,8 @@ namespace SetupLayer.Enum.Services.User
         [EnumMember(Value = "Artist")]
         Artist,
         [EnumMember(Value = "Customer")]
-        Customer
+        Customer,
+        [EnumMember(Value = "Content Manager")]
+        ContentManeger
     }
 }

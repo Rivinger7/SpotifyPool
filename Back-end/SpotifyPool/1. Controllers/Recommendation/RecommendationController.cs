@@ -21,7 +21,7 @@ namespace SpotifyPool._1._Controllers.Recommendation
         /// <param name="audioFeaturesRequest"></param>
         /// <param name="algorithm"></param>
         /// <returns></returns>
-        [AllowAnonymous, HttpPost("tracks")]
+        [AllowAnonymous, HttpPost("tracks/by-features")]
         public async Task<IActionResult> GetRecommendedSongByBotpressSearching([FromBody] AudioFeaturesRequest audioFeaturesRequest, [FromQuery] Algorithm algorithm = Algorithm.CosineSimilarity)
         {
             var result = await _recommendationService.GetRecommendations(audioFeaturesRequest, algorithm);

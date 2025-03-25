@@ -149,6 +149,30 @@ namespace BusinessLogicLayer.Implement.Services.Artists
             return authenticatedUserInfoResponseModel;
         }
 
+        public async Task<ArtistResponseModel> GetArtistByIdAsync(string artistId)
+        {
+            // Projection
+            ProjectionDefinition<Artist, ArtistResponseModel> artistProjection = Builders<Artist>.Projection.Expression(artist =>
+                new ArtistResponseModel
+                {
+                    Id = artist.Id,
+                    Name = artist.Name,
+                    Followers = artist.Followers,
+                    Images = artist.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    })
+                });
+
+            // Lấy thông tin nghệ sĩ
+            ArtistResponseModel artistResponseModel = await _unitOfWork.GetCollection<Artist>().Find(a => a.Id == artistId)
+                .Project(artistProjection)
+                .FirstOrDefaultAsync();
+            return artistResponseModel;
+        }
+
         public async Task<IEnumerable<TrackResponseModel>> GetOwnTracks(int offset, int limit)
         {
             // Lấy UserId từ phiên người dùng
@@ -170,6 +194,7 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                     Lyrics = track.Lyrics,
                     PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
+                    UploadDate = track.UploadDate,
                     Images = track.Images.Select(image => new ImageResponseModel
                     {
                         URL = image.URL,
@@ -216,6 +241,74 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                 .Project(trackWithArtistProjection)
                 .ToListAsync();
 
+            // lấy AlbumIds mỗi track
+            IEnumerable<Album> allAlbums = await _unitOfWork.GetCollection<Album>().Find(a => !a.DeletedTime.HasValue).ToListAsync();
+            foreach (var track in tracksResponseModel)
+            {
+                IEnumerable<string> albumIds = allAlbums.Where(a => a.TrackIds.Contains(track.Id)).Select(a => a.Id);
+                track.AlbumIds = albumIds;
+            }
+
+            return tracksResponseModel;
+        }
+
+        public async Task<IEnumerable<TrackResponseModel>> GetTracksByArtistId(string artistId, int offset, int limit)
+        {
+            // Projection
+            ProjectionDefinition<ASTrack, TrackResponseModel> trackWithArtistProjection = Builders<ASTrack>.Projection.Expression(track =>
+                new TrackResponseModel
+                {
+                    Id = track.Id,
+                    Name = track.Name,
+                    Description = track.Description,
+                    Lyrics = track.Lyrics,
+                    PreviewURL = track.StreamingUrl,
+                    Duration = track.Duration,
+                    UploadDate = track.UploadDate,
+                    Images = track.Images.Select(image => new ImageResponseModel
+                    {
+                        URL = image.URL,
+                        Height = image.Height,
+                        Width = image.Width
+                    }),
+                    Artists = track.Artists.Select(artist => new ArtistResponseModel
+                    {
+                        Id = artist.Id,
+                        Name = artist.Name,
+                        Followers = artist.Followers,
+                        Images = artist.Images.Select(image => new ImageResponseModel
+                        {
+                            URL = image.URL,
+                            Height = image.Height,
+                            Width = image.Width
+                        })
+                    })
+                });
+
+            // Lấy danh sách track của artist
+            // Lấy tracks có streamingUrl != null và isPlayable = true
+            FilterDefinition<Track> trackFilter = Builders<Track>.Filter.And(
+                Builders<Track>.Filter.Ne(t => t.StreamingUrl, null),
+                Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true),
+                Builders<Track>.Filter.AnyEq(t => t.ArtistIds, artistId)
+            );
+
+            // Empty Pipeline
+            IAggregateFluent<Track> aggregateFluent = _unitOfWork.GetCollection<Track>().Aggregate();
+
+            // Lấy thông tin Tracks với Artist
+            // Lookup
+            IEnumerable<TrackResponseModel> tracksResponseModel = await aggregateFluent
+                .Match(trackFilter)
+                .Skip((offset - 1) * limit)
+                .Limit(limit)
+                .Lookup<Track, Artist, ASTrack>(
+                    _unitOfWork.GetCollection<Artist>(),
+                    track => track.ArtistIds,
+                    artist => artist.Id,
+                    result => result.Artists)
+                .Project(trackWithArtistProjection)
+                .ToListAsync();
             return tracksResponseModel;
         }
     }
