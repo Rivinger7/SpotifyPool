@@ -2,8 +2,7 @@
 using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
 using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
 using Hellang.Middleware.ProblemDetails;
-using SpotifyPool.Infrastructure;
-using SpotifyPool.Infrastructure.EnvironmentVariable;
+using SpotifyPool._2._Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,7 +81,7 @@ else
 //    // Đặt tiêu đề
 //    c.DocumentTitle = "SpotifyPool API";
 
-//    // Đường dẫn đến file JSON của Swagger
+//    // Đường dẫn đến file JSON    của Swagger
 //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SpotifyPool API V1");
 
 //    // Inject JavaScript để chuyển đổi theme
@@ -93,18 +92,6 @@ else
 
 //app.UseHttpsRedirection();
 
-//app.UseSession();
 
-app.UseStaticFiles();
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.UseCors("AllowSpecificOrigin");
-
-app.MapControllers();
-
-app.MapHub<StreamCountingHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL")}");
-app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL")}");
-
-app.Run();

@@ -1,6 +1,6 @@
 ﻿using dotenv.net;
 
-namespace SpotifyPool.Infrastructure.EnvironmentVariable
+namespace SpotifyPool._2._Infrastructure
 {
     public static class EnvironmentVariableLoader
     {

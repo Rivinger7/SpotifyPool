@@ -1,7 +1,7 @@
 ﻿using BusinessLogicLayer.Implement.CustomExceptions;
 using Microsoft.AspNetCore.Identity;
 
-namespace SpotifyPool.Infrastructure
+namespace SpotifyPool._2._Infrastructure
 {
     public static class ControllerDependencyInjection
     {
