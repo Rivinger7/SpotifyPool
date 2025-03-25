@@ -84,7 +84,16 @@ namespace BusinessLogicLayer.Implement.Services.Payments
         }
         public async Task<PaymentLinkInformation> CancelPaymantLink(long orderCode, string? reason)
         {
-            return await _payOs.cancelPaymentLink(orderCode, reason);
+            PaymentLinkInformation result = await _payOs.cancelPaymentLink(orderCode, reason);
+            // Truy xuất dữ liệu
+            Payment payment = await _unitOfWork.GetCollection<Payment>().Find(p => p.OrderCode == orderCode).FirstOrDefaultAsync();
+            FilterDefinition<Payment> filter = Builders<Payment>.Filter.Eq(a => a.OrderCode, orderCode);
+            UpdateDefinition<Payment> update = Builders<Payment>.Update.Set(a => a.Status, "CANCELLED");
+
+            await _unitOfWork.GetCollection<Payment>().UpdateOneAsync(filter, update);
+
+            Console.WriteLine($"Đã hủy đơn hàng: {orderCode}");
+            return result;
         }
         public async Task<IList<Premium>> GetAllPremiums()
         {
@@ -116,7 +125,7 @@ namespace BusinessLogicLayer.Implement.Services.Payments
             {
                 update = Builders<Payment>.Update.Set(a => a.Status, "PAID");
             }
-            else // Hết thời gian thanh toán, user hủy, lỗi hoặc bị từ chối
+            else // Hết thời gian thanh toán, lỗi hoặc bị từ chối
             {
                 update = Builders<Payment>.Update.Set(a => a.Status, "CANCELLED");
                 Console.WriteLine($"Đơn bị huỷ/lỗi: {webhookData.desc}");
