@@ -2,13 +2,11 @@
 using BusinessLogicLayer.ModelView.Service_Model_Views.TopTrack.Request;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool._1._Controllers.TopTrack
 {
-    [Route("api/top-tracks")]
+    [Route("api/v1/top-tracks")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // "Bearer"
     public class TopTrackController(ITopTrack topTrackService) : ControllerBase

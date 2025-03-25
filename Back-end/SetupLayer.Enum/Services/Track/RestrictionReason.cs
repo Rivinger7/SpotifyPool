@@ -4,15 +4,18 @@ namespace SetupLayer.Enum.Services.Track
 {
     public enum RestrictionReason
     {
-        [EnumMember(Value = "market")]
+        [EnumMember(Value = "Pending Approval")] // chờ content manager duyệt
+        Pending,
+        [EnumMember(Value = "No Restriction")] // ko bị cấm => KQ duyệt = Accept => IsPlayable = true
+        None,
+        // 4 LÝ DO BỊ CẤM
+        [EnumMember(Value = "Restricted by Market")]
         Market,
-        [EnumMember(Value = "product")]
+        [EnumMember(Value = "Restricted by Product")]
         Product,
-        [EnumMember(Value = "explicit")]
+        [EnumMember(Value = "Restricted by Explicit")]
         Explicit,
-        [EnumMember(Value = "Other")]
+        [EnumMember(Value = "Restricted by Other")]
         Other,
-        [EnumMember(Value = "None")]
-        None
     }
 }

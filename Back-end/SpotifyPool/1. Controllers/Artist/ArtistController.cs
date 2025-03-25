@@ -34,5 +34,13 @@ namespace SpotifyPool._1._Controllers.Artist
             var trackResponseModels = await _artistService.GetOwnTracks(offset, limit);
             return Ok(new { Message = "Get Own Tracks Successfully", trackResponseModels });
         }
+
+        [Authorize(Roles = nameof(UserRole.Artist)), HttpGet("{artistId}/profile")]
+        public async Task<IActionResult> GetArtistProfileAsync(string artistId)
+        {
+            var artistProfile = await _artistService.GetArtistByIdAsync(artistId);
+            var artistTracks = await _artistService.GetTracksByArtistId(artistId, 1, 10);
+            return Ok(new { Message = "Get Artist Successfully", artistProfile, artistTracks});
+        }
     }
 }

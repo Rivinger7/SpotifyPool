@@ -1,5 +1,6 @@
 using AutoMapper;
 using BusinessLogicLayer.Implement.CustomExceptions;
+using BusinessLogicLayer.Implement.Microservices.Cloudinaries;
 using BusinessLogicLayer.Implement.Services.DataAnalysis;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using BusinessLogicLayer.Interface.Microservices_Interface.Spotify;
@@ -9,6 +10,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Artists.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Images.Response;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response;
+using CloudinaryDotNet.Actions;
 using CsvHelper;
 using CsvHelper.Configuration;
 using DataAccessLayer.Interface.MongoDB.UOW;
@@ -18,6 +20,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.Track;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -28,7 +31,7 @@ using Xabe.FFmpeg;
 
 namespace BusinessLogicLayer.Implement.Services.Tracks
 {
-    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISpotify spotifyService, IAmazonWebService amazonWebService, IFFmpegService fFmpegService) : ITrack
+    public class TrackBLL(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISpotify spotifyService, IAmazonWebService amazonWebService, IFFmpegService fFmpegService, CloudinaryService cloudinaryService) : ITrack
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
@@ -36,6 +39,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         private readonly ISpotify _spotifyService = spotifyService;
         private readonly IAmazonWebService _amazonWebService = amazonWebService;
         private readonly IFFmpegService _fFmpegService = fFmpegService;
+        private readonly CloudinaryService _cloudinaryService = cloudinaryService;
 
         #region Chỉ dùng cho mục đích sửa cdn thành streamingUrl
         //public async Task ChangeStreamUrl()
@@ -114,7 +118,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         //            updates.Add(update);
 
         //            // Xóa file sau khi upload để giải phóng bộ nhớ
-        //            File.Delete(filePath);
+        //            AudioFile.Delete(filePath);
         //        }
         //        catch (Exception ex)
         //        {
@@ -151,7 +155,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
         //// Cập nhật hàm ConvertToIFormFile để tránh giữ file mở
         //private static IFormFile ConvertToIFormFile(string filePath, string fileName)
         //{
-        //    byte[] fileBytes = File.ReadAllBytes(filePath); // Đọc file vào bộ nhớ
+        //    byte[] fileBytes = AudioFile.ReadAllBytes(filePath); // Đọc file vào bộ nhớ
         //    var memoryStream = new MemoryStream(fileBytes); // Chuyển thành MemoryStream
 
         //    return new FormFile(memoryStream, 0, fileBytes.Length, "file", fileName)
@@ -203,13 +207,13 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
                 var (trackImages, artistDictionary, artistImages, artistPopularity, artistFollower) = await _spotifyService.FetchTrackAsync(accessToken, trackId);
 
-                var artistNames = record.ArtistNames.Split(',')
+                List<string> artistNames = record.ArtistNames.Split(',')
                     .Select(a => a.Trim().Trim('"'))
                     .Where(a => !string.IsNullOrEmpty(a))
                     .ToList();
 
-                var artistIds = new List<string>();
-                foreach (var artistName in artistNames)
+                List<string> artistIds = [];
+                foreach (string artistName in artistNames)
                 {
                     string existingArtistId = await _unitOfWork.GetCollection<Artist>()
                         .Find(a => a.Name == artistName)
@@ -635,6 +639,59 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             newTrack.UploadBy = artistId ?? throw new ArgumentNullCustomException($"{artistId}");
             newTrack.UploadDate = DateTime.Now.ToString("yyyy-MM-dd");
 
+            // Tạo hình ảnh cho track
+            List<DataAccessLayer.Repository.Entities.Image> images = [];
+
+            // Nếu không có file hình ảnh
+            if (request.ImageFile is null)
+            {
+                images =
+                [
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779869/default-playlist-640_tsyulf.jpg",
+                        Height = 640,
+                        Width = 640
+                    },
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779653/default-playlist-300_iioirq.png",
+                        Height = 300,
+                        Width = 300
+                    },
+                    new() {
+                        URL = "https://res.cloudinary.com/dofnn7sbx/image/upload/v1732779699/default-playlist-64_gek7wt.png",
+                        Height = 64,
+                        Width = 64
+                    }
+                ];
+            }
+            // Nếu có file hình ảnh
+            else
+            {
+                // Kết quả upload hình ảnh
+                ImageUploadResult uploadResult;
+                // Kích thước ảnh
+                IEnumerable<int> sizes = [640, 300, 64];
+                // Kích thước ảnh cố định
+                int fixedSize = 300;
+
+                // Upload hình ảnh lên Cloudinary
+                uploadResult = _cloudinaryService.UploadImage(request.ImageFile, ImageTag.Track, rootFolder: "Image", fixedSize, fixedSize);
+
+                // Tạo 3 kích thước ảnh khác nhau nhưng cùng một URL với kích thước cố định
+                foreach (int size in sizes)
+                {
+                    images.Add(new()
+                    {
+                        URL = uploadResult.SecureUrl.AbsoluteUri,
+                        Height = size,
+                        Width = size
+                    });
+                }
+            }
+
+            // Lưu hình ảnh vào Track
+            newTrack.Images = images;
+
             // Đường dẫn thư mục lưu trữ audio file tạm thời
             string basePath = string.Empty;
             string inputPath = string.Empty;
@@ -644,16 +701,16 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             {
                 basePath = AppDomain.CurrentDomain.BaseDirectory;
 
-                inputPath = Path.Combine(basePath, "Commons", "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
-                outputPath = Path.Combine(basePath, "Commons", "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+                inputPath = Path.Combine(basePath, "Commons", "input_temp_audio", Path.GetFileNameWithoutExtension(request.AudioFile.FileName));
+                outputPath = Path.Combine(basePath, "Commons", "output_temp_audio", Path.GetFileNameWithoutExtension(request.AudioFile.FileName));
             }
             else if (Util.IsLinux())
             {
-                //basePath = "/var/data";
-                basePath = "/tmp";
+                basePath = "/var/data";
+                //basePath = "/tmp";
 
-                inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
-                outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.File.FileName));
+                inputPath = Path.Combine(basePath, "input_temp_audio", Path.GetFileNameWithoutExtension(request.AudioFile.FileName));
+                outputPath = Path.Combine(basePath, "output_temp_audio", Path.GetFileNameWithoutExtension(request.AudioFile.FileName));
             }
             else
             {
@@ -676,11 +733,11 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             //{
             //    // Kiểm tra quyền ghi
             //    string testFile = Path.Combine(inputPath, "test.txt");
-            //    File.WriteAllText(testFile, "Test write permission.");
+            //    AudioFile.WriteAllText(testFile, "Test write permission.");
             //}
             //catch (Exception ex)
             //{
-            //    Console.WriteLine($"❌ Write test failed: {ex.Message}");
+            //    Console.WriteLine($"Write test failed: {ex.Message}");
             //    throw new UnauthorizedAccessException("Write permission denied on `/var/data/input_temp_audio`.");
             //}
             #endregion
@@ -691,7 +748,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             //Syscall.chmod(outputPath, FilePermissions.ALLPERMS);
 
             // Tạo đường dẫn file
-            string fileName = Path.GetFileName(request.File.FileName);
+            string fileName = Path.GetFileName(request.AudioFile.FileName);
             string inputFilePath = Path.Combine(inputPath, fileName);
             string outputFilePath = Path.Combine(outputPath, fileName);
 
@@ -703,9 +760,9 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             try
             {
                 // lưu tạm thời file upload vào thư mục input
-                using (var stream = new FileStream(inputFilePath, FileMode.Create))
+                using (FileStream stream = new(inputFilePath, FileMode.Create))
                 {
-                    await request.File.CopyToAsync(stream);
+                    await request.AudioFile.CopyToAsync(stream);
                 }
 
                 // Lấy thông tin file audio
@@ -722,10 +779,10 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 string trackIdName = $"{newTrack.Id}_{newTrack.Name}";
 
                 // url mp3 public của file audio
-                string publicUrl = await _amazonWebService.UploadFileAsync(request.File, trackIdName);
+                string publicUrl = await _amazonWebService.UploadFileAsync(request.AudioFile, trackIdName);
 
                 // Convert audio file sang dạng streaming
-                (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.File, newTrack.Id);
+                (inputFileTemp, inputFolderPath, outputFolderPath) = await _fFmpegService.ConvertToHls(request.AudioFile, newTrack.Id);
 
                 // Upload streaming files lên AWS S3
                 newTrack.StreamingUrl = await _amazonWebService.UploadFolderAsync(outputFolderPath, newTrack.Id, newTrack.Name);
@@ -800,8 +857,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             finally
             {
                 //xóa các file tạm không cần nữa trong wwwroot
-                //File.Delete(inputFilePath);
-                //File.Delete(outputPath);
+                //AudioFile.Delete(inputFilePath);
+                //AudioFile.Delete(outputPath);
 
                 // Xóa folder tạm, đảm bảo file không bị lock trước khi xóa
                 try
@@ -840,34 +897,6 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 {
                     Console.WriteLine($"Error deleting folders: {ex.Message}");
                 }
-
-                // Xóa file tạm, đảm bảo file không bị lock trước khi xóa
-                //try
-                //{
-                //    if (File.Exists(inputFilePath))
-                //    {
-                //        using (var fs = new FileStream(inputFilePath, FileMode.Open))
-                //        {
-                //            fs.Close();
-                //        }
-                //        File.Delete(inputFilePath);
-                //        Console.WriteLine($"🗑️ Deleted: {inputFilePath}");
-                //    }
-
-                //    if (File.Exists(outputFilePath))
-                //    {
-                //        using (var fs = new FileStream(outputFilePath, FileMode.Open))
-                //        {
-                //            fs.Close();
-                //        }
-                //        File.Delete(outputFilePath);
-                //        Console.WriteLine($"🗑️ Deleted: {outputFilePath}");
-                //    }
-                //}
-                //catch (Exception ex)
-                //{
-                //    Console.WriteLine($"❌ Error deleting files: {ex.Message}");
-                //}
             }
         }
 
