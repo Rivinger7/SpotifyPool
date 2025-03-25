@@ -46,7 +46,7 @@ namespace BusinessLogicLayer.Implement.Microservices.Cloudinaries
             string currentFolder = $"{rootFolder}/{imageTag}";
 
             // Hashing Metadata
-            string hashedData = DataEncryptionExtensions.Encrypt($"image_{imageTag}_{userID}");
+            string hashedData = DataEncryptionExtensions.Encrypt($"image_{imageTag}_{userID}_{DateTime.UtcNow}");
 
             // Nếu người dùng đang ở khác muối giờ thì cách này hiệu quả hơn
             // Không nhất thiết phải là UTC+7 vì còn tùy thuộc theo hệ thống trên máy của người dùng
