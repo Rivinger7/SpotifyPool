@@ -689,7 +689,8 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
                 }
             }
 
-            
+            // Lưu hình ảnh vào Track
+            newTrack.Images = images;
 
             // Đường dẫn thư mục lưu trữ audio file tạm thời
             string basePath = string.Empty;
