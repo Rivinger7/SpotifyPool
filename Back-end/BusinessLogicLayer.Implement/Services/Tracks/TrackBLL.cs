@@ -417,14 +417,15 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
 
             // Lấy tracks có streamingUrl != null và isPlayable = true
             trackFilter = Builders<Track>.Filter.And(
-                Builders<Track>.Filter.Ne(t => t.StreamingUrl, null),
-                Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true)
+                Builders<Track>.Filter.Ne(t => t.StreamingUrl, null)
+                //Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true)
             );
 
             if (filterModel.RestrictionReason.HasValue)
             {
                 trackFilter = Builders<Track>.Filter.And(
                     trackFilter,
+                    Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, false),
                     Builders<Track>.Filter.Eq(t => t.Restrictions.Reason, filterModel.RestrictionReason.Value)
                 );
             }
@@ -434,6 +435,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             {
                 trackFilter = Builders<Track>.Filter.And(
                     trackFilter, // Giữ điều kiện StreamingUrl != null và IsPlayable = true
+                    Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true),
                         Builders<Track>.Filter.Or(
                         Builders<Track>.Filter.Regex(track => track.Name, new BsonRegularExpression(searchTermEscaped, "i")),
                         Builders<Track>.Filter.Regex(track => track.Description, new BsonRegularExpression(searchTermEscaped, "i"))
@@ -444,6 +446,7 @@ namespace BusinessLogicLayer.Implement.Services.Tracks
             {
                 trackFilter = Builders<Track>.Filter.And(
                     trackFilter, // Giữ điều kiện StreamingUrl != null và IsPlayable = true
+                    Builders<Track>.Filter.Eq(t => t.Restrictions.IsPlayable, true),
                     filterModel.Mood switch
                     {
                         Mood.Sad => Builders<Track>.Filter.And(
