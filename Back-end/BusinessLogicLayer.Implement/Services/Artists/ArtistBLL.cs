@@ -194,6 +194,7 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                     Lyrics = track.Lyrics,
                     PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
+                    UploadDate = track.UploadDate,
                     Images = track.Images.Select(image => new ImageResponseModel
                     {
                         URL = image.URL,
@@ -255,6 +256,7 @@ namespace BusinessLogicLayer.Implement.Services.Artists
                     Lyrics = track.Lyrics,
                     PreviewURL = track.StreamingUrl,
                     Duration = track.Duration,
+                    UploadDate = track.UploadDate,
                     Images = track.Images.Select(image => new ImageResponseModel
                     {
                         URL = image.URL,

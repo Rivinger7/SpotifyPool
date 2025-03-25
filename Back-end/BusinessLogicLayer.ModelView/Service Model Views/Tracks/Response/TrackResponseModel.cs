@@ -16,6 +16,8 @@ namespace BusinessLogicLayer.ModelView.Service_Model_Views.Tracks.Response
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? AddedTime { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? UploadDate { get; set; }
 
         public required IEnumerable<ImageResponseModel> Images { get; set; }
         public required IEnumerable<ArtistResponseModel> Artists { get; set; }
