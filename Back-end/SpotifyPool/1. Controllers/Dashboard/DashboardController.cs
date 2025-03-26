@@ -26,7 +26,7 @@ namespace SpotifyPool._1._Controllers.Dashboard
 		}
 
 		/// <summary>
-		/// Dữ liệu quản lý bài hát và nghệ sĩ
+		/// Dữ liệu Top 10 về Track và Artist
 		/// </summary>
 		/// <returns></returns>
 		[HttpGet("track-artist")]
@@ -37,7 +37,7 @@ namespace SpotifyPool._1._Controllers.Dashboard
 		}
 
 		/// <summary>
-		/// Tổng quan: so sánh giữa người dùng mới với người dùng trong tháng đó
+		/// Tổng quan: so sánh giữa người dùng mới với người dùng đang hoạt động trong tháng đó
 		/// </summary>
 		/// <returns></returns>
 		[HttpGet("user-growth")]
@@ -55,6 +55,17 @@ namespace SpotifyPool._1._Controllers.Dashboard
 		public async Task<IActionResult> GetUserRoleDistribution()
 		{
 			var data = await _dashboardBLL.GetUserRoleDistributionAsync();
+			return Ok(data);
+		}
+
+		/// <summary>
+		/// Thống kê tổng số giao dịch thanh toán và tổng doanh thu
+		/// </summary>
+		/// <returns></returns>
+		[HttpGet("premium-stats")]
+		public async Task<IActionResult> GetPremiumDashboard()
+		{
+			var data = await _dashboardBLL.GetPremiumDashboardAsync();
 			return Ok(data);
 		}
 	}

@@ -12,5 +12,7 @@ namespace BusinessLogicLayer.Interface.Services_Interface.Dashboard
 
 		Task<List<RoleDistributionDashboard>> GetUserRoleDistributionAsync();
 
+		Task<PremiumDashboar> GetPremiumDashboardAsync();
+
 	}
 }
