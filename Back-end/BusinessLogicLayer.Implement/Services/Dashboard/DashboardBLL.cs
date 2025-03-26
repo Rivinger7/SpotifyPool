@@ -5,7 +5,6 @@ using DataAccessLayer.Repository.Entities;
 using MongoDB.Driver;
 using SetupLayer.Enum.Services.User;
 using System.Globalization;
-using System.Linq;
 
 namespace BusinessLogicLayer.Implement.Services.Dashboard
 {
@@ -165,6 +164,41 @@ namespace BusinessLogicLayer.Implement.Services.Dashboard
 			return mainRoles;
 		}
 
+		#endregion
+
+		#region Thống kê tổng số giao dịch thanh toán thành công và tổng doanh thu
+		public async Task<PremiumDashboar> GetPremiumDashboardAsync()
+		{
+			IMongoCollection<Payment> paymentCollection = _unitOfWork.GetCollection<Payment>();
+			IMongoCollection<Product> productCollection = _unitOfWork.GetCollection<Product>();
+			IMongoCollection<Premium> premiumCollection = _unitOfWork.GetCollection<Premium>();
+
+			//Lọc trạng thái thành công "PAID"
+			FilterDefinition<Payment> paidFilter = Builders<Payment>.Filter.Eq(p => p.Status, "PAID");
+
+			//Tổng số giao dịch thanh toán
+			long totalPayments = await paymentCollection.CountDocumentsAsync(paidFilter);
+
+			//Tổng doanh thu (Mỗi Payment có snapshot chứa Premium.Price)
+			List<Payment> payments = await paymentCollection.Find(paidFilter).ToListAsync();
+
+			double totalRevenue = payments
+				.Select(p => (double?)p.SnapshotInfo?.PremiumPrice)
+				.Where(p => p.HasValue)
+				.Sum(p => p!.Value);
+
+			//Số người dùng đang sử dụng Premium
+			long activePremiumUsers = await productCollection.CountDocumentsAsync(
+				Builders<Product>.Filter.Ne(p => p.PremiumId, null)
+			);
+
+			return new PremiumDashboar
+			{
+				TotalPayments = totalPayments,
+				TotalRevenue = totalRevenue,
+				ActivePremiumUsers = activePremiumUsers
+			};
+		}
 		#endregion
 
 	}
