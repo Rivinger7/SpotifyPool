@@ -46,7 +46,7 @@ namespace BusinessLogicLayer.Implement.Services.Payments
                 premium.Price,
                 "Thanh toan don hang",
                 items,
-                cancelUrl: "https://localhost:3002",
+                cancelUrl: "https://spotifypoolmusicdevelopers.onrender.com/api/v1/payments/payment-link?orderCode=" + orderCode,
                 returnUrl: "https://localhost:3002",
                 expiredAt: expiredAt);
             // tạo link thanh toán
