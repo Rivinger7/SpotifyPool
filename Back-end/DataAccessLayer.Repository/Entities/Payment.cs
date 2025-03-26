@@ -16,7 +16,7 @@ namespace DataAccessLayer.Repository.Entities
         [BsonRepresentation(BsonType.ObjectId)]
         public required string PremiumId { get; set; } = null!;
         public Snapshot SnapshotInfo { get; set; } = null!;
-        public string Status { get; set; } = null!; // "PAID", "CANCELLED", "PENDING"
+        public string Status { get; set; } = null!; // "PAID", "CANCELLED", "PENDING" (pending: chờ - có thể đã hết hạn )
         public long OrderCode { get; set; } 
     }
     public class Snapshot
@@ -29,7 +29,7 @@ namespace DataAccessLayer.Repository.Entities
         public List<Image> Images { get; set; } = [];
         public string? Birthdate { get; set; }
         public UserGender Gender { get; set; }
-        public DateTime? BuyedTime { get; set; }
+        public DateTime? BuyedTime { get; set; } // check hết hạn link thanh toán ở đây (mỗi link thanh toán tồn tại 15p)
         public DateTime? ExpiredTime { get; set; }
         // Premium Info
         public string PremiumName { get; set; } = null!;
