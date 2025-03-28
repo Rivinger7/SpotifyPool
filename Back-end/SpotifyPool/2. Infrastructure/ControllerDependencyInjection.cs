@@ -8,8 +8,8 @@ namespace SpotifyPool.Infrastructure
         public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             // API Config
-            services.ConfigRoute();
-            services.AddSwaggerGen();
+            //services.ConfigRoute();
+            //services.AddSwaggerGen();
             services.AddCors();
         }
 
