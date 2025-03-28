@@ -12,6 +12,7 @@ using MongoDB.Driver;
 using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.User;
 using Utility.Coding;
+using KeyNotFoundException = System.Collections.Generic.KeyNotFoundException;
 
 namespace BusinessLogicLayer.Implement.Services.Account
 {

@@ -1,9 +1,12 @@
 ﻿using BusinessLogicLayer.DependencyInjection.Dependency_Injections;
 using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
 using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
+using Google.Protobuf.WellKnownTypes;
 using Hellang.Middleware.ProblemDetails;
+using SpotifyPool.GraphQL;
 using SpotifyPool.Infrastructure;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +49,17 @@ builder.Services.AddEndpointsApiExplorer();
 // Dependency Injections
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddBusinessInfrastructure(builder.Configuration);
+
+builder.Services.AddGraphQLServer().AddQueryType<QueryTrack>();
+
+
+//builder.Services
+//    .AddGraphQLServer()
+//    .AddQueryType<QueryTrack>()
+//    .AddMutationType<Mutation>()
+//    .AddProjections()
+//    .AddFiltering()
+//    .AddSorting();
 
 var app = builder.Build();
 
@@ -103,6 +117,8 @@ app.UseAuthorization();
 app.UseCors("AllowSpecificOrigin");
 
 app.MapControllers();
+
+app.MapGraphQL("/graphql");
 
 app.MapHub<StreamCountingHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_COUNT_STREAM_URL")}");
 app.MapHub<PlaylistHub>($"{Environment.GetEnvironmentVariable("SPOTIFYPOOL_HUB_PLAYLIST_URL")}");

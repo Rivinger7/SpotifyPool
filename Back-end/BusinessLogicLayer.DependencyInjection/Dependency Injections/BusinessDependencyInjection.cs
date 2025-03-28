@@ -74,6 +74,7 @@ using BusinessLogicLayer.Implement.Services.ContentManagers;
 using DataAccessLayer.Repository.Entities;
 using BusinessLogicLayer.Implement.Services.Payments;
 using BusinessLogicLayer.Interface.Services_Interface.Payments;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 #endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections

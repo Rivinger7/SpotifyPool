@@ -7,6 +7,7 @@ using SixLabors.ImageSharp.Processing;
 using Utility.Coding;
 using Xabe.FFmpeg;
 using BitmapDrawing = System.Drawing.Bitmap;
+using Path = System.IO.Path;
 
 namespace BusinessLogicLayer.Implement.Services.DataAnalysis
 {

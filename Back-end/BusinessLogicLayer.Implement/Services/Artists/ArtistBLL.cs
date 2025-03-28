@@ -21,6 +21,7 @@ using SetupLayer.Enum.Microservices.Cloudinary;
 using SetupLayer.Enum.Services.User;
 using System.Security.Claims;
 using Utility.Coding;
+using KeyNotFoundException = System.Collections.Generic.KeyNotFoundException;
 
 namespace BusinessLogicLayer.Implement.Services.Artists
 {

@@ -6,6 +6,7 @@ using BusinessLogicLayer.Implement.CustomExceptions;
 using BusinessLogicLayer.Interface.Microservices_Interface.AWS;
 using Microsoft.AspNetCore.Http;
 using SetupLayer.Setting.Microservices.AWS;
+using Path = System.IO.Path;
 
 namespace BusinessLogicLayer.Implement.Microservices.AWS
 {

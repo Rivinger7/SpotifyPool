@@ -468,7 +468,7 @@ namespace BusinessLogicLayer.Implement.Services.SignalR.Playlists
             }
 
             // Tạo Optional để kiểm tra playlistId có rỗng không
-            Optional<string?> playlistIdOptional = Optional.Create(playlistId);
+            MongoDB.Driver.Optional<string?> playlistIdOptional = Optional.Create(playlistId);
 
             // Lấy thông tin playlist từ database
             Playlist? playlist = playlistIdOptional.HasValue

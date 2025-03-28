@@ -1,6 +1,7 @@
 ﻿using BusinessLogicLayer.Interface.Microservices_Interface.EmailService;
 using BusinessLogicLayer.ModelView.Microservice_Model_Views.EmailService;
 using FluentEmail.Core;
+using Path = System.IO.Path;
 
 namespace BusinessLogicLayer.Implement.Microservices.EmailService
 {

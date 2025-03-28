@@ -3,6 +3,7 @@ using DataAccessLayer.Repository.Entities;
 using MongoDB.Driver;
 using System.Drawing;
 using Utility.Coding;
+using Path = System.IO.Path;
 
 namespace BusinessLogicLayer.Implement.Services.Tests
 {
