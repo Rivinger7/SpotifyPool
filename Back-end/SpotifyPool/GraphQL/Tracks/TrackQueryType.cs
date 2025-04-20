@@ -1,4 +1,5 @@
-﻿using HotChocolate.Types;
+﻿using DataAccessLayer.Interface.MongoDB.UOW;
+using HotChocolate.Types;
 using SetupLayer.Enum.Services.User;
 
 namespace SpotifyPool.GraphQL.Tracks
@@ -7,7 +8,7 @@ namespace SpotifyPool.GraphQL.Tracks
     {
         protected override void Configure(IObjectTypeDescriptor<TrackQuery> descriptor)
         {
-            descriptor.Authorize([nameof(UserRole.Admin)]); // Mặc định tất cả yêu cầu login
+            //descriptor.Authorize([nameof(UserRole.Admin)]); // Mặc định tất cả yêu cầu login
 
             //descriptor.Field(x => x.GetTrackByIdAsync(default!)).AllowAnonymous(); // Cho phép truy cập public
         }

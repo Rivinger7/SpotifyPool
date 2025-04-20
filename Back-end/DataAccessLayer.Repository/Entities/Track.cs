@@ -34,6 +34,7 @@ namespace DataAccessLayer.Repository.Entities
         public long StreamCount { get; set; } // Real counting
         public long DownloadCount { get; set; }
         public long FavoriteCount { get; set; }
+
         public required AudioFeatures AudioFeatures { get; set; }
     }
 }
