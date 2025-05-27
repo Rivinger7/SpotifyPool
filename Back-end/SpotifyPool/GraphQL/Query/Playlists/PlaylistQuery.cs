@@ -3,7 +3,7 @@ using BusinessLogicLayer.ModelView.Service_Model_Views.Playlists.Response;
 using HotChocolate.Types;
 using SpotifyPool.GraphQL.Query;
 
-namespace SpotifyPool.GraphQL.Playlists
+namespace SpotifyPool.GraphQL.Query.Playlists
 {
     [ExtendObjectType(typeof(QueryInitialization))]
     public class PlaylistQuery(IPlaylist playlistService)

@@ -2,7 +2,7 @@
 using HotChocolate.Types;
 using SetupLayer.Enum.Services.User;
 
-namespace SpotifyPool.GraphQL.Tracks
+namespace SpotifyPool.GraphQL.Query.Tracks
 {
     public class TrackQueryType : ObjectTypeExtension<TrackQuery>
     {

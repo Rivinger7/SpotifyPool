@@ -3,10 +3,11 @@ using BusinessLogicLayer.Implement.Services.SignalR.Playlists;
 using BusinessLogicLayer.Implement.Services.SignalR.StreamCounting;
 using Google.Protobuf.WellKnownTypes;
 using Hellang.Middleware.ProblemDetails;
-using SpotifyPool.GraphQL.Authentication;
-using SpotifyPool.GraphQL.Playlists;
+using SpotifyPool.GraphQL.Mutation;
+using SpotifyPool.GraphQL.Mutation.Authentication;
 using SpotifyPool.GraphQL.Query;
-using SpotifyPool.GraphQL.Tracks;
+using SpotifyPool.GraphQL.Query.Playlists;
+using SpotifyPool.GraphQL.Query.Tracks;
 using SpotifyPool.Infrastructure;
 using SpotifyPool.Infrastructure.EnvironmentVariable;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -36,7 +37,8 @@ builder.Services.AddGraphQLServer().AddAuthorization()
     .AddQueryType<QueryInitialization>()
     .AddTypeExtension<TrackQueryType>()
     .AddTypeExtension<PlaylistQueryType>()
-    .AddMutationType<AuthenticationMutationType>();
+    .AddMutationType<MutationInitialization>()
+    .AddTypeExtension<AuthenticationMutationType>();
 
 
 var app = builder.Build();

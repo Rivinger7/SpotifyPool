@@ -13,7 +13,7 @@ using MongoDB.Driver;
 using SpotifyPool.GraphQL.Query;
 
 
-namespace SpotifyPool.GraphQL.Tracks
+namespace SpotifyPool.GraphQL.Query.Tracks
 {
     [ExtendObjectType(typeof(QueryInitialization))]
     public class TrackQuery(ITrack trackService)

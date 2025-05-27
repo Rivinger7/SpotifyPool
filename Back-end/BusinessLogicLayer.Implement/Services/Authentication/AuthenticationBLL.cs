@@ -26,9 +26,9 @@ using Utility.EmailTemplate;
 
 namespace BusinessLogicLayer.Implement.Services.Authentication
 {
-    public class AuthenticationBLL(IConnectionMultiplexer connectionMultiplexer, IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IEmailService emailService) : IAuthentication
+    public class AuthenticationBLL(IMapper mapper, IUnitOfWork unitOfWork, IJwtBLL jwtBLL, IHttpContextAccessor httpContextAccessor, IEmailService emailService) : IAuthentication
     {
-        private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
+        //private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IJwtBLL _jwtBLL = jwtBLL;
@@ -697,7 +697,7 @@ namespace BusinessLogicLayer.Implement.Services.Authentication
             if(userId is not null)
             {
                 //xóa key refresh trong redis để dọn dẹp tài nguyên ko cần thiết vì token 7 ngày lận
-                await _redis.KeyDeleteAsync(userId);
+                //await _redis.KeyDeleteAsync(userId);
             }
             return;
         }

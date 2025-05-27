@@ -892,12 +892,12 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
         private static void AddRedis(this IServiceCollection services)
         {
-            var option = new ConfigurationOptions
-            {
-                EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
-                Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
-            };
-            services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
+            //var option = new ConfigurationOptions
+            //{
+            //    EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
+            //    Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
+            //};
+            //services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
         }
     }
 }

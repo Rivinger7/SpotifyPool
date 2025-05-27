@@ -1,6 +1,6 @@
 ﻿using HotChocolate.Types;
 
-namespace SpotifyPool.GraphQL.Authentication
+namespace SpotifyPool.GraphQL.Mutation.Authentication
 {
     public class AuthenticationMutationType : ObjectType<AuthenticationMutation>
     {

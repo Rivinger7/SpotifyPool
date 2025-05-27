@@ -1,9 +1,11 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.Authentication;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Request;
 using BusinessLogicLayer.ModelView.Service_Model_Views.Authentication.Response;
+using HotChocolate.Types;
 
-namespace SpotifyPool.GraphQL.Authentication
+namespace SpotifyPool.GraphQL.Mutation.Authentication
 {
+    [ExtendObjectType(typeof(MutationInitialization))]
     public class AuthenticationMutation(IAuthentication authenticationService)
     {
         private readonly IAuthentication _authenticationService = authenticationService;

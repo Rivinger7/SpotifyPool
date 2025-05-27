@@ -12,10 +12,10 @@ using System.Text;
 
 namespace BusinessLogicLayer.Implement.Services.JWTs
 {
-    public class JwtBLL(IUnitOfWork unitOfWork, IConnectionMultiplexer redis) : IJwtBLL, IDisposable
+    public class JwtBLL(IUnitOfWork unitOfWork) : IJwtBLL, IDisposable
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly IDatabase _redis = redis.GetDatabase();
+        //private readonly IDatabase _redis = redis.GetDatabase();
         private bool _disposed = false;
 
         public void Dispose()
@@ -167,7 +167,7 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
             refreshToken = GenerateRefreshToken(claims, null);
 
             //store refresh token to Redis
-            _redis.StringSet(userId, refreshToken, TimeSpan.FromDays(7));
+            //_redis.StringSet(userId, refreshToken, TimeSpan.FromDays(7));
 
             return;
         }
@@ -214,18 +214,18 @@ namespace BusinessLogicLayer.Implement.Services.JWTs
 
             string userID = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            RedisValue? tokenInRedis = _redis.StringGet(userID);
+            //RedisValue? tokenInRedis = _redis.StringGet(userID);
 
-            if (tokenInRedis is null || tokenInRedis != oldRefreshToken)
-            {
-                throw new BadRequestCustomException("Invalid, refresh token is not available in cache! Please log in again.");
-            }
+            //if (tokenInRedis is null || tokenInRedis != oldRefreshToken)
+            //{
+            //    throw new BadRequestCustomException("Invalid, refresh token is not available in cache! Please log in again.");
+            //}
 
             newAccessToken = GenerateAccessToken(principal.Claims);
             newRefreshToken = GenerateRefreshToken(principal.Claims, principal);
 
             //set lại refresh token và thời gian hết hạn mới
-            _redis.StringSet(userID, newRefreshToken, TimeSpan.FromDays(7));
+            //_redis.StringSet(userID, newRefreshToken, TimeSpan.FromDays(7));
             return;
         }
 

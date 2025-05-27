@@ -1,7 +1,7 @@
 ﻿using HotChocolate.Types;
 using SetupLayer.Enum.Services.User;
 
-namespace SpotifyPool.GraphQL.Playlists
+namespace SpotifyPool.GraphQL.Query.Playlists
 {
     public class PlaylistQueryType : ObjectTypeExtension<PlaylistQuery>
     {
