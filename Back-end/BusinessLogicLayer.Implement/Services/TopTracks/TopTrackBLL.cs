@@ -16,11 +16,10 @@ using Utility.Coding;
 
 namespace BusinessLogicLayer.Implement.Services.TopTracks
 {
-    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, IConnectionMultiplexer connectionMultiplexer) : ITopTrack
+    public class TopTrackBLL(IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork) : ITopTrack
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
 
         public async Task UpsertTopTrackAsync(TopTrackRequestModel topTrackRequestModel)
         {

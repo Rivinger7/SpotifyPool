@@ -75,6 +75,7 @@ using DataAccessLayer.Repository.Entities;
 using BusinessLogicLayer.Implement.Services.Payments;
 using BusinessLogicLayer.Interface.Services_Interface.Payments;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using BusinessLogicLayer.Implement.Services.Fingerprint;
 #endregion
 
 namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
@@ -112,7 +113,7 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             //});
             services.AddAuthentication();
             services.AddAuthorization();
-            services.AddRedis();
+            //services.AddRedis();
         }
 
         #region Custom Problem Details
@@ -440,6 +441,8 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
 
             // FFmpeg
             services.AddScoped<IFFmpegService, FFmpegService>();
+
+            services.AddScoped<FingerprintCustomService>();
 
             // Dashboard
             services.AddScoped<IDashboard, DashboardBLL>();
@@ -890,14 +893,14 @@ namespace BusinessLogicLayer.DependencyInjection.Dependency_Injections
             BsonSerializer.RegisterSerializer(typeof(Algorithm), new EnumMemberSerializer<Algorithm>());
         }
 
-        private static void AddRedis(this IServiceCollection services)
-        {
-            var option = new ConfigurationOptions
-            {
-                EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
-                Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
-            };
-            services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
-        }
+        //private static void AddRedis(this IServiceCollection services)
+        //{
+        //    var option = new ConfigurationOptions
+        //    {
+        //        EndPoints = { $"{Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")}:{Environment.GetEnvironmentVariable("REDIS_PORT")}" },
+        //        Password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")
+        //    };
+        //    services.AddSingleton<IConnectionMultiplexer>(otp => ConnectionMultiplexer.Connect(option));
+        //}
     }
 }

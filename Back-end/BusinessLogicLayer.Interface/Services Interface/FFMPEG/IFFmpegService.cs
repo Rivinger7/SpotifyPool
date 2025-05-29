@@ -6,5 +6,6 @@ namespace BusinessLogicLayer.Interface.Services_Interface.FFMPEG
     {
         Task<(string, string, string)> ConvertToHls(IFormFile audioFile, string trackId);
         Task<(string, string, string)> ConvertToHlsTemp(IFormFile audioFile, string trackId);
+        Task<string> ConvertToWavFileAsync(IFormFile inputFile);
     }
 }

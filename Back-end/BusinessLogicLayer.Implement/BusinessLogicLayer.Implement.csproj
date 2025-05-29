@@ -31,6 +31,7 @@
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
     <PackageReference Include="payOS" Version="1.0.9" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />
+    <PackageReference Include="SoundFingerprinting" Version="12.0.0" />
     <PackageReference Include="Spectrogram" Version="1.6.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.24" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.0" />

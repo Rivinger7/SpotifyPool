@@ -90,6 +90,39 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             }
         }
 
+
+        // Convert IFormFile to Waveform Audio File
+        public async Task<string> ConvertToWavFileAsync(IFormFile inputFile)
+        {
+            if (inputFile == null || inputFile.Length == 0)
+                throw new ArgumentException("Tệp âm thanh không hợp lệ.");
+
+            // Tạo file tạm input (mp3, m4a...)
+            string inputExt = Path.GetExtension(inputFile.FileName);
+            string inputTempPath = Path.Combine(Path.GetTempPath(), $"{ObjectId.GenerateNewId()}{inputExt}");
+            using (var stream = new FileStream(inputTempPath, FileMode.Create))
+            {
+                await inputFile.CopyToAsync(stream);
+            }
+
+            // Tạo đường dẫn file .wav tạm
+            string outputWavPath = Path.Combine(Path.GetTempPath(), $"{ObjectId.GenerateNewId()}.wav");
+
+            // Convert dùng Xabe.FFmpeg
+            IConversion conversion = await FFmpeg.Conversions.FromSnippet.Convert(inputTempPath, outputWavPath);
+            conversion.AddParameter("-ac 1 -ar 16000"); // Mono, 16kHz nếu cần
+            await conversion.Start();
+
+            // Xoá input tạm
+            if (File.Exists(inputTempPath))
+            {
+                File.Delete(inputTempPath);
+            }
+
+            return outputWavPath;
+        }
+
+
         public async Task<(string, string, string)> ConvertToHls(IFormFile audioFile, string trackId)
         {
             string inputFolder = string.Empty;
