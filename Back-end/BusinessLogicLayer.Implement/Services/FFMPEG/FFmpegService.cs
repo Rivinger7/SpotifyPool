@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using Utility.Coding;
@@ -92,36 +93,97 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 
 
         // Convert IFormFile to Waveform Audio File
-        public async Task<string> ConvertToWavFileAsync(IFormFile inputFile)
+        public async Task<(string, long?)> ConvertToWavFileAsync(IFormFile inputFile, string? basePath, string? rootFolder, string? inputIntermediateFolder, string? ouputIntermediateFolder)
         {
             if (inputFile == null || inputFile.Length == 0)
                 throw new ArgumentException("Tệp âm thanh không hợp lệ.");
 
             // Tạo file tạm input (mp3, m4a...)
-            string inputExt = Path.GetExtension(inputFile.FileName);
-            string inputTempPath = Path.Combine(Path.GetTempPath(), $"{ObjectId.GenerateNewId()}{inputExt}");
-            using (var stream = new FileStream(inputTempPath, FileMode.Create))
+            string inputFileExtension = Path.GetExtension(inputFile.FileName);
+
+            //string inputTempPath = Path.Combine(Path.GetTempPath(), $"{ObjectId.GenerateNewId()}{inputFileExtension}");
+
+            basePath ??= Path.GetTempPath(); // Nếu basePath null thì dùng thư mục tạm hệ thống
+            rootFolder ??= string.Empty;
+            inputIntermediateFolder ??= string.Empty;
+            ouputIntermediateFolder ??= string.Empty;
+            string inputFileName = Path.GetFileNameWithoutExtension(inputFile.FileName);
+
+            // Nếu basePath, rootFolder, intermediateFolder không null thì tạo đường dẫn tạm theo cấu trúc
+            string inputFolderTempPath = Path.Combine(basePath, rootFolder, inputIntermediateFolder);
+            string outputFolderTempPath = Path.Combine(basePath, rootFolder, ouputIntermediateFolder);
+
+            string outputWavPath = string.Empty;
+            long? bitrate = null;
+
+            // Tạo thư mục nếu chưa tồn tại
+            if (!Directory.Exists(inputFolderTempPath))
             {
-                await inputFile.CopyToAsync(stream);
+                Directory.CreateDirectory(inputFolderTempPath);
+            }
+            if (!Directory.Exists(outputFolderTempPath))
+            {
+                Directory.CreateDirectory(outputFolderTempPath);
             }
 
-            // Tạo đường dẫn file .wav tạm
-            string outputWavPath = Path.Combine(Path.GetTempPath(), $"{ObjectId.GenerateNewId()}.wav");
-
-            // Convert dùng Xabe.FFmpeg
-            IConversion conversion = await FFmpeg.Conversions.FromSnippet.Convert(inputTempPath, outputWavPath);
-            conversion.AddParameter("-ac 1 -ar 16000"); // Mono, 16kHz nếu cần
-            await conversion.Start();
-
-            // Xoá input tạm
-            if (File.Exists(inputTempPath))
+            try
             {
-                File.Delete(inputTempPath);
+                string inputTempPath = Path.Combine(inputFolderTempPath, $"{ObjectId.GenerateNewId()}_{inputFileName}{inputFileExtension}");
+                using (var stream = new FileStream(inputTempPath, FileMode.Create))
+                {
+                    await inputFile.CopyToAsync(stream);
+                }
+
+                // Tạo đường dẫn file .wav tạm
+                outputWavPath = Path.Combine(outputFolderTempPath, $"{ObjectId.GenerateNewId()}.wav");
+
+                // Kiểm tra file đầu vào có hợp lệ không
+                IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputTempPath);
+                if (!mediaInfo.AudioStreams.Any())
+                    throw new InvalidOperationException("Tệp âm thanh không chứa stream âm thanh hợp lệ.");
+
+                // Lấy stream âm thanh đầu tiên (nếu có nhiều stream thì lấy stream đầu tiên)
+                IAudioStream? audioStream = mediaInfo.AudioStreams.FirstOrDefault();
+
+                // Nếu không có bitrate thì dùng 128k
+                bitrate = audioStream?.Bitrate ?? 128000;
+
+                // Convert dùng Xabe.FFmpeg
+                //IConversion conversion = await FFmpeg.Conversions.FromSnippet.Convert(inputTempPath, outputWavPath);
+                //conversion.AddParameter("-ac 1 -ar 16000"); // Mono, 16kHz nếu cần
+                IConversion conversion = FFmpeg.Conversions.New()
+                    .AddStream(audioStream)
+                    .SetOutput(outputWavPath);
+
+                await conversion.Start();
+
+                // Xoá input tạm
+                if (File.Exists(inputTempPath))
+                {
+                    File.Delete(inputTempPath);
+                }
+            }
+            catch
+            {
+                // Xoá thư mục tạm nếu có lỗi xảy ra
+                if (Directory.Exists(inputFolderTempPath))
+                {
+                    Directory.Delete(inputFolderTempPath, true); // Xóa cả file bên trong
+                }
+                if (Directory.Exists(outputFolderTempPath))
+                {
+                    Directory.Delete(outputFolderTempPath, true); // Xóa cả file bên trong
+                }
             }
 
-            return outputWavPath;
+            return (outputWavPath, bitrate);
         }
 
+        public void DeleteFileAsync(string filePath)
+        {
+            File.Delete(filePath);
+            return;
+        }
 
         public async Task<(string, string, string)> ConvertToHls(IFormFile audioFile, string trackId)
         {
@@ -183,11 +245,14 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 if (!mediaInfo.AudioStreams.Any())
                     throw new InvalidOperationException("AudioFile không chứa stream âm thanh hợp lệ.");
 
+                // Dùng bitrate gốc nếu có, hoặc fallback về 128k hoặc 256k
+                long bitrate = mediaInfo.AudioStreams.FirstOrDefault().Bitrate;
+
                 // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
                 IConversion conversion = FFmpeg.Conversions.New()
                     .AddStream(mediaInfo.AudioStreams.FirstOrDefault()) // Lấy stream âm thanh
                     .SetOutput(outputFilePath)
-                    .AddParameter("-c:a aac -b:a 128k -hls_time 10 -hls_playlist_type vod");
+                    .AddParameter($"-c:a aac -b:a {bitrate} -hls_time 10 -hls_playlist_type vod");
 
                 await conversion.Start();
             }
@@ -224,43 +289,21 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
         }
 
 
-        public async Task<(string, string, string)> ConvertToHlsTemp(IFormFile audioFile, string trackId)
+        public async Task<string> ConvertToHlsTemp(string audioFilePath, string trackId, string? basePath, string? rootFolder, string? outputIntermediateFolder, string? targetFolder = null)
         {
-            string inputFolder = string.Empty;
-            string inputFileTemp = string.Empty;
-            string outputFilePath = string.Empty;
             string outputFolder = string.Empty;
+            string outputFilePath = string.Empty;
+
+            basePath ??= Path.GetTempPath(); // Nếu basePath null thì dùng thư mục tạm hệ thống
+            rootFolder ??= string.Empty;
+            outputIntermediateFolder ??= string.Empty;
+            targetFolder ??= ObjectId.GenerateNewId().ToString();
+
             try
             {
-                if (audioFile == null || audioFile.Length == 0)
-                    throw new ArgumentException("AudioFile âm thanh không hợp lệ.");
-
-                // Tạo thư mục chứa file input và output
-                string basePath = string.Empty;
-
-                if (Util.IsWindows())
-                {
-                    basePath = AppDomain.CurrentDomain.BaseDirectory;
-
-                    inputFolder = Path.Combine(basePath, "Commons", "input_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
-                    outputFolder = Path.Combine(basePath, "Commons", "output_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
-                }
-                else if (Util.IsLinux())
-                {
-                    //basePath = "/var/data";
-                    basePath = "/tmp";
-
-                    inputFolder = Path.Combine(basePath, "input_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
-                    outputFolder = Path.Combine(basePath, "output_temp_audio_hls", $"{ObjectId.GenerateNewId()}_{Path.GetFileNameWithoutExtension(audioFile.FileName)}");
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException("This platform is not supported");
-                }
+                outputFolder = Path.Combine(basePath, rootFolder, outputIntermediateFolder, $"{targetFolder}");
 
                 // Tạo thư mục nếu chưa tồn tại
-                if (!Directory.Exists(inputFolder))
-                    Directory.CreateDirectory(inputFolder);
                 if (!Directory.Exists(outputFolder))
                     Directory.CreateDirectory(outputFolder);
 
@@ -268,35 +311,28 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 //Syscall.chmod(inputFolder, FilePermissions.ALLPERMS);
                 //Syscall.chmod(outputFolder, FilePermissions.ALLPERMS);
 
-                // Tạo tên file input tạm
-                inputFileTemp = Path.Combine(inputFolder, ObjectId.GenerateNewId().ToString() + $"{Path.GetExtension(audioFile.FileName)}");
-
-                // Lưu IFormFile thành file tạm
-                using (FileStream fileStream = new(inputFileTemp, FileMode.Create))
-                {
-                    await audioFile.CopyToAsync(fileStream);
-                }
-
-                outputFilePath = Path.Combine(outputFolder, $"{trackId}_output.m3u8");
+                outputFilePath = Path.Combine(outputFolder, $"{trackId}_hls.m3u8");
 
                 // Kiểm tra file đầu vào có hợp lệ không
-                IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(inputFileTemp);
+                IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(audioFilePath);
                 if (!mediaInfo.AudioStreams.Any())
                     throw new InvalidOperationException("AudioFile không chứa stream âm thanh hợp lệ.");
+
+                long bitrate = mediaInfo.AudioStreams?.FirstOrDefault().Bitrate ?? 128000;
 
                 // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
                 IConversion conversion = FFmpeg.Conversions.New()
                     .AddStream(mediaInfo.AudioStreams.FirstOrDefault()) // Lấy stream âm thanh
                     .SetOutput(outputFilePath)
-                    .AddParameter("-c:a aac -b:a 128k -hls_time 10 -hls_playlist_type vod");
+                    .AddParameter($"-c:a aac -b:a {bitrate} -hls_time 10 -hls_playlist_type vod");
 
                 await conversion.Start();
             }
             catch
             {
-                if (Directory.Exists(inputFolder))
+                if (Directory.Exists(audioFilePath))
                 {
-                    Directory.Delete(inputFolder, true); // Xóa cả file bên trong
+                    Directory.Delete(audioFilePath, true); // Xóa cả file bên trong
                 }
 
                 if (Directory.Exists(outputFolder))
@@ -304,24 +340,8 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                     Directory.Delete(outputFolder, true); // Xóa cả file bên trong
                 }
             }
-            finally
-            {
-                // Xóa file input sau khi xử lý xong để tránh rác
-                //if (!string.IsNullOrEmpty(inputFileTemp) && AudioFile.Exists(inputFileTemp))
-                //    AudioFile.Delete(inputFileTemp);
 
-                //if (Directory.Exists(inputFolder))
-                //{
-                //    Directory.Delete(inputFolder, true); // Xóa cả file bên trong
-                //}
-
-                //if (Directory.Exists(outputFolder))
-                //{
-                //    Directory.Delete(outputFolder, true); // Xóa cả file bên trong
-                //}
-            }
-
-            return (inputFileTemp, inputFolder, outputFolder);
+            return outputFilePath;
         }
         protected virtual void Dispose(bool disposing)
         {

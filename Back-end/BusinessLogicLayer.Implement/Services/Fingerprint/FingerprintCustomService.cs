@@ -1,17 +1,17 @@
-﻿using BusinessLogicLayer.Implement.Services.FFMPEG;
-using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
-using DataAccessLayer.Implement.MongoDB.UOW;
+﻿using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
 using DataAccessLayer.Interface.MongoDB.UOW;
 using DataAccessLayer.Repository.Entities;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using MongoDB.Driver;
-using SoundFingerprinting;
 using SoundFingerprinting.Audio;
 using SoundFingerprinting.Builder;
 using SoundFingerprinting.Data;
 using SoundFingerprinting.InMemory;
 using SoundFingerprinting.Query;
 using System.IO.Compression;
+using Utility.Coding;
+using Xabe.FFmpeg;
 using Path = System.IO.Path;
 
 namespace BusinessLogicLayer.Implement.Services.Fingerprint
@@ -23,9 +23,14 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
 
         public async Task SaveFingerprintToMongo(IFormFile audioFile)
         {
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+            string rootFolder = "audio_processing";
+            string inputIntermediateFolder = "input_temp_audio";
+            string ouputIntermediateFolder = "output_wav_audio";
+
             SoundFingerprintingAudioService audioService = new();
 
-            string tempPath = await _fFmpegService.ConvertToWavFileAsync(audioFile);
+            (string tempPath, long? bitrate) = await _fFmpegService.ConvertToWavFileAsync(audioFile, basePath, rootFolder, inputIntermediateFolder, ouputIntermediateFolder);
 
             AVHashes hashes = await FingerprintCommandBuilder.Instance
                 .BuildFingerprintCommand()
@@ -33,7 +38,10 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
                 .UsingServices(audioService)
                 .Hash();
 
-            File.Delete(tempPath);
+            if(File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
 
             AudioFingerprint doc = new()
             {
@@ -51,11 +59,16 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
 
         public async Task<double> CompareWithDatabase(IFormFile inputFile)
         {
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+            string rootFolder = "audio_processing";
+            string inputIntermediateFolder = "input_temp_audio";
+            string ouputIntermediateFolder = "output_wav_audio";
+
             SoundFingerprintingAudioService audioService = new();
 
-            string wavPath = await _fFmpegService.ConvertToWavFileAsync(inputFile);
+            (string wavPath, long? bitrate) = await _fFmpegService.ConvertToWavFileAsync(inputFile, basePath, rootFolder, inputIntermediateFolder, ouputIntermediateFolder);
 
-            AVHashes hashes = await FingerprintCommandBuilder.Instance
+            await FingerprintCommandBuilder.Instance
                 .BuildFingerprintCommand()
                 .From(wavPath)
                 .UsingServices(audioService)
@@ -64,10 +77,10 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
             List<AudioFingerprint> allDocs = await _unitOfWork.GetCollection<AudioFingerprint>().Find(_ => true).ToListAsync();
 
             double bestConfidence = 0;
+            InMemoryModelService tempModelService = new();
 
             foreach (AudioFingerprint doc in allDocs)
             {
-                InMemoryModelService tempModelService = new();
 
                 TrackInfo track = new(doc.Id, "temp", "unknown");
 
@@ -75,9 +88,9 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
                 for (int i = 0; i < doc.CompressedFingerprints.Count; i++)
                 {
                     hashesFromDb[i] = new HashedFingerprint(
-                        DecompressToIntArray(doc.CompressedFingerprints[i]), 
-                        doc.SequenceNumbers[i], 
-                        doc.StartsAt[i], 
+                        DecompressToIntArray(doc.CompressedFingerprints[i]),
+                        doc.SequenceNumbers[i],
+                        doc.StartsAt[i],
                         doc.OriginalPoints[i]);
                 }
 
@@ -99,7 +112,10 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
                 }
             }
 
-            File.Delete(wavPath);
+            if (File.Exists(wavPath))
+            {
+                File.Delete(wavPath);
+            }
 
             return bestConfidence;
         }
