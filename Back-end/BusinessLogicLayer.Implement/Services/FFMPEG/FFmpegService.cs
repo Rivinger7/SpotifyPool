@@ -1,5 +1,4 @@
 ﻿using BusinessLogicLayer.Interface.Services_Interface.FFMPEG;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using Utility.Coding;
@@ -93,7 +92,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 
 
         // Convert IFormFile to Waveform Audio File
-        public async Task<(string, long?)> ConvertToWavFileAsync(IFormFile inputFile, string? basePath, string? rootFolder, string? inputIntermediateFolder, string? ouputIntermediateFolder)
+        public async Task<(string, long)> ConvertToWavFileAsync(IFormFile inputFile, string? basePath, string? rootFolder, string? inputIntermediateFolder, string? ouputIntermediateFolder)
         {
             if (inputFile == null || inputFile.Length == 0)
                 throw new ArgumentException("Tệp âm thanh không hợp lệ.");
@@ -114,7 +113,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             string outputFolderTempPath = Path.Combine(basePath, rootFolder, ouputIntermediateFolder);
 
             string outputWavPath = string.Empty;
-            long? bitrate = null;
+            long bitrate = default;
 
             // Tạo thư mục nếu chưa tồn tại
             if (!Directory.Exists(inputFolderTempPath))
@@ -143,10 +142,10 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                     throw new InvalidOperationException("Tệp âm thanh không chứa stream âm thanh hợp lệ.");
 
                 // Lấy stream âm thanh đầu tiên (nếu có nhiều stream thì lấy stream đầu tiên)
-                IAudioStream? audioStream = mediaInfo.AudioStreams.FirstOrDefault();
+                IAudioStream? audioStream = mediaInfo.AudioStreams.FirstOrDefault() ?? throw new ArgumentNullException("Audio Stream is null");
 
                 // Nếu không có bitrate thì dùng 128k
-                bitrate = audioStream?.Bitrate ?? 128000;
+                bitrate = audioStream.Bitrate;
 
                 // Convert dùng Xabe.FFmpeg
                 //IConversion conversion = await FFmpeg.Conversions.FromSnippet.Convert(inputTempPath, outputWavPath);
@@ -315,14 +314,15 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 
                 // Kiểm tra file đầu vào có hợp lệ không
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(audioFilePath);
-                if (!mediaInfo.AudioStreams.Any())
-                    throw new InvalidOperationException("AudioFile không chứa stream âm thanh hợp lệ.");
+                //if (!mediaInfo.AudioStreams.Any())
+                //    throw new InvalidOperationException("AudioFile không chứa stream âm thanh hợp lệ.");
 
-                long bitrate = mediaInfo.AudioStreams?.FirstOrDefault().Bitrate ?? 128000;
+                IAudioStream? audioStream = mediaInfo.AudioStreams.FirstOrDefault() ?? throw new ArgumentNullException("Audio Stream is null");
+                long bitrate = audioStream.Bitrate;
 
                 // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
                 IConversion conversion = FFmpeg.Conversions.New()
-                    .AddStream(mediaInfo.AudioStreams.FirstOrDefault()) // Lấy stream âm thanh
+                    .AddStream(audioStream) // Lấy stream âm thanh
                     .SetOutput(outputFilePath)
                     .AddParameter($"-c:a aac -b:a {bitrate} -hls_time 10 -hls_playlist_type vod");
 

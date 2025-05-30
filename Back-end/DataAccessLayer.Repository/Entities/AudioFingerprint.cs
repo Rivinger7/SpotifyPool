@@ -8,13 +8,17 @@ namespace DataAccessLayer.Repository.Entities
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        public string Biterate = "Unknown";
+
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string TrackId { get; set; } // Optional: if you want to associate fingerprints with a specific track
+
+        public long Biterate { get; set; }
         public List<byte[]> CompressedFingerprints { get; set; } = [];
         public List<uint> SequenceNumbers { get; set; } = [];
         public List<float> StartsAt { get; set; } = [];
         public List<byte[]> OriginalPoints { get; set; } = [];
         public double Duration { get; set; } // Duration in seconds
         public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 }

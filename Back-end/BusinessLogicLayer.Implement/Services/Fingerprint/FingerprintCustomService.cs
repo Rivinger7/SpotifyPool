@@ -30,7 +30,7 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
 
             SoundFingerprintingAudioService audioService = new();
 
-            (string tempPath, long? bitrate) = await _fFmpegService.ConvertToWavFileAsync(audioFile, basePath, rootFolder, inputIntermediateFolder, ouputIntermediateFolder);
+            (string tempPath, long bitrate) = await _fFmpegService.ConvertToWavFileAsync(audioFile, basePath, rootFolder, inputIntermediateFolder, ouputIntermediateFolder);
 
             AVHashes hashes = await FingerprintCommandBuilder.Instance
                 .BuildFingerprintCommand()
@@ -38,18 +38,27 @@ namespace BusinessLogicLayer.Implement.Services.Fingerprint
                 .UsingServices(audioService)
                 .Hash();
 
-            if(File.Exists(tempPath))
+            if (File.Exists(tempPath))
             {
                 File.Delete(tempPath);
             }
 
+            if (hashes.Audio is null)
+            {
+                throw new InvalidOperationException("No audio fingerprints were generated. Please check the input file.");
+            }
+
             AudioFingerprint doc = new()
             {
+                TrackId = ObjectId.GenerateNewId().ToString(), // Replace with the actual track Id
+                Biterate = bitrate,
                 CompressedFingerprints = hashes.Audio.Select(h => CompressIntArray(h.HashBins)).ToList(),
                 SequenceNumbers = hashes.Audio.Select(h => h.SequenceNumber).ToList(),
                 StartsAt = hashes.Audio.Select(h => h.StartsAt).ToList(),
                 OriginalPoints = hashes.Audio.Select(h => h.OriginalPoint).ToList(),
                 Duration = hashes.Audio.DurationInSeconds,
+                CreatedAt = Util.GetUtcPlus7Time(),
+                UpdatedAt = null
             };
 
             await _unitOfWork.GetCollection<AudioFingerprint>().InsertOneAsync(doc);
