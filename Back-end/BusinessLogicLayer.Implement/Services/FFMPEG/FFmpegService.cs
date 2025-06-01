@@ -290,27 +290,23 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
 
         public async Task<string> ConvertToHlsTemp(string audioFilePath, string trackId, string? basePath, string? rootFolder, string? outputIntermediateFolder, string? targetFolder = null)
         {
+            IEnumerable<long> bitrates = [128000, 256000, 320000]; // Các bitrate có thể sử dụng
+            List<(long bitrate, string relativePath)> playlistEntries = [];
+
             string outputFolder = string.Empty;
             string outputFilePath = string.Empty;
+            string bitrateVersionFolder = string.Empty;
 
             basePath ??= Path.GetTempPath(); // Nếu basePath null thì dùng thư mục tạm hệ thống
             rootFolder ??= string.Empty;
             outputIntermediateFolder ??= string.Empty;
             targetFolder ??= ObjectId.GenerateNewId().ToString();
 
+            string targetRootFolder = Path.Combine(basePath, rootFolder, outputIntermediateFolder, targetFolder);
+
             try
             {
-                outputFolder = Path.Combine(basePath, rootFolder, outputIntermediateFolder, $"{targetFolder}");
-
-                // Tạo thư mục nếu chưa tồn tại
-                if (!Directory.Exists(outputFolder))
-                    Directory.CreateDirectory(outputFolder);
-
-                // Cấp quyền cho thư mục
-                //Syscall.chmod(inputFolder, FilePermissions.ALLPERMS);
-                //Syscall.chmod(outputFolder, FilePermissions.ALLPERMS);
-
-                outputFilePath = Path.Combine(outputFolder, $"{trackId}_hls.m3u8");
+                string playlistFileName = $"{trackId}_hls.m3u8";
 
                 // Kiểm tra file đầu vào có hợp lệ không
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(audioFilePath);
@@ -320,13 +316,49 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 IAudioStream? audioStream = mediaInfo.AudioStreams.FirstOrDefault() ?? throw new ArgumentNullException("Audio Stream is null");
                 long bitrate = audioStream.Bitrate;
 
-                // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
-                IConversion conversion = FFmpeg.Conversions.New()
-                    .AddStream(audioStream) // Lấy stream âm thanh
-                    .SetOutput(outputFilePath)
-                    .AddParameter($"-c:a aac -b:a {bitrate} -hls_time 10 -hls_playlist_type vod");
+                foreach (long bitrateIndex in bitrates)
+                {
+                    if (bitrateIndex > bitrate)
+                    {
+                        return targetRootFolder;
+                    }
 
-                await conversion.Start();
+                    string bitrateDisplay = (bitrateIndex / 1000).ToString("D3") + "kbps";
+                    outputFolder = Path.Combine(basePath, rootFolder, outputIntermediateFolder, $"{targetFolder}", $"{bitrateDisplay}");
+
+                    // Tạo thư mục nếu chưa tồn tại
+                    if (!Directory.Exists(outputFolder))
+                        Directory.CreateDirectory(outputFolder);
+
+                    // Cấp quyền cho thư mục
+                    //Syscall.chmod(inputFolder, FilePermissions.ALLPERMS);
+                    //Syscall.chmod(outputFolder, FilePermissions.ALLPERMS);
+
+                    outputFilePath = Path.Combine(outputFolder, playlistFileName);
+
+                    // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
+                    IConversion conversion = FFmpeg.Conversions.New()
+                        .AddStream(audioStream) // Lấy stream âm thanh
+                        .SetOutput(outputFilePath)
+                        .AddParameter($"-c:a aac -b:a {bitrateIndex} -hls_time 10 -hls_playlist_type vod");
+
+                    await conversion.Start();
+
+                    // Ghi lại relative path để thêm vào master playlist
+                    string relativePath = $"{bitrateDisplay}/{playlistFileName}";
+                    playlistEntries.Add((bitrateIndex, relativePath));
+                }
+
+                // Tạo master.m3u8 ở folder gốc (targetFolder)
+                string masterFilePath = Path.Combine(targetRootFolder, $"{targetFolder}_master.m3u8");
+                List<string> lines = ["#EXTM3U"];
+                foreach ((long bitrate, string relativePath) entry in playlistEntries.OrderBy(e => e.bitrate))
+                {
+                    lines.Add($"#EXT-X-STREAM-INF:BANDWIDTH={entry.bitrate}");
+                    lines.Add(entry.relativePath);
+                }
+
+                await File.WriteAllLinesAsync(masterFilePath, lines);
             }
             catch
             {
@@ -341,7 +373,7 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 }
             }
 
-            return outputFilePath;
+            return targetRootFolder;
         }
         protected virtual void Dispose(bool disposing)
         {
