@@ -308,6 +308,26 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
             {
                 string playlistFileName = $"{trackId}_hls.m3u8";
 
+                // Lấy key và iv từ environment để mã hóa
+                string keyHex = Environment.GetEnvironmentVariable("HLS_KEY")!;
+                string ivHex = Environment.GetEnvironmentVariable("HLS_IV")!;
+                string keyUri = "key.key"; // Dùng URI cứng để test local
+
+                string keyDirectory = Path.Combine(targetRootFolder, "key");
+                Directory.CreateDirectory(keyDirectory);
+
+                string keyFilePath = Path.Combine(keyDirectory, "encryption.key");
+                string keyInfoPath = Path.Combine(keyDirectory, "key_info.txt");
+
+                // Ghi key file và key info file
+                await File.WriteAllBytesAsync(keyFilePath, Convert.FromHexString(keyHex));
+                await File.WriteAllLinesAsync(keyInfoPath,
+                    [
+                        keyUri,
+                        keyFilePath,
+                        ivHex
+                    ]);
+
                 // Kiểm tra file đầu vào có hợp lệ không
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(audioFilePath);
                 //if (!mediaInfo.AudioStreams.Any())
@@ -337,12 +357,11 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                     outputFilePath = Path.Combine(outputFolder, playlistFileName);
 
                     // Chuyển đổi bằng cách thêm Stream thay vì AddParameter
-                    IConversion conversion = FFmpeg.Conversions.New()
+                    await FFmpeg.Conversions.New()
                         .AddStream(audioStream) // Lấy stream âm thanh
                         .SetOutput(outputFilePath)
-                        .AddParameter($"-c:a aac -b:a {bitrateIndex} -hls_time 10 -hls_playlist_type vod");
-
-                    await conversion.Start();
+                        .AddParameter($"-c:a aac -b:a {bitrateIndex} -hls_time 10 -hls_playlist_type vod -hls_key_info_file \"{keyInfoPath}\"")
+                        .Start();
 
                     // Ghi lại relative path để thêm vào master playlist
                     string relativePath = $"{bitrateDisplay}/{playlistFileName}";
