@@ -311,7 +311,8 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 // Lấy key và iv từ environment để mã hóa
                 string keyHex = Environment.GetEnvironmentVariable("HLS_KEY")!;
                 string ivHex = Environment.GetEnvironmentVariable("HLS_IV")!;
-                string keyUri = "key.key"; // Dùng URI cứng để test local
+                string keyUriTemplate = Environment.GetEnvironmentVariable("HLS_KEY_URL")!;
+                string keyUri = keyUriTemplate.Replace("{trackId}", trackId); // Dùng API để lấy key theo track
 
                 string keyDirectory = Path.Combine(targetRootFolder, "key");
                 Directory.CreateDirectory(keyDirectory);
@@ -322,11 +323,11 @@ namespace BusinessLogicLayer.Implement.Services.FFMPEG
                 // Ghi key file và key info file
                 await File.WriteAllBytesAsync(keyFilePath, Convert.FromHexString(keyHex));
                 await File.WriteAllLinesAsync(keyInfoPath,
-                    [
-                        keyUri,
-                        keyFilePath,
-                        ivHex
-                    ]);
+                [
+                    keyUri,
+                    keyFilePath,
+                    ivHex
+                ]);
 
                 // Kiểm tra file đầu vào có hợp lệ không
                 IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(audioFilePath);

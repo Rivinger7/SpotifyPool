@@ -26,5 +26,26 @@ namespace SpotifyPool._1._Controllers.FFmpeg
 
             return Ok(new { Result = result, Bitrate = bitrate });
         }
+
+        [HttpGet]
+        public IActionResult GetKey([FromQuery] string trackId, [FromQuery] string token)
+        {
+            if (!IsAuthorized(token, trackId))
+                return Unauthorized("Invalid token or trackId");
+
+            var keyHex = Environment.GetEnvironmentVariable("HLS_KEY");
+            if (string.IsNullOrWhiteSpace(keyHex) || keyHex.Length != 32)
+                return StatusCode(500, "Encryption key is not properly configured");
+
+            var keyBytes = System.Convert.FromHexString(keyHex);
+
+            return File(keyBytes, "application/octet-stream");
+        }
+
+        private bool IsAuthorized(string token, string trackId)
+        {
+            // 🔐 TODO: thay thế logic kiểm tra thật sự bằng JWT / session v.v.
+            return token == "xyz" && !string.IsNullOrWhiteSpace(trackId);
+        }
     }
 }
